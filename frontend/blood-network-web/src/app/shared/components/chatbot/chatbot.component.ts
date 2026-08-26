@@ -281,7 +281,7 @@ export class ChatbotComponent implements AfterViewChecked {
   messages = signal<ChatMsg[]>([
     {
       role: 'assistant',
-      content: 'Hello! I\'m Blood Buddy, your AI assistant for Blood Network Bangladesh. How can I help you today?\n\nআমি ব্লাড বাডি, ব্লাড নেটওয়ার্ক বাংলাদেশের AI সহকারী। আমি কীভাবে আপনাকে সাহায্য করতে পারি?',
+      content: 'আমি কীভাবে সাহায্য করতে পারি?',
     },
   ]);
 
