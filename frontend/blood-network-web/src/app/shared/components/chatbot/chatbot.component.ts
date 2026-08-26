@@ -282,7 +282,7 @@ export class ChatbotComponent implements AfterViewChecked {
   messages = signal<ChatMsg[]>([
     {
       role: 'assistant',
-      content: 'আমি কীভাবে সাহায্য করতে পারি?',
+      content: 'How can I help you?',
     },
   ]);
 
