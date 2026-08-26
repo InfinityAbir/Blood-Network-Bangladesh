@@ -26,6 +26,7 @@ public static class DependencyInjection
         services.AddScoped<BloodRequestService>();
         services.AddScoped<IMatchingService, MatchingService>();
         services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<IAdminService, AdminService>();
 
         services.Configure<MatchScoreWeightsOptions>(
             configuration.GetSection("AppSettings:MatchScoreWeights"));
