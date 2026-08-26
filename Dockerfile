@@ -16,6 +16,8 @@ COPY --from=build /app/publish .
 
 ENV ASPNETCORE_URLS=http://+:8080
 ENV ASPNETCORE_ENVIRONMENT=Production
+ENV DOTNET_ROLL_FORWARD=LatestMajor
+ENV DOTNET_HOSTBUILDER__RELOADCONFIG=false
 
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "BloodNetwork.Api.dll"]
