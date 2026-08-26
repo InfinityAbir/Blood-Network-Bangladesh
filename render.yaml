@@ -4,7 +4,6 @@ services:
     runtime: image
     image:
       url: ghcr.io/infinityabir/blood-network-bangladesh:main
-    dockerfilePath: ./Dockerfile
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
         value: Production
@@ -27,12 +26,9 @@ services:
       - key: Serilog__WriteTo__0__Args__path
         value: /tmp/logs/bloodnetwork-.log
     healthCheckPath: /health
-    port: 8080
-    plan: free
 
-  - type: web
+  - type: static_site
     name: blood-network-frontend
-    runtime: static
     buildCommand: |
       cd frontend/blood-network-web
       npm install
@@ -47,10 +43,6 @@ services:
         fromService:
           name: blood-network-api
           property: url
-    preDeployCommand: |
-      cd frontend/blood-network-web
-      echo "window.__env = window.__env || {};" > public/env.js
-      echo "window.__env.apiUrl = '$API_URL/api';" >> public/env.js
 
 databases:
   - name: blood-network-db
