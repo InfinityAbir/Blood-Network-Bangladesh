@@ -116,6 +116,11 @@ import { FooterComponent } from '../../../layout/footer/footer.component';
           <h3>Location aware</h3>
           <p>Division, district and upazila based search across Bangladesh.</p>
         </div>
+        <a class="feature feature-link" routerLink="/eligibility">
+          <svg class="feat-icon" viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          <h3>Eligibility Check / যোগ্যতা পরীক্ষা</h3>
+          <p>Check if you are eligible to donate blood with our self-assessment tool.</p>
+        </a>
       </section>
 
       <!-- CTA BANNER -->
@@ -229,6 +234,12 @@ import { FooterComponent } from '../../../layout/footer/footer.component';
     .feat-icon { color: var(--bgn-primary); margin-bottom: 10px; display: block; }
     .feature h3 { margin: 0 0 6px; font-size: 1.05rem; }
     .feature p { color: var(--bgn-text-muted); margin: 0; font-size: 0.92rem; }
+    .feature-link {
+      text-decoration: none;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .feature-link:hover { transform: translateY(-4px); box-shadow: var(--bgn-shadow-md); }
 
     .cta-banner { margin-top: 64px; }
     .cta-banner-inner {

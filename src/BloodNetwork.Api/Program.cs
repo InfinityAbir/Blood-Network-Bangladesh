@@ -1,6 +1,7 @@
 using System.Text;
 using System.Threading.RateLimiting;
 using BloodNetwork.Api.Middleware;
+using BloodNetwork.Application.Configuration;
 using BloodNetwork.Infrastructure;
 using BloodNetwork.Infrastructure.Data;
 using FluentValidation;
@@ -127,6 +128,8 @@ builder.Services.AddRateLimiter(options =>
 });
 
 builder.Services.AddInfrastructure(builder.Configuration);
+
+builder.Services.Configure<GroqOptions>(builder.Configuration.GetSection(GroqOptions.SectionName));
 
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<BloodNetworkDbContext>();

@@ -15,6 +15,10 @@ export const routes: Routes = [
     loadComponent: () => import('./features/request/request-blood/request-blood.component').then(m => m.RequestBloodComponent)
   },
   {
+    path: 'eligibility',
+    loadComponent: () => import('./shared/components/eligibility-check/eligibility-check.component').then(m => m.EligibilityCheckComponent)
+  },
+  {
     path: 'login',
     loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent)
   },

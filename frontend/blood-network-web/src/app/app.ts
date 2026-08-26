@@ -1,11 +1,15 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { ChatbotComponent } from './shared/components/chatbot/chatbot.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet],
-  template: `<router-outlet />`,
+  imports: [RouterOutlet, ChatbotComponent],
+  template: `
+    <router-outlet />
+    <app-chatbot />
+  `,
   styles: [`:host { display: flex; flex-direction: column; min-height: 100vh; }`]
 })
 export class App {}

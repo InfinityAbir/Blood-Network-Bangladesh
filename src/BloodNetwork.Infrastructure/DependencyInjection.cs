@@ -1,3 +1,4 @@
+using BloodNetwork.Application.Configuration;
 using BloodNetwork.Application.DTOs;
 using BloodNetwork.Application.Interfaces;
 using BloodNetwork.Application.Services;
@@ -32,9 +33,14 @@ public static class DependencyInjection
         services.AddScoped<IMatchingService, MatchingService>();
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<IAdminService, AdminService>();
+        services.AddScoped<IDonorEngagementService, DonorEngagementService>();
+        services.AddScoped<IMatchEnhancementService, MatchEnhancementService>();
+        services.AddScoped<IEligibilityService, EligibilityService>();
 
         services.Configure<MatchScoreWeightsOptions>(
             configuration.GetSection("AppSettings:MatchScoreWeights"));
+
+        services.AddHttpClient<IAiChatService, GroqChatService>();
 
         return services;
     }
