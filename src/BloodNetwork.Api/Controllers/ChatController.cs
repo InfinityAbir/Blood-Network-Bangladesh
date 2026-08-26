@@ -7,7 +7,6 @@ namespace BloodNetwork.Api.Controllers;
 
 [ApiController]
 [Route("api/chat")]
-[Authorize]
 public class ChatController : ControllerBase
 {
     private readonly IAiChatService _chatService;

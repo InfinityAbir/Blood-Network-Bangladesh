@@ -51,12 +51,13 @@ public class GroqChatService : IAiChatService
     {
         if (string.IsNullOrWhiteSpace(_options.ApiKey) || _options.ApiKey == "YOUR_GROQ_API_KEY")
         {
-            _logger.LogWarning("Groq API key is not configured.");
-            return "Sorry, the AI assistant is not configured yet. / দুঃখিত, AI সহকারী এখনো কনফিগার করা হয়নি।";
+            _logger.LogWarning("Groq API key is not configured. Set GroqApi__ApiKey environment variable.");
+            return "AI assistant is not configured yet. / AI সহকারী এখনো কনফিগার করা হয়নি।";
         }
 
         try
         {
+            _logger.LogInformation("Calling Groq API with model {Model}", _options.Model);
             var client = _httpClientFactory.CreateClient();
 
             var messages = new List<object>
