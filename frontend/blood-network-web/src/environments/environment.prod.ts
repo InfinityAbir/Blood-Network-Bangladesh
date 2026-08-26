@@ -6,5 +6,5 @@ declare global {
 
 export const environment = {
   production: true,
-  apiUrl: window.__env?.apiUrl || '/api'
+  apiUrl: (typeof window !== 'undefined' && window.__env?.apiUrl) || 'https://blood-network-bangladesh.onrender.com/api'
 };

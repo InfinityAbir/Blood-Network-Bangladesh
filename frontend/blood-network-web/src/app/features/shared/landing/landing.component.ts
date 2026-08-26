@@ -174,11 +174,14 @@ import { FooterComponent } from '../../../layout/footer/footer.component';
     .hero h1 { font-size: clamp(2.2rem, 5vw, 3.6rem); line-height: 1.1; margin: 0 0 16px; font-weight: 800; }
     .hero-accent { color: #ffd2d2; }
     .tagline { font-size: 1.15rem; max-width: 620px; margin: 0 auto 32px; opacity: 0.94; }
-    .cta-buttons { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-bottom: 18px; }
-    .cta { height: 52px !important; border-radius: var(--bgn-radius-pill) !important; font-size: 1rem !important; font-weight: 600 !important; padding: 0 28px !important; display: inline-flex !important; align-items: center !important; gap: 8px !important; }
+    .cta-buttons { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-bottom: 18px; align-items: center; }
+    .cta { height: 52px !important; border-radius: var(--bgn-radius-pill) !important; font-size: 1rem !important; font-weight: 600 !important; padding: 0 28px !important; }
+    .cta .mdc-button__label { display: inline-flex !important; align-items: center !important; justify-content: center !important; gap: 8px !important; line-height: 1 !important; }
+    .cta .bgn-icon { display: block; flex-shrink: 0; }
     .cta-need { background: #fff !important; color: #b71c1c !important; }
     .cta-donate { background: rgba(255,255,255,0.16) !important; color: #fff !important; border: 1px solid rgba(255,255,255,0.4) !important; }
-    .ghost-link { color: #fff !important; opacity: 0.9; display: inline-flex !important; align-items: center !important; gap: 6px !important; }
+    .ghost-link { color: #fff !important; opacity: 0.9; }
+    .ghost-link .mdc-button__label { display: inline-flex !important; align-items: center !important; gap: 6px !important; }
 
     /* STATS */
     .stats {
