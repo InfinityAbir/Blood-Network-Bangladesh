@@ -1,0 +1,65 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+## NuGet
+**/packages/
+*.nupkg
+**/[Pp]ackages/
+*.nuget.props
+*.nuget.targets
+
+## Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+build/
+bld/
+
+## Visual Studio
+.vs/
+*.dbmdl
+*.jfm
+launchSettings.json
+
+## Rider
+.idea/
+*.sln.iml
+
+## VS Code
+.vscode/
+
+## Node / Angular
+frontend/blood-network-web/node_modules/
+frontend/blood-network-web/dist/
+frontend/blood-network-web/.angular/
+frontend/blood-network-web/.sass-cache/
+
+## Logs
+logs/
+*.log
+
+## Environment / Secrets
+appsettings.Production.json
+appsettings.*.local.json
+*.env
+.env.local
+.env.*.local
+
+## User Secrets
+**/Properties/serviceDependencies.json
+**/Properties/serviceDependencies.local.json
+
+## OS
+.DS_Store
+Thumbs.db
+
+## Test results
+TestResults/
+coverage/

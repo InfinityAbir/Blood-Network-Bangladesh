@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/BloodNetwork.Api/BloodNetwork.Api.csproj" />
+    <Project Path="src/BloodNetwork.Application/BloodNetwork.Application.csproj" />
+    <Project Path="src/BloodNetwork.Domain/BloodNetwork.Domain.csproj" />
+    <Project Path="src/BloodNetwork.Infrastructure/BloodNetwork.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/BloodNetwork.IntegrationTests/BloodNetwork.IntegrationTests.csproj" />
+    <Project Path="tests/BloodNetwork.UnitTests/BloodNetwork.UnitTests.csproj" />
+  </Folder>
+</Solution>

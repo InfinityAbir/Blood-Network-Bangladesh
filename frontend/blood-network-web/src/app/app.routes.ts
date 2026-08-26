@@ -1,0 +1,49 @@
+import { Routes } from '@angular/router';
+import { authGuard, adminGuard } from './core/guards/auth.guard';
+
+export const routes: Routes = [
+  {
+    path: '',
+    loadComponent: () => import('./features/shared/landing/landing.component').then(m => m.LandingComponent)
+  },
+  {
+    path: 'find-blood',
+    loadComponent: () => import('./features/shared/find-blood/find-blood.component').then(m => m.FindBloodComponent)
+  },
+  {
+    path: 'request-blood',
+    loadComponent: () => import('./features/request/request-blood/request-blood.component').then(m => m.RequestBloodComponent)
+  },
+  {
+    path: 'login',
+    loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent)
+  },
+  {
+    path: 'register',
+    loadComponent: () => import('./features/auth/register/register.component').then(m => m.RegisterComponent)
+  },
+  {
+    path: 'donor/dashboard',
+    loadComponent: () => import('./features/donor/dashboard/dashboard.component').then(m => m.DonorDashboardComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'donor/profile',
+    loadComponent: () => import('./features/donor/profile/profile.component').then(m => m.DonorProfileComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'requester/dashboard',
+    loadComponent: () => import('./features/request/dashboard/dashboard.component').then(m => m.RequesterDashboardComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'admin',
+    loadComponent: () => import('./features/admin/dashboard/dashboard.component').then(m => m.AdminDashboardComponent),
+    canActivate: [adminGuard]
+  },
+  {
+    path: '**',
+    redirectTo: ''
+  }
+];
