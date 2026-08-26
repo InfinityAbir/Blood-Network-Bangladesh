@@ -138,6 +138,39 @@ if (!app.Environment.IsEnvironment("Testing"))
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<BloodNetworkDbContext>();
     await db.Database.MigrateAsync();
+
+    // --- Seed default admin (idempotent) ---
+    var adminPhone = app.Configuration["Admin:Phone"]
+        ?? Environment.GetEnvironmentVariable("ADMIN_PHONE")
+        ?? "01700000001";
+    var adminPassword = app.Configuration["Admin:Password"]
+        ?? Environment.GetEnvironmentVariable("ADMIN_PASSWORD")
+        ?? "Admin123!";
+    var adminEmail = app.Configuration["Admin:Email"]
+        ?? Environment.GetEnvironmentVariable("ADMIN_EMAIL")
+        ?? "admin@bloodnetworkbd.com";
+
+    var adminExists = await db.Users.AnyAsync(u => u.PhoneNumber == adminPhone);
+    if (!adminExists)
+    {
+        var hasher = new BloodNetwork.Infrastructure.Authentication.PasswordHasher();
+        var admin = new BloodNetwork.Domain.Entities.User
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "System",
+            LastName = "Admin",
+            PhoneNumber = adminPhone,
+            Email = adminEmail,
+            PasswordHash = hasher.HashPassword(adminPassword),
+            Role = BloodNetwork.Domain.Enums.UserRole.Admin,
+            IsActive = true,
+            IsPhoneVerified = true,
+            CreatedAt = DateTime.UtcNow
+        };
+        db.Users.Add(admin);
+        await db.SaveChangesAsync();
+        Log.Information("Seeded default admin {Phone}", adminPhone);
+    }
 }
 
 app.UseSwagger();
