@@ -85,6 +85,7 @@ interface ChatMsg {
               matInput
               [(ngModel)]="userInput"
               (keydown.enter)="sendMessage()"
+              (compositionend)="onCompositionEnd($event)"
               placeholder="Ask about blood donation..."
               [disabled]="loading()"
               #inputField
@@ -303,6 +304,11 @@ export class ChatbotComponent implements AfterViewChecked {
     if (this.isOpen()) {
       this.shouldScroll = true;
     }
+  }
+
+  onCompositionEnd(event: CompositionEvent): void {
+    const target = event.target as HTMLInputElement;
+    this.userInput = target.value;
   }
 
   sendMessage(): void {
