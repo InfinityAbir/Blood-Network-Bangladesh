@@ -68,7 +68,8 @@ public class GroqChatService : IAiChatService
             {
                 foreach (var msg in history)
                 {
-                    messages.Add(new { role = msg.Role, content = msg.Content });
+                    var role = msg.Role?.ToLowerInvariant() == "assistant" ? "assistant" : "user";
+                    messages.Add(new { role, content = msg.Content });
                 }
             }
 
