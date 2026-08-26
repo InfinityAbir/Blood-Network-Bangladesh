@@ -49,6 +49,11 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "static.json",
+                "input": ".",
+                "output": "/"
               }
             ],
             "styles": [
