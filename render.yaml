@@ -3,7 +3,7 @@ services:
     name: blood-network-api
     runtime: image
     image:
-      url: ghcr.io/infinityabir/blood-network-bangladesh:main
+      url: ghcr.io/infinityabir/blood-network-bangladesh
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
         value: Production
