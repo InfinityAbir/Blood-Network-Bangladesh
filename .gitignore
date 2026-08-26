@@ -47,6 +47,7 @@ logs/
 
 ## Environment / Secrets
 appsettings.Production.json
+appsettings.Testing.json
 appsettings.*.local.json
 *.env
 .env.local

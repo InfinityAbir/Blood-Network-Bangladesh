@@ -50,6 +50,10 @@ export class AuthService {
       );
   }
 
+  refreshToken(refreshToken: string): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/refresh`, { refreshToken });
+  }
+
   changeFirstLoginCredentials(currentPassword: string, newEmail: string, newPassword: string): Observable<User> {
     return this.http.post<User>(`${this.apiUrl}/first-login-change`, { currentPassword, newEmail, newPassword })
       .pipe(
@@ -94,7 +98,7 @@ export class AuthService {
     }
   }
 
-  private storeAuth(response: AuthResponse): void {
+  storeAuth(response: AuthResponse): void {
     localStorage.setItem('access_token', response.accessToken);
     localStorage.setItem('refresh_token', response.refreshToken);
     localStorage.setItem('user', JSON.stringify(response.user));

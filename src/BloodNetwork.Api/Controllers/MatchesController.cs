@@ -2,6 +2,7 @@ using BloodNetwork.Application.DTOs;
 using BloodNetwork.Application.Interfaces;
 using BloodNetwork.Domain.Entities;
 using BloodNetwork.Domain.Enums;
+using BloodNetwork.Domain.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -14,15 +15,31 @@ namespace BloodNetwork.Api.Controllers;
 public class MatchesController : ControllerBase
 {
     private readonly IMatchingService _matchingService;
+    private readonly IRepository<BloodRequest> _bloodRequestRepository;
 
-    public MatchesController(IMatchingService matchingService)
+    public MatchesController(
+        IMatchingService matchingService,
+        IRepository<BloodRequest> bloodRequestRepository)
     {
         _matchingService = matchingService;
+        _bloodRequestRepository = bloodRequestRepository;
     }
 
     [HttpGet("request/{requestId}")]
     public async Task<IActionResult> GetMatchesForRequest(Guid requestId)
     {
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
+
+        var bloodRequest = await _bloodRequestRepository.GetByIdAsync(requestId);
+        if (bloodRequest == null) return NotFound();
+
+        var isOwner = bloodRequest.RequesterId == userId.Value;
+        var isAdmin = User.IsInRole("Admin");
+
+        if (!isOwner && !isAdmin)
+            return Forbid();
+
         var matches = await _matchingService.GetMatchesForRequestAsync(requestId);
         return Ok(matches.Select(MapToDto));
     }
@@ -47,7 +64,11 @@ public class MatchesController : ControllerBase
         if (userId == null) return Unauthorized();
 
         if (match.DonorId != userId.Value && !User.IsInRole("Admin"))
-            return Forbid();
+        {
+            var bloodRequest = await _bloodRequestRepository.GetByIdAsync(match.BloodRequestId);
+            if (bloodRequest == null || bloodRequest.RequesterId != userId.Value)
+                return Forbid();
+        }
 
         return Ok(MapToDto(match));
     }

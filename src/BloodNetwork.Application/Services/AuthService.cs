@@ -10,17 +10,20 @@ namespace BloodNetwork.Application.Services;
 public class AuthService
 {
     private readonly IRepository<User> _userRepository;
+    private readonly IRepository<RefreshToken> _refreshTokenRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtTokenService _jwtTokenService;
 
     public AuthService(
         IRepository<User> userRepository,
+        IRepository<RefreshToken> refreshTokenRepository,
         IUnitOfWork unitOfWork,
         IPasswordHasher passwordHasher,
         IJwtTokenService jwtTokenService)
     {
         _userRepository = userRepository;
+        _refreshTokenRepository = refreshTokenRepository;
         _unitOfWork = unitOfWork;
         _passwordHasher = passwordHasher;
         _jwtTokenService = jwtTokenService;
@@ -60,7 +63,7 @@ public class AuthService
 
         var dto = MapToDto(user);
         var accessToken = _jwtTokenService.GenerateAccessToken(user.Id, user.PhoneNumber, user.Role);
-        var refreshToken = _jwtTokenService.GenerateRefreshToken();
+        var refreshToken = await CreateRefreshTokenAsync(user.Id, cancellationToken);
 
         return Result<AuthResponse>.Success(new AuthResponse(accessToken, refreshToken, dto));
     }
@@ -84,9 +87,50 @@ public class AuthService
 
         var dto = MapToDto(user);
         var accessToken = _jwtTokenService.GenerateAccessToken(user.Id, user.PhoneNumber, user.Role);
-        var refreshToken = _jwtTokenService.GenerateRefreshToken();
+        var refreshToken = await CreateRefreshTokenAsync(user.Id, cancellationToken);
 
         return Result<AuthResponse>.Success(new AuthResponse(accessToken, refreshToken, dto));
+    }
+
+    public async Task<Result<AuthResponse>> RefreshTokenAsync(string refreshTokenValue, CancellationToken cancellationToken = default)
+    {
+        var refreshToken = await _refreshTokenRepository.FirstOrDefaultAsync(
+            t => t.Token == refreshTokenValue && !t.IsRevoked, cancellationToken);
+
+        if (refreshToken == null || refreshToken.ExpiresAt < DateTime.UtcNow)
+            return Result<AuthResponse>.Failure("Invalid or expired refresh token");
+
+        var user = await _userRepository.GetByIdAsync(refreshToken.UserId, cancellationToken);
+        if (user == null || !user.IsActive)
+            return Result<AuthResponse>.Failure("User not found or inactive");
+
+        // Revoke the old refresh token
+        refreshToken.IsRevoked = true;
+        refreshToken.RevokedAt = DateTime.UtcNow;
+
+        // Create a new refresh token
+        var newRefreshToken = await CreateRefreshTokenAsync(user.Id, cancellationToken);
+        refreshToken.ReplacedByToken = newRefreshToken;
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        var dto = MapToDto(user);
+        var accessToken = _jwtTokenService.GenerateAccessToken(user.Id, user.PhoneNumber, user.Role);
+
+        return Result<AuthResponse>.Success(new AuthResponse(accessToken, newRefreshToken, dto));
+    }
+
+    public async Task RevokeRefreshTokenAsync(string refreshTokenValue, CancellationToken cancellationToken = default)
+    {
+        var refreshToken = await _refreshTokenRepository.FirstOrDefaultAsync(
+            t => t.Token == refreshTokenValue, cancellationToken);
+
+        if (refreshToken != null)
+        {
+            refreshToken.IsRevoked = true;
+            refreshToken.RevokedAt = DateTime.UtcNow;
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
     }
 
     public async Task<Result<UserDto>> GetCurrentUserAsync(Guid userId, CancellationToken cancellationToken = default)
@@ -127,6 +171,23 @@ public class AuthService
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return Result<UserDto>.Success(MapToDto(user));
+    }
+
+    private async Task<string> CreateRefreshTokenAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var tokenValue = _jwtTokenService.GenerateRefreshToken();
+        var refreshToken = new RefreshToken
+        {
+            UserId = userId,
+            Token = tokenValue,
+            ExpiresAt = DateTime.UtcNow.AddDays(7),
+            IsRevoked = false
+        };
+
+        await _refreshTokenRepository.AddAsync(refreshToken, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return tokenValue;
     }
 
     private static UserDto MapToDto(User user)

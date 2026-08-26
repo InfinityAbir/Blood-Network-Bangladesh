@@ -95,9 +95,9 @@ public class MatchingServiceTests
             .ReturnsAsync(request);
         _matchRepoMock.Setup(r => r.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<BloodRequestMatch, bool>>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<BloodRequestMatch>());
-        _donorProfileRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
+        _donorProfileRepoMock.Setup(r => r.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<DonorProfile, bool>>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<DonorProfile> { donorProfile });
-        _userRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
+        _userRepoMock.Setup(r => r.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<User, bool>>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<User> { donorUser });
         _mapServiceMock.Setup(m => m.CalculateDistanceKm(It.IsAny<double>(), It.IsAny<double>(), It.IsAny<double>(), It.IsAny<double>()))
             .Returns(2.5);
@@ -135,10 +135,10 @@ public class MatchingServiceTests
             .ReturnsAsync(request);
         _matchRepoMock.Setup(r => r.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<BloodRequestMatch, bool>>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<BloodRequestMatch>());
-        _donorProfileRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<DonorProfile> { donorProfile });
-        _userRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<User> { donorUser });
+        _donorProfileRepoMock.Setup(r => r.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<DonorProfile, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<DonorProfile>());
+        _userRepoMock.Setup(r => r.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<User, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<User>());
 
         var result = await _service.MatchRequestAsync(requestId);
 
@@ -171,9 +171,9 @@ public class MatchingServiceTests
             .ReturnsAsync(request);
         _matchRepoMock.Setup(r => r.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<BloodRequestMatch, bool>>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<BloodRequestMatch>());
-        _donorProfileRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
+        _donorProfileRepoMock.Setup(r => r.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<DonorProfile, bool>>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<DonorProfile> { donorProfile });
-        _userRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
+        _userRepoMock.Setup(r => r.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<User, bool>>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<User> { donorUser });
         _mapServiceMock.Setup(m => m.CalculateDistanceKm(It.IsAny<double>(), It.IsAny<double>(), It.IsAny<double>(), It.IsAny<double>()))
             .Returns(1.0);
@@ -209,9 +209,9 @@ public class MatchingServiceTests
             .ReturnsAsync(request);
         _matchRepoMock.Setup(r => r.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<BloodRequestMatch, bool>>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<BloodRequestMatch>());
-        _donorProfileRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
+        _donorProfileRepoMock.Setup(r => r.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<DonorProfile, bool>>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<DonorProfile> { donorProfile });
-        _userRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
+        _userRepoMock.Setup(r => r.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<User, bool>>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<User> { donorUser });
         _mapServiceMock.Setup(m => m.CalculateDistanceKm(It.IsAny<double>(), It.IsAny<double>(), It.IsAny<double>(), It.IsAny<double>()))
             .Returns(1.0);
@@ -247,10 +247,8 @@ public class MatchingServiceTests
             .ReturnsAsync(request);
         _matchRepoMock.Setup(r => r.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<BloodRequestMatch, bool>>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<BloodRequestMatch>());
-        _donorProfileRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<DonorProfile> { donorProfile });
-        _userRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<User> { donorUser });
+        _donorProfileRepoMock.Setup(r => r.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<DonorProfile, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<DonorProfile>());
 
         var result = await _service.MatchRequestAsync(requestId);
 
@@ -283,10 +281,10 @@ public class MatchingServiceTests
             .ReturnsAsync(request);
         _matchRepoMock.Setup(r => r.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<BloodRequestMatch, bool>>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<BloodRequestMatch>());
-        _donorProfileRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
+        _donorProfileRepoMock.Setup(r => r.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<DonorProfile, bool>>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<DonorProfile> { donorProfile });
-        _userRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<User> { donorUser });
+        _userRepoMock.Setup(r => r.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<User, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<User>());
 
         var result = await _service.MatchRequestAsync(requestId);
 
@@ -334,9 +332,9 @@ public class MatchingServiceTests
             .ReturnsAsync(request);
         _matchRepoMock.Setup(r => r.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<BloodRequestMatch, bool>>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<BloodRequestMatch>());
-        _donorProfileRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
+        _donorProfileRepoMock.Setup(r => r.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<DonorProfile, bool>>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<DonorProfile> { closeDonorProfile, farDonorProfile });
-        _userRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
+        _userRepoMock.Setup(r => r.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<User, bool>>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<User> { closeUser, farUser });
         _mapServiceMock.Setup(m => m.CalculateDistanceKm(closeDonorProfile.Latitude!.Value, closeDonorProfile.Longitude!.Value, request.Latitude!.Value, request.Longitude!.Value))
             .Returns(1.0);

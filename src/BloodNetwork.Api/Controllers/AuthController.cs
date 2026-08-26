@@ -45,6 +45,29 @@ public class AuthController : ControllerBase
         return Unauthorized(new { success = false, message = result.Error });
     }
 
+    [HttpPost("refresh")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request, CancellationToken cancellationToken)
+    {
+        var result = await _authService.RefreshTokenAsync(request.RefreshToken, cancellationToken);
+
+        if (result.IsSuccess)
+            return Ok(result.Value);
+
+        return Unauthorized(new { success = false, message = result.Error });
+    }
+
+    [HttpPost("logout")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> Logout([FromBody] RefreshTokenRequest request, CancellationToken cancellationToken)
+    {
+        await _authService.RevokeRefreshTokenAsync(request.RefreshToken, cancellationToken);
+        return Ok(new { success = true });
+    }
+
     [HttpPost("first-login-change")]
     [Authorize]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]

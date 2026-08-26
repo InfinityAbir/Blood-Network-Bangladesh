@@ -141,14 +141,18 @@ if (!app.Environment.IsEnvironment("Testing"))
 
     // --- Seed default admin (idempotent) ---
     var adminPhone = app.Configuration["Admin:Phone"]
-        ?? Environment.GetEnvironmentVariable("ADMIN_PHONE")
-        ?? "01700000001";
+        ?? Environment.GetEnvironmentVariable("ADMIN_PHONE");
     var adminPassword = app.Configuration["Admin:Password"]
-        ?? Environment.GetEnvironmentVariable("ADMIN_PASSWORD")
-        ?? "Admin123!";
+        ?? Environment.GetEnvironmentVariable("ADMIN_PASSWORD");
     var adminEmail = app.Configuration["Admin:Email"]
         ?? Environment.GetEnvironmentVariable("ADMIN_EMAIL")
         ?? "admin@bloodnetworkbd.com";
+
+    if (string.IsNullOrWhiteSpace(adminPhone) || string.IsNullOrWhiteSpace(adminPassword))
+    {
+        Log.Fatal("Admin credentials not configured. Set ADMIN_PHONE and ADMIN_PASSWORD environment variables.");
+        throw new InvalidOperationException("Admin credentials not configured. Set ADMIN_PHONE and ADMIN_PASSWORD environment variables.");
+    }
 
     var adminExists = await db.Users.AnyAsync(u => u.PhoneNumber == adminPhone);
     if (!adminExists)
@@ -186,11 +190,14 @@ if (!app.Environment.IsEnvironment("Testing"))
 }
 
 app.UseSwagger();
-app.UseSwaggerUI(c =>
+if (app.Environment.IsDevelopment())
 {
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Blood Network Bangladesh API v1");
-    c.RoutePrefix = "swagger";
-});
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Blood Network Bangladesh API v1");
+        c.RoutePrefix = "swagger";
+    });
+}
 
 app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 app.UseForwardedHeaders(new ForwardedHeadersOptions

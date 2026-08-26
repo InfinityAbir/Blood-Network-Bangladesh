@@ -63,27 +63,29 @@ public class MatchingService : IMatchingService
             return Array.Empty<BloodRequestMatch>();
         }
 
-        var existingMatches = await _matchRepo.FindAsync(m => m.BloodRequestId == requestId);
+        var existingMatches = (await _matchRepo.FindAsync(m => m.BloodRequestId == requestId)) ?? Array.Empty<BloodRequestMatch>();
         var existingDonorIds = existingMatches.Select(m => m.DonorId).ToHashSet();
 
-        var allProfiles = await _donorProfileRepo.GetAllAsync();
-        var allUsers = await _userRepo.GetAllAsync();
-        var userLookup = allUsers.ToDictionary(u => u.Id);
+        var compatibleGroups = BloodCompatibility[request.BloodGroup];
+        var candidates = (await _donorProfileRepo.FindAsync(p =>
+            !existingDonorIds.Contains(p.UserId) &&
+            compatibleGroups.Contains(p.BloodGroup) &&
+            p.AvailabilityStatus == AvailabilityStatus.Available &&
+            p.VerificationStatus != VerificationStatus.Rejected)) ?? Array.Empty<DonorProfile>();
 
-        var candidates = allProfiles
-            .Where(p =>
-                !existingDonorIds.Contains(p.UserId) &&
-                IsCompatible(p.BloodGroup, request.BloodGroup) &&
-                p.AvailabilityStatus == AvailabilityStatus.Available &&
-                p.VerificationStatus != VerificationStatus.Rejected &&
-                userLookup.TryGetValue(p.UserId, out var user) &&
-                user.IsActive)
+        var candidateUserIds = candidates.Select(p => p.UserId).ToList();
+        var activeUsers = (await _userRepo.FindAsync(u =>
+            candidateUserIds.Contains(u.Id) && u.IsActive)) ?? Array.Empty<User>();
+        var activeUserLookup = activeUsers.ToDictionary(u => u.Id);
+
+        var filteredCandidates = candidates
+            .Where(p => activeUserLookup.ContainsKey(p.UserId))
             .ToList();
 
-        _logger.LogInformation("Found {Count} candidate donors for request {RequestId}", candidates.Count, requestId);
+        _logger.LogInformation("Found {Count} candidate donors for request {RequestId}", filteredCandidates.Count, requestId);
 
         var matches = new List<BloodRequestMatch>();
-        foreach (var profile in candidates)
+        foreach (var profile in filteredCandidates)
         {
             var score = CalculateScore(profile, request);
             if (score < 10) continue;

@@ -20,6 +20,22 @@ public class BloodRequestMatchDto
     public DateTime CreatedAt { get; set; }
 }
 
+public class PublicBloodRequestMatchDto
+{
+    public Guid Id { get; set; }
+    public Guid BloodRequestId { get; set; }
+    public string DonorName { get; set; } = string.Empty;
+    public string DonorBloodGroup { get; set; } = string.Empty;
+    public int MatchScore { get; set; }
+    public double? DistanceKm { get; set; }
+    public DonorResponse DonorResponse { get; set; }
+    public DateTime? ContactedAt { get; set; }
+    public DateTime? RespondedAt { get; set; }
+    public DateTime? AcceptedAt { get; set; }
+    public DateTime? DeclinedAt { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
 public class RespondToMatchRequest
 {
     public DonorResponse Response { get; set; }

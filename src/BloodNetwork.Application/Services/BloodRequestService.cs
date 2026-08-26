@@ -160,6 +160,13 @@ public class BloodRequestService
         if (request.Status != RequestStatus.Open && request.Status != RequestStatus.PartiallyFulfilled)
             return Result<BloodRequestDto>.Failure("Request is not in a fulfillable state");
 
+        if (unitsFulfilled <= 0)
+            return Result<BloodRequestDto>.Failure("Units fulfilled must be at least 1");
+
+        var remaining = request.UnitsRequired - request.UnitsFulfilled;
+        if (unitsFulfilled > remaining)
+            return Result<BloodRequestDto>.Failure($"Cannot fulfill more than {remaining} remaining units");
+
         request.UnitsFulfilled += unitsFulfilled;
 
         if (request.UnitsFulfilled >= request.UnitsRequired)
@@ -183,7 +190,7 @@ public class BloodRequestService
         return Result<BloodRequestDto>.Success(MapToDto(request, user, district, upazila));
     }
 
-    public async Task<Result<PagedResult<BloodRequestDto>>> SearchOpenRequestsAsync(BloodRequestSearchRequest request, CancellationToken cancellationToken = default)
+    public async Task<Result<PagedResult<PublicBloodRequestDto>>> SearchOpenRequestsAsync(BloodRequestSearchRequest request, CancellationToken cancellationToken = default)
     {
         var allRequests = await _requestRepository.GetAllAsync(cancellationToken);
         var query = allRequests.Where(r => r.Status == RequestStatus.Open || r.Status == RequestStatus.PartiallyFulfilled);
@@ -205,16 +212,15 @@ public class BloodRequestService
             .Take(request.PageSize)
             .ToList();
 
-        var dtos = new List<BloodRequestDto>();
+        var dtos = new List<PublicBloodRequestDto>();
         foreach (var item in items)
         {
-            var user = await _userRepository.GetByIdAsync(item.RequesterId, cancellationToken);
             var district = await _districtRepository.GetByIdAsync(item.DistrictId, cancellationToken);
             var upazila = await _upazilaRepository.GetByIdAsync(item.UpazilaId, cancellationToken);
-            dtos.Add(MapToDto(item, user, district, upazila));
+            dtos.Add(MapToPublicDto(item, district, upazila));
         }
 
-        return Result<PagedResult<BloodRequestDto>>.Success(new PagedResult<BloodRequestDto>
+        return Result<PagedResult<PublicBloodRequestDto>>.Success(new PagedResult<PublicBloodRequestDto>
         {
             Items = dtos,
             TotalCount = totalCount,
@@ -248,6 +254,28 @@ public class BloodRequestService
             request.Status,
             request.CompletedAt,
             request.CancelledAt,
+            request.CreatedAt
+        );
+    }
+
+    private static PublicBloodRequestDto MapToPublicDto(BloodRequest request, District? district, Upazila? upazila)
+    {
+        return new PublicBloodRequestDto(
+            request.Id,
+            request.BloodGroup,
+            request.UnitsRequired,
+            request.UnitsFulfilled,
+            request.HospitalName,
+            request.HospitalAddress,
+            request.DistrictId,
+            district?.Name,
+            request.UpazilaId,
+            upazila?.Name,
+            request.Area,
+            request.RequiredBy,
+            request.Urgency,
+            request.AdditionalInformation,
+            request.Status,
             request.CreatedAt
         );
     }

@@ -15,6 +15,11 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+        services.AddScoped<IRepository<BloodNetwork.Domain.Entities.RefreshToken>>(sp =>
+        {
+            var context = sp.GetRequiredService<BloodNetworkDbContext>();
+            return new Repository<BloodNetwork.Domain.Entities.RefreshToken>(context);
+        });
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         services.AddScoped<IPasswordHasher, PasswordHasher>();

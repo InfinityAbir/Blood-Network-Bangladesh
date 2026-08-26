@@ -46,6 +46,25 @@ public record BloodRequestDto(
     DateTime CreatedAt
 );
 
+public record PublicBloodRequestDto(
+    Guid Id,
+    BloodGroup BloodGroup,
+    int UnitsRequired,
+    int UnitsFulfilled,
+    string HospitalName,
+    string HospitalAddress,
+    Guid DistrictId,
+    string? DistrictName,
+    Guid UpazilaId,
+    string? UpazilaName,
+    string? Area,
+    DateTime RequiredBy,
+    Urgency Urgency,
+    string? AdditionalInformation,
+    RequestStatus Status,
+    DateTime CreatedAt
+);
+
 public record BloodRequestSearchRequest(
     BloodGroup? BloodGroup,
     Guid? DistrictId,

@@ -76,8 +76,7 @@ public class NotificationService : INotificationService
 
     public async Task<int> GetUnreadCountAsync(Guid userId)
     {
-        var allNotifications = await _notificationRepo.FindAsync(n => n.UserId == userId && !n.IsRead);
-        return allNotifications.Count;
+        return await _notificationRepo.CountAsync(n => n.UserId == userId && !n.IsRead);
     }
 
     public async Task<NotificationDto?> MarkAsReadAsync(Guid notificationId, Guid userId)

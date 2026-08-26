@@ -143,34 +143,48 @@ public class DonorService
 
     public async Task<Result<PagedResult<PublicDonorDto>>> SearchDonorsAsync(DonorSearchRequest request, CancellationToken cancellationToken = default)
     {
-        var allProfiles = await _donorProfileRepository.GetAllAsync(cancellationToken);
-        var query = allProfiles.Where(p => p.VerificationStatus == VerificationStatus.Verified);
+        var profiles = await _donorProfileRepository.FindAsync(
+            p => p.VerificationStatus == VerificationStatus.Verified,
+            cancellationToken);
+
+        var filtered = profiles.AsEnumerable();
 
         if (request.BloodGroup.HasValue)
-            query = query.Where(p => p.BloodGroup == request.BloodGroup.Value);
-
+            filtered = filtered.Where(p => p.BloodGroup == request.BloodGroup.Value);
         if (request.DistrictId.HasValue)
-            query = query.Where(p => p.DistrictId == request.DistrictId.Value);
-
+            filtered = filtered.Where(p => p.DistrictId == request.DistrictId.Value);
         if (request.UpazilaId.HasValue)
-            query = query.Where(p => p.UpazilaId == request.UpazilaId.Value);
-
+            filtered = filtered.Where(p => p.UpazilaId == request.UpazilaId.Value);
         if (request.AvailabilityStatus.HasValue)
-            query = query.Where(p => p.AvailabilityStatus == request.AvailabilityStatus.Value);
+            filtered = filtered.Where(p => p.AvailabilityStatus == request.AvailabilityStatus.Value);
 
-        var totalCount = query.Count();
+        var totalCount = filtered.Count();
 
-        var items = query
+        var items = filtered
+            .OrderBy(p => p.CreatedAt)
             .Skip((request.Page - 1) * request.PageSize)
             .Take(request.PageSize)
             .ToList();
 
+        var userIds = items.Select(p => p.UserId).ToList();
+        var districtIds = items.Select(p => p.DistrictId).Distinct().ToList();
+        var upazilaIds = items.Select(p => p.UpazilaId).Distinct().ToList();
+
+        var users = await _userRepository.FindAsync(u => userIds.Contains(u.Id), cancellationToken);
+        var userLookup = users.ToDictionary(u => u.Id);
+
+        var districts = await _districtRepository.FindAsync(d => districtIds.Contains(d.Id), cancellationToken);
+        var districtLookup = districts.ToDictionary(d => d.Id);
+
+        var upazilas = await _upazilaRepository.FindAsync(u => upazilaIds.Contains(u.Id), cancellationToken);
+        var upazilaLookup = upazilas.ToDictionary(u => u.Id);
+
         var publicDonors = new List<PublicDonorDto>();
         foreach (var item in items)
         {
-            var user = await _userRepository.GetByIdAsync(item.UserId, cancellationToken);
-            var district = await _districtRepository.GetByIdAsync(item.DistrictId, cancellationToken);
-            var upazila = await _upazilaRepository.GetByIdAsync(item.UpazilaId, cancellationToken);
+            userLookup.TryGetValue(item.UserId, out var user);
+            districtLookup.TryGetValue(item.DistrictId, out var district);
+            upazilaLookup.TryGetValue(item.UpazilaId, out var upazila);
 
             double? distance = null;
             if (request.Latitude.HasValue && request.Longitude.HasValue &&

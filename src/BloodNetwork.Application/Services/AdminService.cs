@@ -36,33 +36,37 @@ public class AdminService : IAdminService
 
     public async Task<AdminDashboardStatsDto> GetDashboardStatsAsync()
     {
-        var users = await _userRepo.GetAllAsync();
-        var donorProfiles = await _donorProfileRepo.GetAllAsync();
-        var requests = await _requestRepo.GetAllAsync();
-        var matches = await _matchRepo.GetAllAsync();
-        var reports = await _reportRepo.GetAllAsync();
+        var totalUsers = await _userRepo.CountAsync();
+        var totalDonors = await _userRepo.CountAsync(u => u.Role == UserRole.Donor);
+        var totalRequesters = await _userRepo.CountAsync(u => u.Role == UserRole.Requester);
+        var totalBloodRequests = await _requestRepo.CountAsync();
+        var openBloodRequests = await _requestRepo.CountAsync(r => r.Status == RequestStatus.Open || r.Status == RequestStatus.PartiallyFulfilled);
+        var fulfilledBloodRequests = await _requestRepo.CountAsync(r => r.Status == RequestStatus.Fulfilled);
+        var totalMatches = await _matchRepo.CountAsync();
+        var acceptedMatches = await _matchRepo.CountAsync(m => m.DonorResponse == DonorResponse.Accepted);
+        var totalReports = await _reportRepo.CountAsync();
+        var openReports = await _reportRepo.CountAsync(r => r.Status == ReportStatus.Open || r.Status == ReportStatus.UnderReview);
+        var pendingVerifications = await _donorProfileRepo.CountAsync(d => d.VerificationStatus == VerificationStatus.Pending);
 
         return new AdminDashboardStatsDto
         {
-            TotalUsers = users.Count,
-            TotalDonors = users.Count(u => u.Role == UserRole.Donor || u.Role == UserRole.Requester),
-            TotalRequesters = users.Count(u => u.Role == UserRole.Requester),
-            TotalBloodRequests = requests.Count,
-            OpenBloodRequests = requests.Count(r => r.Status == RequestStatus.Open || r.Status == RequestStatus.PartiallyFulfilled),
-            FulfilledBloodRequests = requests.Count(r => r.Status == RequestStatus.Fulfilled),
-            TotalMatches = matches.Count,
-            AcceptedMatches = matches.Count(m => m.DonorResponse == DonorResponse.Accepted),
-            TotalReports = reports.Count,
-            OpenReports = reports.Count(r => r.Status == ReportStatus.Open || r.Status == ReportStatus.UnderReview),
-            PendingVerifications = donorProfiles.Count(d => d.VerificationStatus == VerificationStatus.Pending)
+            TotalUsers = totalUsers,
+            TotalDonors = totalDonors,
+            TotalRequesters = totalRequesters,
+            TotalBloodRequests = totalBloodRequests,
+            OpenBloodRequests = openBloodRequests,
+            FulfilledBloodRequests = fulfilledBloodRequests,
+            TotalMatches = totalMatches,
+            AcceptedMatches = acceptedMatches,
+            TotalReports = totalReports,
+            OpenReports = openReports,
+            PendingVerifications = pendingVerifications
         };
     }
 
     public async Task<IReadOnlyList<AdminUserDto>> GetUsersAsync(string? search, UserRole? role, int page = 1, int pageSize = 20)
     {
         var allUsers = await _userRepo.GetAllAsync();
-        var allProfiles = await _donorProfileRepo.GetAllAsync();
-        var profileLookup = allProfiles.ToDictionary(p => p.UserId);
 
         var query = allUsers.AsEnumerable();
 
@@ -80,10 +84,12 @@ public class AdminService : IAdminService
             query = query.Where(u => u.Role == role.Value);
 
         var sorted = query.OrderByDescending(u => u.CreatedAt).ToList();
+        var pagedUsers = sorted.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+        var pagedIds = pagedUsers.Select(u => u.Id).ToList();
+        var profiles = await _donorProfileRepo.FindAsync(p => pagedIds.Contains(p.UserId));
+        var profileLookup = profiles.ToDictionary(p => p.UserId);
 
-        return sorted
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
+        return pagedUsers
             .Select(u =>
             {
                 profileLookup.TryGetValue(u.Id, out var profile);
@@ -94,23 +100,21 @@ public class AdminService : IAdminService
 
     public async Task<int> GetUserCountAsync(string? search, UserRole? role)
     {
-        var allUsers = await _userRepo.GetAllAsync();
-        var query = allUsers.AsEnumerable();
-
-        if (!string.IsNullOrWhiteSpace(search))
+        if (string.IsNullOrWhiteSpace(search))
         {
-            var term = search.ToLower();
-            query = query.Where(u =>
-                u.FirstName.ToLower().Contains(term) ||
-                u.LastName.ToLower().Contains(term) ||
-                u.PhoneNumber.Contains(term) ||
-                (u.Email != null && u.Email.ToLower().Contains(term)));
+            return role.HasValue
+                ? await _userRepo.CountAsync(u => u.Role == role.Value)
+                : await _userRepo.CountAsync();
         }
 
-        if (role.HasValue)
-            query = query.Where(u => u.Role == role.Value);
-
-        return query.Count();
+        var allUsers = await _userRepo.GetAllAsync();
+        var term = search.ToLower();
+        return allUsers.Count(u =>
+            (u.FirstName.ToLower().Contains(term) ||
+             u.LastName.ToLower().Contains(term) ||
+             u.PhoneNumber.Contains(term) ||
+             (u.Email != null && u.Email.ToLower().Contains(term))) &&
+            (!role.HasValue || u.Role == role.Value));
     }
 
     public async Task<AdminUserDto?> ToggleUserActiveAsync(Guid userId, bool isActive)
@@ -142,18 +146,22 @@ public class AdminService : IAdminService
     public async Task<IReadOnlyList<AdminReportDto>> GetReportsAsync(ReportStatus? status, int page = 1, int pageSize = 20)
     {
         var allReports = await _reportRepo.GetAllAsync();
-        var allUsers = await _userRepo.GetAllAsync();
-        var userLookup = allUsers.ToDictionary(u => u.Id);
 
         var query = allReports.AsEnumerable();
         if (status.HasValue)
             query = query.Where(r => r.Status == status.Value);
 
         var sorted = query.OrderByDescending(r => r.CreatedAt).ToList();
+        var pagedReports = sorted.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+        var userIds = pagedReports
+            .SelectMany(r => new[] { r.ReporterUserId, r.ReportedUserId, r.ReviewedBy ?? Guid.Empty })
+            .Where(id => id != Guid.Empty)
+            .Distinct()
+            .ToList();
+        var users = await _userRepo.FindAsync(u => userIds.Contains(u.Id));
+        var userLookup = users.ToDictionary(u => u.Id);
 
-        return sorted
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
+        return pagedReports
             .Select(r =>
             {
                 userLookup.TryGetValue(r.ReporterUserId, out var reporter);
@@ -166,11 +174,9 @@ public class AdminService : IAdminService
 
     public async Task<int> GetReportCountAsync(ReportStatus? status)
     {
-        var allReports = await _reportRepo.GetAllAsync();
-        var query = allReports.AsEnumerable();
-        if (status.HasValue)
-            query = query.Where(r => r.Status == status.Value);
-        return query.Count();
+        return status.HasValue
+            ? await _reportRepo.CountAsync(r => r.Status == status.Value)
+            : await _reportRepo.CountAsync();
     }
 
     public async Task<AdminReportDto?> ResolveReportAsync(Guid reportId, Guid adminId, ReportStatus status, string? resolution)
@@ -195,18 +201,23 @@ public class AdminService : IAdminService
     public async Task<IReadOnlyList<AdminAuditLogDto>> GetAuditLogsAsync(string? entityType, int page = 1, int pageSize = 20)
     {
         var allLogs = await _auditLogRepo.GetAllAsync();
-        var allUsers = await _userRepo.GetAllAsync();
-        var userLookup = allUsers.ToDictionary(u => u.Id);
 
         var query = allLogs.AsEnumerable();
         if (!string.IsNullOrWhiteSpace(entityType))
             query = query.Where(l => l.EntityType == entityType);
 
         var sorted = query.OrderByDescending(l => l.CreatedAt).ToList();
+        var pagedLogs = sorted.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+        var userIds = pagedLogs
+            .Select(l => l.UserId)
+            .Where(id => id.HasValue)
+            .Select(id => id!.Value)
+            .Distinct()
+            .ToList();
+        var users = await _userRepo.FindAsync(u => userIds.Contains(u.Id));
+        var userLookup = users.ToDictionary(u => u.Id);
 
-        return sorted
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
+        return pagedLogs
             .Select(l =>
             {
                 userLookup.TryGetValue(l.UserId ?? Guid.Empty, out var user);
@@ -217,11 +228,9 @@ public class AdminService : IAdminService
 
     public async Task<int> GetAuditLogCountAsync(string? entityType)
     {
-        var allLogs = await _auditLogRepo.GetAllAsync();
-        var query = allLogs.AsEnumerable();
-        if (!string.IsNullOrWhiteSpace(entityType))
-            query = query.Where(l => l.EntityType == entityType);
-        return query.Count();
+        return !string.IsNullOrWhiteSpace(entityType)
+            ? await _auditLogRepo.CountAsync(l => l.EntityType == entityType)
+            : await _auditLogRepo.CountAsync();
     }
 
     public async Task LogActionAsync(Guid? userId, string action, string entityType, Guid? entityId, string? ipAddress, string? metadata)

@@ -45,8 +45,10 @@ public class BloodRequestsController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [Authorize]
     [ProducesResponseType(typeof(BloodRequestDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetRequest(Guid id, CancellationToken cancellationToken)
     {
         var result = await _requestService.GetRequestByIdAsync(id, cancellationToken);
@@ -80,7 +82,7 @@ public class BloodRequestsController : ControllerBase
 
     [HttpGet("open")]
     [EnableRateLimiting("search")]
-    [ProducesResponseType(typeof(PagedResult<BloodRequestDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<PublicBloodRequestDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> SearchOpenRequests([FromQuery] BloodRequestSearchRequest request, CancellationToken cancellationToken)
     {
         var result = await _requestService.SearchOpenRequestsAsync(request, cancellationToken);
@@ -118,6 +120,12 @@ public class BloodRequestsController : ControllerBase
         var userId = GetCurrentUserId();
         if (userId == Guid.Empty)
             return Unauthorized(new { success = false, message = "Invalid token" });
+
+        if (request.UnitsFulfilled <= 0)
+            return BadRequest(new { success = false, message = "Units fulfilled must be at least 1" });
+
+        if (request.UnitsFulfilled > 10)
+            return BadRequest(new { success = false, message = "Cannot fulfill more than 10 units at once" });
 
         var result = await _requestService.UpdateFulfilledUnitsAsync(id, userId, request.UnitsFulfilled, cancellationToken);
 
