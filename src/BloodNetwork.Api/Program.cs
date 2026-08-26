@@ -153,66 +153,83 @@ builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.Configure<GroqOptions>(builder.Configuration.GetSection(GroqOptions.SectionName));
 
-builder.Services.AddHealthChecks()
-    .AddDbContextCheck<BloodNetworkDbContext>();
+builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
 if (!app.Environment.IsEnvironment("Testing"))
 {
-    using var scope = app.Services.CreateScope();
-    var db = scope.ServiceProvider.GetRequiredService<BloodNetworkDbContext>();
-    await db.Database.MigrateAsync();
-
-    // --- Seed default admin (idempotent) ---
-    var adminPhone = app.Configuration["Admin:Phone"]
-        ?? Environment.GetEnvironmentVariable("ADMIN_PHONE");
-    var adminPassword = app.Configuration["Admin:Password"]
-        ?? Environment.GetEnvironmentVariable("ADMIN_PASSWORD");
-    var adminEmail = app.Configuration["Admin:Email"]
-        ?? Environment.GetEnvironmentVariable("ADMIN_EMAIL")
-        ?? "admin@bloodnetworkbd.com";
-
-    if (string.IsNullOrWhiteSpace(adminPhone) || string.IsNullOrWhiteSpace(adminPassword))
+    try
     {
-        Log.Warning("Admin credentials not configured. Set ADMIN_PHONE and ADMIN_PASSWORD environment variables. Skipping admin seed.");
+        using var migrationScope = app.Services.CreateScope();
+        var migrationDb = migrationScope.ServiceProvider.GetRequiredService<BloodNetworkDbContext>();
+        await migrationDb.Database.MigrateAsync();
+        Log.Information("Database migration completed");
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "Database migration failed. App will start but may not function correctly.");
     }
 
-    if (!string.IsNullOrWhiteSpace(adminPhone) && !string.IsNullOrWhiteSpace(adminPassword))
+    // --- Seed default admin (idempotent) ---
+    try
     {
-        var adminExists = await db.Users.AnyAsync(u => u.PhoneNumber == adminPhone);
-        if (!adminExists)
+        var adminPhone = app.Configuration["Admin:Phone"]
+            ?? Environment.GetEnvironmentVariable("ADMIN_PHONE");
+        var adminPassword = app.Configuration["Admin:Password"]
+            ?? Environment.GetEnvironmentVariable("ADMIN_PASSWORD");
+        var adminEmail = app.Configuration["Admin:Email"]
+            ?? Environment.GetEnvironmentVariable("ADMIN_EMAIL")
+            ?? "admin@bloodnetworkbd.com";
+
+        if (string.IsNullOrWhiteSpace(adminPhone) || string.IsNullOrWhiteSpace(adminPassword))
         {
-            var hasher = new BloodNetwork.Infrastructure.Authentication.PasswordHasher();
-            var admin = new BloodNetwork.Domain.Entities.User
-            {
-                Id = Guid.NewGuid(),
-                FirstName = "System",
-                LastName = "Admin",
-                PhoneNumber = adminPhone,
-                Email = adminEmail,
-                PasswordHash = hasher.HashPassword(adminPassword),
-                Role = BloodNetwork.Domain.Enums.UserRole.Admin,
-                IsActive = true,
-                IsPhoneVerified = true,
-                MustChangePassword = true,
-                CreatedAt = DateTime.UtcNow
-            };
-            db.Users.Add(admin);
-            await db.SaveChangesAsync();
-            Log.Information("Seeded default admin {Phone}", adminPhone);
+            Log.Warning("Admin credentials not configured. Set ADMIN_PHONE and ADMIN_PASSWORD environment variables. Skipping admin seed.");
         }
-        else
+
+        using var seedScope = app.Services.CreateScope();
+        var db = seedScope.ServiceProvider.GetRequiredService<BloodNetworkDbContext>();
+
+        if (!string.IsNullOrWhiteSpace(adminPhone) && !string.IsNullOrWhiteSpace(adminPassword))
         {
-            // Ensure existing default admin is forced to change password on first login
-            var existing = await db.Users.FirstOrDefaultAsync(u => u.PhoneNumber == adminPhone);
-            if (existing != null && !existing.MustChangePassword && existing.LastLoginAt == null)
+            var adminExists = await db.Users.AnyAsync(u => u.PhoneNumber == adminPhone);
+            if (!adminExists)
             {
-                existing.MustChangePassword = true;
+                var hasher = new BloodNetwork.Infrastructure.Authentication.PasswordHasher();
+                var admin = new BloodNetwork.Domain.Entities.User
+                {
+                    Id = Guid.NewGuid(),
+                    FirstName = "System",
+                    LastName = "Admin",
+                    PhoneNumber = adminPhone,
+                    Email = adminEmail,
+                    PasswordHash = hasher.HashPassword(adminPassword),
+                    Role = BloodNetwork.Domain.Enums.UserRole.Admin,
+                    IsActive = true,
+                    IsPhoneVerified = true,
+                    MustChangePassword = true,
+                    CreatedAt = DateTime.UtcNow
+                };
+                db.Users.Add(admin);
                 await db.SaveChangesAsync();
-                Log.Information("Updated existing admin {Phone} to require password change", adminPhone);
+                Log.Information("Seeded default admin {Phone}", adminPhone);
+            }
+            else
+            {
+                // Ensure existing default admin is forced to change password on first login
+                var existing = await db.Users.FirstOrDefaultAsync(u => u.PhoneNumber == adminPhone);
+                if (existing != null && !existing.MustChangePassword && existing.LastLoginAt == null)
+                {
+                    existing.MustChangePassword = true;
+                    await db.SaveChangesAsync();
+                    Log.Information("Updated existing admin {Phone} to require password change", adminPhone);
+                }
             }
         }
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "Admin seed failed. App will continue without admin account.");
     }
 }
 
