@@ -45,6 +45,23 @@ public class AuthController : ControllerBase
         return Unauthorized(new { success = false, message = result.Error });
     }
 
+    [HttpPost("first-login-change")]
+    [Authorize]
+    [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> FirstLoginChange([FromBody] FirstLoginChangeRequest request, CancellationToken cancellationToken)
+    {
+        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)
+            ?? User.FindFirst("sub");
+        if (userIdClaim is null || !Guid.TryParse(userIdClaim.Value, out var userId))
+            return Unauthorized(new { success = false, message = "Invalid token" });
+
+        var result = await _authService.ChangeFirstLoginCredentialsAsync(userId, request, cancellationToken);
+        if (result.IsSuccess)
+            return Ok(result.Value);
+        return BadRequest(new { success = false, message = result.Error });
+    }
+
     [HttpGet("me")]
     [Authorize]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]

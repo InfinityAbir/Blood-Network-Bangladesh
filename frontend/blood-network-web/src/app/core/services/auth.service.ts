@@ -50,6 +50,20 @@ export class AuthService {
       );
   }
 
+  changeFirstLoginCredentials(currentPassword: string, newEmail: string, newPassword: string): Observable<User> {
+    return this.http.post<User>(`${this.apiUrl}/first-login-change`, { currentPassword, newEmail, newPassword })
+      .pipe(
+        tap(user => {
+          const stored = localStorage.getItem('user');
+          if (stored) {
+            const updated = { ...JSON.parse(stored), email: user.email, mustChangePassword: user.mustChangePassword };
+            localStorage.setItem('user', JSON.stringify(updated));
+            this.currentUserSignal.set(updated);
+          }
+        })
+      );
+  }
+
   logout(): void {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');

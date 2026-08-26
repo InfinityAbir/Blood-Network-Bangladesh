@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, adminGuard } from './core/guards/auth.guard';
+import { authGuard, adminGuard, firstLoginGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   {
@@ -56,6 +56,11 @@ export const routes: Routes = [
     path: 'admin/audit-logs',
     loadComponent: () => import('./features/admin/audit-logs/audit-logs.component').then(m => m.AuditLogViewerComponent),
     canActivate: [adminGuard]
+  },
+  {
+    path: 'admin/first-login-change',
+    loadComponent: () => import('./features/admin/first-login/first-login.component').then(m => m.AdminFirstLoginComponent),
+    canActivate: [firstLoginGuard]
   },
   {
     path: '**',

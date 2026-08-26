@@ -19,9 +19,25 @@ export const adminGuard: CanActivateFn = () => {
   const router = inject(Router);
 
   if (authService.isAuthenticated() && authService.isAdmin()) {
+    const user = authService.currentUser();
+    if ((user as any)?.mustChangePassword) {
+      router.navigate(['/admin/first-login-change']);
+      return false;
+    }
     return true;
   }
 
+  router.navigate(['/']);
+  return false;
+};
+
+export const firstLoginGuard: CanActivateFn = () => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+  const user = authService.currentUser();
+  if (authService.isAuthenticated() && (user as any)?.mustChangePassword) {
+    return true;
+  }
   router.navigate(['/']);
   return false;
 };

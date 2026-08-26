@@ -34,5 +34,12 @@ public record UserDto(
     string? Email,
     UserRole Role,
     bool IsPhoneVerified,
+    bool MustChangePassword,
     DateTime CreatedAt
+);
+
+public record FirstLoginChangeRequest(
+    string NewEmail,
+    string NewPassword,
+    string CurrentPassword
 );

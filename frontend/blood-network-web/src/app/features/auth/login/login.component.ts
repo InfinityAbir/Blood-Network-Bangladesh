@@ -162,7 +162,11 @@ export class LoginComponent {
     const { phoneNumber, password } = this.loginForm.value;
 
     this.authService.login(phoneNumber, password).subscribe({
-      next: () => {
+      next: (res) => {
+        if ((res.user as any)?.mustChangePassword) {
+          this.router.navigate(['/admin/first-login-change']);
+          return;
+        }
         this.router.navigate([this.authService.getDashboardRoute()]);
       },
       error: (err) => {

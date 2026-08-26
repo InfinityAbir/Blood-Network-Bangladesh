@@ -165,11 +165,23 @@ if (!app.Environment.IsEnvironment("Testing"))
             Role = BloodNetwork.Domain.Enums.UserRole.Admin,
             IsActive = true,
             IsPhoneVerified = true,
+            MustChangePassword = true,
             CreatedAt = DateTime.UtcNow
         };
         db.Users.Add(admin);
         await db.SaveChangesAsync();
         Log.Information("Seeded default admin {Phone}", adminPhone);
+    }
+    else
+    {
+        // Ensure existing default admin is forced to change password on first login
+        var existing = await db.Users.FirstOrDefaultAsync(u => u.PhoneNumber == adminPhone);
+        if (existing != null && !existing.MustChangePassword && existing.LastLoginAt == null)
+        {
+            existing.MustChangePassword = true;
+            await db.SaveChangesAsync();
+            Log.Information("Updated existing admin {Phone} to require password change", adminPhone);
+        }
     }
 }
 

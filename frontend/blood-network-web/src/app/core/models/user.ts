@@ -14,6 +14,8 @@ export interface User {
   role: UserRole;
   isActive: boolean;
   isPhoneVerified: boolean;
+  mustChangePassword?: boolean;
+  createdAt?: string;
 }
 
 export interface AuthResponse {

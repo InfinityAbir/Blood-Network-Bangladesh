@@ -99,6 +99,36 @@ public class AuthService
         return Result<UserDto>.Success(MapToDto(user));
     }
 
+    public async Task<Result<UserDto>> ChangeFirstLoginCredentialsAsync(Guid userId, FirstLoginChangeRequest request, CancellationToken cancellationToken = default)
+    {
+        var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
+        if (user is null)
+            return Result<UserDto>.Failure("User not found");
+
+        if (!user.MustChangePassword)
+            return Result<UserDto>.Failure("No credential change required");
+
+        if (!_passwordHasher.VerifyPassword(request.CurrentPassword, user.PasswordHash))
+            return Result<UserDto>.Failure("Current password is incorrect");
+
+        if (string.IsNullOrWhiteSpace(request.NewEmail) || !request.NewEmail.Contains('@'))
+            return Result<UserDto>.Failure("Valid email is required");
+
+        var emailExists = await _userRepository.AnyAsync(u => u.Email == request.NewEmail && u.Id != userId, cancellationToken);
+        if (emailExists)
+            return Result<UserDto>.Failure("Email already in use");
+
+        if (request.NewPassword.Length < 8 || !System.Text.RegularExpressions.Regex.IsMatch(request.NewPassword, @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$"))
+            return Result<UserDto>.Failure("Password must be at least 8 characters and include uppercase, lowercase and a number");
+
+        user.Email = request.NewEmail;
+        user.PasswordHash = _passwordHasher.HashPassword(request.NewPassword);
+        user.MustChangePassword = false;
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return Result<UserDto>.Success(MapToDto(user));
+    }
+
     private static UserDto MapToDto(User user)
     {
         return new UserDto(
@@ -109,6 +139,7 @@ public class AuthService
             user.Email,
             user.Role,
             user.IsPhoneVerified,
+            user.MustChangePassword,
             user.CreatedAt
         );
     }

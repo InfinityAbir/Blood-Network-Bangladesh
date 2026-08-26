@@ -13,6 +13,7 @@ public class User : BaseEntity
     public UserRole Role { get; set; } = UserRole.Requester;
     public bool IsActive { get; set; } = true;
     public bool IsPhoneVerified { get; set; }
+    public bool MustChangePassword { get; set; }
     public DateTime? LastLoginAt { get; set; }
 
     public DonorProfile? DonorProfile { get; set; }
