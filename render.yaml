@@ -1,28 +1,3 @@
-services:
-  - type: web
-    name: blood-network-api
-    runtime: image
-    image:
-      url: ghcr.io/infinityabir/blood-network-bangladesh
-    envVars:
-      - key: ASPNETCORE_ENVIRONMENT
-        value: Production
-      - key: ConnectionStrings__DefaultConnection
-        fromDatabase:
-          name: blood-network-db
-          property: connectionString
-      - key: Jwt__Secret
-        generateValue: true
-      - key: Jwt__Issuer
-        value: BloodNetworkBangladesh
-      - key: Jwt__Audience
-        value: BloodNetworkBangladesh
-      - key: Jwt__ExpirationInMinutes
-        value: 60
-      - key: Serilog__WriteTo__0__Args__path
-        value: /tmp/logs/bloodnetwork-.log
-    healthCheckPath: /health
-
 databases:
   - name: blood-network-db
     plan: free
