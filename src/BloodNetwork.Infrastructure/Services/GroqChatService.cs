@@ -9,7 +9,7 @@ namespace BloodNetwork.Infrastructure.Services;
 
 public class GroqChatService : IAiChatService
 {
-    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly HttpClient _httpClient;
     private readonly GroqOptions _options;
     private readonly ILogger<GroqChatService> _logger;
 
@@ -37,11 +37,11 @@ public class GroqChatService : IAiChatService
         """;
 
     public GroqChatService(
-        IHttpClientFactory httpClientFactory,
+        HttpClient httpClient,
         IOptions<GroqOptions> options,
         ILogger<GroqChatService> logger)
     {
-        _httpClientFactory = httpClientFactory;
+        _httpClient = httpClient;
         _options = options.Value;
         _logger = logger;
     }
@@ -57,7 +57,7 @@ public class GroqChatService : IAiChatService
         try
         {
             _logger.LogInformation("Calling Groq API with model {Model}", _options.Model);
-            var client = _httpClientFactory.CreateClient();
+            var client = _httpClient;
 
             var messages = new List<object>
             {
