@@ -12,15 +12,18 @@ public class NotificationService : INotificationService
     private readonly IRepository<Notification> _notificationRepo;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<NotificationService> _logger;
+    private readonly INotificationBroadcaster? _broadcaster;
 
     public NotificationService(
         IRepository<Notification> notificationRepo,
         IUnitOfWork unitOfWork,
-        ILogger<NotificationService> logger)
+        ILogger<NotificationService> logger,
+        INotificationBroadcaster? broadcaster = null)
     {
         _notificationRepo = notificationRepo;
         _unitOfWork = unitOfWork;
         _logger = logger;
+        _broadcaster = broadcaster;
     }
 
     public async Task SendNotificationAsync(Guid userId, string title, string message, NotificationType type, Guid? relatedEntityId = null)
@@ -39,6 +42,13 @@ public class NotificationService : INotificationService
         await _unitOfWork.SaveChangesAsync();
 
         _logger.LogInformation("Notification sent to {UserId}: {Title} (Type: {Type})", userId, title, type);
+
+        if (_broadcaster != null)
+        {
+            var count = await _notificationRepo.CountAsync(n => n.UserId == userId && !n.IsRead);
+            await _broadcaster.BroadcastNotificationAsync(userId, title, message, type.ToString(), relatedEntityId);
+            await _broadcaster.BroadcastUnreadCountAsync(userId, count);
+        }
     }
 
     public async Task SendBulkNotificationAsync(IEnumerable<Guid> userIds, string title, string message, NotificationType type, Guid? relatedEntityId = null)
@@ -61,6 +71,16 @@ public class NotificationService : INotificationService
 
         await _unitOfWork.SaveChangesAsync();
         _logger.LogInformation("Bulk notification sent to {Count} users: {Title} (Type: {Type})", userIdList.Count, title, type);
+
+        if (_broadcaster != null)
+        {
+            foreach (var userId in userIdList)
+            {
+                var count = await _notificationRepo.CountAsync(n => n.UserId == userId && !n.IsRead);
+                await _broadcaster.BroadcastNotificationAsync(userId, title, message, type.ToString(), relatedEntityId);
+                await _broadcaster.BroadcastUnreadCountAsync(userId, count);
+            }
+        }
     }
 
     public async Task<IReadOnlyList<NotificationDto>> GetUserNotificationsAsync(Guid userId, int page = 1, int pageSize = 20)
@@ -90,6 +110,13 @@ public class NotificationService : INotificationService
         notification.UpdatedAt = DateTime.UtcNow;
 
         await _unitOfWork.SaveChangesAsync();
+
+        if (_broadcaster != null)
+        {
+            var count = await _notificationRepo.CountAsync(n => n.UserId == userId && !n.IsRead);
+            await _broadcaster.BroadcastUnreadCountAsync(userId, count);
+        }
+
         return MapToDto(notification);
     }
 
@@ -104,6 +131,11 @@ public class NotificationService : INotificationService
         }
 
         await _unitOfWork.SaveChangesAsync();
+
+        if (_broadcaster != null)
+        {
+            await _broadcaster.BroadcastUnreadCountAsync(userId, 0);
+        }
     }
 
     private static NotificationDto MapToDto(Notification notification)

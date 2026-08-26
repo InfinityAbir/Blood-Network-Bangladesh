@@ -9,6 +9,7 @@ import { MatBadgeModule } from '@angular/material/badge';
 import { MatListModule } from '@angular/material/list';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Subscription } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
@@ -28,7 +29,8 @@ import { Notification } from '../../core/models/notification';
     MatBadgeModule,
     MatListModule,
     MatDividerModule,
-    MatTooltipModule
+    MatTooltipModule,
+    MatSnackBarModule
   ],
   template: `
     <mat-toolbar class="bgn-header">
@@ -84,6 +86,11 @@ import { Notification } from '../../core/models/notification';
               </div>
             </button>
           }
+          <mat-divider></mat-divider>
+          <a mat-menu-item routerLink="/notifications" (click)="$event.stopPropagation()">
+            <mat-icon>list</mat-icon>
+            <span>View All Notifications</span>
+          </a>
         </mat-menu>
         <button mat-button class="logout-btn" (click)="authService.logout()">Logout</button>
       } @else {
@@ -186,29 +193,55 @@ import { Notification } from '../../core/models/notification';
 export class HeaderComponent implements OnInit, OnDestroy {
   notifications: Notification[] = [];
   unreadCount = 0;
-  private sub?: Subscription;
+  private subscriptions: Subscription[] = [];
 
   constructor(
     public authService: AuthService,
     private notificationService: NotificationService,
     private router: Router,
-    public theme: ThemeService
+    public theme: ThemeService,
+    private snackBar: MatSnackBar
   ) {}
 
   ngOnInit(): void {
     if (this.authService.isAuthenticated()) {
+      this.notificationService.startConnection();
       this.notificationService.refreshUnreadCount();
-      this.notificationService.startPolling();
-      this.sub = this.notificationService.unreadCount$.subscribe(count => {
-        this.unreadCount = count;
-      });
+
+      this.subscriptions.push(
+        this.notificationService.unreadCount$.subscribe(count => {
+          this.unreadCount = count;
+        })
+      );
+
+      this.subscriptions.push(
+        this.notificationService.newNotification$.subscribe(notif => {
+          this.notifications.unshift(notif);
+          if (this.notifications.length > 10) {
+            this.notifications = this.notifications.slice(0, 10);
+          }
+          const snackBarRef = this.snackBar.open(notif.message, 'View', {
+            duration: 5000,
+            horizontalPosition: 'end',
+            verticalPosition: 'top'
+          });
+          snackBarRef.onAction().subscribe(() => {
+            if (notif.relatedEntityId) {
+              this.navigateToRelated(notif.type, notif.relatedEntityId);
+            } else {
+              this.router.navigate(['/notifications']);
+            }
+          });
+        })
+      );
+
       this.loadNotifications();
     }
   }
 
   ngOnDestroy(): void {
-    this.sub?.unsubscribe();
-    this.notificationService.stopPolling();
+    this.subscriptions.forEach(s => s.unsubscribe());
+    this.notificationService.stopConnection();
   }
 
   loadNotifications(): void {
@@ -226,20 +259,24 @@ export class HeaderComponent implements OnInit, OnDestroy {
     }
 
     if (notif.relatedEntityId) {
-      switch (notif.type) {
-        case 'BloodRequestMatch':
-          this.router.navigate(['/donor/dashboard']);
-          break;
-        case 'DonorAccepted':
-        case 'DonorDeclined':
-        case 'RequestUpdate':
-          this.router.navigate(['/requester/dashboard']);
-          break;
-        default:
-          this.router.navigate([this.authService.getDashboardRoute()]);
-      }
+      this.navigateToRelated(notif.type, notif.relatedEntityId);
     } else {
       this.router.navigate([this.authService.getDashboardRoute()]);
+    }
+  }
+
+  private navigateToRelated(type: string, entityId: string): void {
+    switch (type) {
+      case 'BloodRequestMatch':
+        this.router.navigate(['/donor/dashboard']);
+        break;
+      case 'DonorAccepted':
+      case 'DonorDeclined':
+      case 'RequestUpdate':
+        this.router.navigate(['/requester/dashboard']);
+        break;
+      default:
+        this.router.navigate([this.authService.getDashboardRoute()]);
     }
   }
 

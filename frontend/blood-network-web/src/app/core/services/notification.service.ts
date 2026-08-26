@@ -1,20 +1,31 @@
-import { Injectable, NgZone } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject, tap, interval, Subject, takeUntil } from 'rxjs';
+import { Observable, BehaviorSubject, tap, Subject } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Notification } from '../models/notification';
+import { SignalRService, RealtimeNotification } from './signalr.service';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class NotificationService {
   private readonly apiUrl = `${environment.apiUrl}/notifications`;
   private unreadCountSubject = new BehaviorSubject<number>(0);
   unreadCount$ = this.unreadCountSubject.asObservable();
-  private destroy$ = new Subject<void>();
-  private isPolling = false;
+  private newNotificationSubject = new Subject<Notification>();
+  newNotification$ = this.newNotificationSubject.asObservable();
 
-  constructor(private http: HttpClient, private ngZone: NgZone) {}
+  constructor(
+    private http: HttpClient,
+    private signalR: SignalRService
+  ) {
+    this.signalR.notifications$.subscribe(n => {
+      this.newNotificationSubject.next(n as any);
+      this.unreadCountSubject.next(this.unreadCountSubject.value + 1);
+    });
+
+    this.signalR.unreadCount$.subscribe(count => {
+      this.unreadCountSubject.next(count);
+    });
+  }
 
   getNotifications(page = 1, pageSize = 20): Observable<Notification[]> {
     return this.http.get<Notification[]>(this.apiUrl, {
@@ -47,24 +58,11 @@ export class NotificationService {
     this.getUnreadCount().subscribe();
   }
 
-  startPolling(): void {
-    if (this.isPolling) return;
-    this.isPolling = true;
-    this.ngZone.runOutsideAngular(() => {
-      interval(30000).pipe(
-        takeUntil(this.destroy$)
-      ).subscribe(() => {
-        this.ngZone.run(() => {
-          this.refreshUnreadCount();
-        });
-      });
-    });
+  startConnection(): void {
+    this.signalR.start();
   }
 
-  stopPolling(): void {
-    this.isPolling = false;
-    this.destroy$.next();
-    this.destroy$.complete();
-    this.destroy$ = new Subject<void>();
+  stopConnection(): void {
+    this.signalR.stop();
   }
 }

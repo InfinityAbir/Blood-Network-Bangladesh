@@ -1,7 +1,10 @@
 using System.Text;
 using System.Threading.RateLimiting;
+using BloodNetwork.Api.Hubs;
 using BloodNetwork.Api.Middleware;
+using BloodNetwork.Api.Services;
 using BloodNetwork.Application.Configuration;
+using BloodNetwork.Application.Interfaces;
 using BloodNetwork.Infrastructure;
 using BloodNetwork.Infrastructure.Data;
 using FluentValidation;
@@ -73,8 +76,26 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero
         };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs/notifications"))
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
+        };
     });
 builder.Services.AddAuthorization();
+
+builder.Services.AddSignalR();
+
+builder.Services.AddScoped<INotificationBroadcaster, SignalRNotificationBroadcaster>();
 
 builder.Services.AddCors(options =>
 {
@@ -84,7 +105,8 @@ builder.Services.AddCors(options =>
             ?? new[] { "http://localhost:4200" };
         policy.WithOrigins(origins)
             .AllowAnyHeader()
-            .AllowAnyMethod();
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 
@@ -215,6 +237,7 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers().RequireRateLimiting("api");
+app.MapHub<NotificationHub>("/hubs/notifications");
 app.MapHealthChecks("/health");
 app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
 {

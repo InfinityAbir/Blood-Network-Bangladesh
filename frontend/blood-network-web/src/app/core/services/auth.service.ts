@@ -1,9 +1,10 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { User, AuthResponse, UserRole } from '../models/user';
+import { SignalRService } from './signalr.service';
 
 @Injectable({
   providedIn: 'root'
@@ -11,6 +12,7 @@ import { User, AuthResponse, UserRole } from '../models/user';
 export class AuthService {
   private readonly apiUrl = `${environment.apiUrl}/auth`;
   private currentUserSignal = signal<User | null>(null);
+  private signalR = inject(SignalRService);
 
   currentUser = this.currentUserSignal.asReadonly();
   isAuthenticated = computed(() => !!this.currentUserSignal());
@@ -69,6 +71,7 @@ export class AuthService {
   }
 
   logout(): void {
+    this.signalR.stop();
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
@@ -103,6 +106,7 @@ export class AuthService {
     localStorage.setItem('refresh_token', response.refreshToken);
     localStorage.setItem('user', JSON.stringify(response.user));
     this.currentUserSignal.set(response.user);
+    this.signalR.start();
   }
 
   private loadStoredUser(): void {

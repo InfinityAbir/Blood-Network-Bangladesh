@@ -67,6 +67,11 @@ export const routes: Routes = [
     canActivate: [firstLoginGuard]
   },
   {
+    path: 'notifications',
+    loadComponent: () => import('./features/notifications/notifications.component').then(m => m.NotificationsComponent),
+    canActivate: [authGuard]
+  },
+  {
     path: '**',
     redirectTo: ''
   }
