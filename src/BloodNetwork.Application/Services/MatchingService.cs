@@ -16,6 +16,7 @@ public class MatchingService : IMatchingService
     private readonly IRepository<User> _userRepo;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapService _mapService;
+    private readonly INotificationService _notificationService;
     private readonly MatchScoreWeightsOptions _weights;
     private readonly ILogger<MatchingService> _logger;
 
@@ -38,6 +39,7 @@ public class MatchingService : IMatchingService
         IRepository<User> userRepo,
         IUnitOfWork unitOfWork,
         IMapService mapService,
+        INotificationService notificationService,
         IOptions<MatchScoreWeightsOptions> weights,
         ILogger<MatchingService> logger)
     {
@@ -47,6 +49,7 @@ public class MatchingService : IMatchingService
         _userRepo = userRepo;
         _unitOfWork = unitOfWork;
         _mapService = mapService;
+        _notificationService = notificationService;
         _weights = weights.Value;
         _logger = logger;
     }
@@ -107,6 +110,19 @@ public class MatchingService : IMatchingService
         if (matches.Count > 0)
         {
             await _unitOfWork.SaveChangesAsync();
+
+            var requestUser = await _userRepo.GetByIdAsync(request.RequesterId);
+            var requesterName = requestUser is not null ? $"{requestUser.FirstName} {requestUser.LastName}" : "Someone";
+
+            foreach (var match in matches)
+            {
+                await _notificationService.SendNotificationAsync(
+                    match.DonorId,
+                    "New Blood Request Match",
+                    $"{requesterName} needs {request.BloodGroup} blood at {request.HospitalName}. You scored {match.MatchScore}/100 match.",
+                    NotificationType.BloodRequestMatch,
+                    request.Id);
+            }
         }
 
         return matches;
@@ -148,6 +164,23 @@ public class MatchingService : IMatchingService
         }
 
         await _unitOfWork.SaveChangesAsync();
+
+        var donorUser = await _userRepo.GetByIdAsync(userId);
+        var donorName = donorUser is not null ? $"{donorUser.FirstName} {donorUser.LastName}" : "A donor";
+        var request = await _requestRepo.GetByIdAsync(match.BloodRequestId);
+        var responseType = response == DonorResponse.Accepted ? "accepted" : "declined";
+        var notifType = response == DonorResponse.Accepted ? NotificationType.DonorAccepted : NotificationType.DonorDeclined;
+
+        if (request != null)
+        {
+            await _notificationService.SendNotificationAsync(
+                request.RequesterId,
+                $"Donor {responseType}",
+                $"{donorName} has {responseType} your blood request at {request.HospitalName}.",
+                notifType,
+                match.BloodRequestId);
+        }
+
         return match;
     }
 

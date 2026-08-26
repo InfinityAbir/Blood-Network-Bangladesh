@@ -2,8 +2,6 @@ using System.Text;
 using BloodNetwork.Api.Middleware;
 using BloodNetwork.Infrastructure;
 using BloodNetwork.Infrastructure.Data;
-using BloodNetwork.Infrastructure.Services;
-using BloodNetwork.Application.Interfaces;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -61,7 +59,6 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddHealthChecks()
