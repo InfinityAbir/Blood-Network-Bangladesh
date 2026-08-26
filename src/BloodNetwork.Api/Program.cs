@@ -13,15 +13,16 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 
-var builder = WebApplication.CreateBuilder(args);
-
-builder.Configuration.Sources.Clear();
+var builder = WebApplication.CreateEmptyBuilder(new WebApplicationOptions
+{
+    Args = args,
+    ContentRootPath = Directory.GetCurrentDirectory()
+});
 
 builder.Configuration
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: false)
-    .AddEnvironmentVariables()
-    .AddCommandLine(args);
+    .AddEnvironmentVariables();
 
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
@@ -85,38 +86,38 @@ builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
-    options.AddFixedWindowLimiter("auth", limiterOptions =>
+    options.AddFixedWindowLimiter("auth", lo =>
     {
-        limiterOptions.PermitLimit = 10;
-        limiterOptions.Window = TimeSpan.FromMinutes(1);
-        limiterOptions.QueueLimit = 0;
+        lo.PermitLimit = 10;
+        lo.Window = TimeSpan.FromMinutes(1);
+        lo.QueueLimit = 0;
     });
 
-    options.AddFixedWindowLimiter("api", limiterOptions =>
+    options.AddFixedWindowLimiter("api", lo =>
     {
-        limiterOptions.PermitLimit = 60;
-        limiterOptions.Window = TimeSpan.FromMinutes(1);
-        limiterOptions.QueueLimit = 0;
+        lo.PermitLimit = 60;
+        lo.Window = TimeSpan.FromMinutes(1);
+        lo.QueueLimit = 0;
     });
 
-    options.AddFixedWindowLimiter("search", limiterOptions =>
+    options.AddFixedWindowLimiter("search", lo =>
     {
-        limiterOptions.PermitLimit = 30;
-        limiterOptions.Window = TimeSpan.FromMinutes(1);
-        limiterOptions.QueueLimit = 0;
+        lo.PermitLimit = 30;
+        lo.Window = TimeSpan.FromMinutes(1);
+        lo.QueueLimit = 0;
     });
 
-    options.OnRejected = async (context, cancellationToken) =>
+    options.OnRejected = async (ctx, ct) =>
     {
-        context.HttpContext.Response.ContentType = "application/json";
+        ctx.HttpContext.Response.ContentType = "application/json";
         var response = new
         {
             success = false,
             message = "Rate limit exceeded. Please try again later.",
-            retryAfter = context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter)
+            retryAfter = ctx.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter)
                 ? (int)retryAfter.TotalSeconds : 60
         };
-        await context.HttpContext.Response.WriteAsJsonAsync(response, cancellationToken);
+        await ctx.HttpContext.Response.WriteAsJsonAsync(response, ct);
     };
 });
 
