@@ -10,6 +10,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { HeaderComponent } from '../../../layout/header/header.component';
 import { FooterComponent } from '../../../layout/footer/footer.component';
 import { DonorService } from '../../../core/services/donor.service';
@@ -30,6 +31,7 @@ import { BloodGroup, BloodGroupLabels } from '../../../core/models/blood-group';
     MatDatepickerModule,
     MatNativeDateModule,
     MatProgressSpinnerModule,
+    MatSnackBarModule,
     HeaderComponent,
     FooterComponent
   ],
@@ -159,7 +161,8 @@ export class DonorProfileComponent implements OnInit {
     private fb: FormBuilder,
     private donorService: DonorService,
     private locationService: LocationService,
-    private router: Router
+    private router: Router,
+    private snackBar: MatSnackBar
   ) {
     this.profileForm = this.fb.group({
       bloodGroup: ['', Validators.required],
@@ -214,6 +217,7 @@ export class DonorProfileComponent implements OnInit {
 
     this.donorService.createProfile(data).subscribe({
       next: () => {
+        this.snackBar.open('Profile saved successfully!', 'Close', { duration: 3000, horizontalPosition: 'end', verticalPosition: 'top' });
         this.router.navigate(['/donor/dashboard']);
       },
       error: (err) => {

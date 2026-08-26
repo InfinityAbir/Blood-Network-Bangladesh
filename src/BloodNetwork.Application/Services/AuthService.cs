@@ -14,19 +14,22 @@ public class AuthService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtTokenService _jwtTokenService;
+    private readonly INotificationService _notificationService;
 
     public AuthService(
         IRepository<User> userRepository,
         IRepository<RefreshToken> refreshTokenRepository,
         IUnitOfWork unitOfWork,
         IPasswordHasher passwordHasher,
-        IJwtTokenService jwtTokenService)
+        IJwtTokenService jwtTokenService,
+        INotificationService notificationService)
     {
         _userRepository = userRepository;
         _refreshTokenRepository = refreshTokenRepository;
         _unitOfWork = unitOfWork;
         _passwordHasher = passwordHasher;
         _jwtTokenService = jwtTokenService;
+        _notificationService = notificationService;
     }
 
     public async Task<Result<AuthResponse>> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken = default)
@@ -60,6 +63,13 @@ public class AuthService
 
         await _userRepository.AddAsync(user, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        await _notificationService.SendNotificationAsync(
+            user.Id,
+            "Welcome to Blood Network Bangladesh!",
+            $"Hi {user.FirstName}, welcome to Blood Network Bangladesh! Complete your donor profile to start saving lives, or create a blood request to find donors.",
+            NotificationType.System,
+            null);
 
         var dto = MapToDto(user);
         var accessToken = _jwtTokenService.GenerateAccessToken(user.Id, user.PhoneNumber, user.Role);

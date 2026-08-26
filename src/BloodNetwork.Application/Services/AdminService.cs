@@ -15,6 +15,7 @@ public class AdminService : IAdminService
     private readonly IRepository<Report> _reportRepo;
     private readonly IRepository<AuditLog> _auditLogRepo;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly INotificationService _notificationService;
 
     public AdminService(
         IRepository<User> userRepo,
@@ -23,7 +24,8 @@ public class AdminService : IAdminService
         IRepository<BloodRequestMatch> matchRepo,
         IRepository<Report> reportRepo,
         IRepository<AuditLog> auditLogRepo,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        INotificationService notificationService)
     {
         _userRepo = userRepo;
         _donorProfileRepo = donorProfileRepo;
@@ -32,6 +34,7 @@ public class AdminService : IAdminService
         _reportRepo = reportRepo;
         _auditLogRepo = auditLogRepo;
         _unitOfWork = unitOfWork;
+        _notificationService = notificationService;
     }
 
     public async Task<AdminDashboardStatsDto> GetDashboardStatsAsync()
@@ -138,6 +141,18 @@ public class AdminService : IAdminService
         profile.VerificationStatus = status;
         profile.UpdatedAt = DateTime.UtcNow;
         await _unitOfWork.SaveChangesAsync();
+
+        var notifTitle = status == VerificationStatus.Verified ? "Donor Verified!" : "Verification Update";
+        var notifMessage = status == VerificationStatus.Verified
+            ? "Congratulations! Your donor profile has been verified. You are now visible to blood requesters and can start receiving match requests."
+            : $"Your donor verification status has been updated to: {status}. Please check your profile for details.";
+
+        await _notificationService.SendNotificationAsync(
+            userId,
+            notifTitle,
+            notifMessage,
+            NotificationType.System,
+            null);
 
         var user = await _userRepo.GetByIdAsync(userId);
         return user != null ? MapToUserDto(user, profile) : null;

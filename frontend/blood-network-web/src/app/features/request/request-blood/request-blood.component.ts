@@ -13,6 +13,7 @@ import { MatRadioModule } from '@angular/material/radio';
 import { MatIconModule } from '@angular/material/icon';
 import { MatStepperModule } from '@angular/material/stepper';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { HeaderComponent } from '../../../layout/header/header.component';
 import { FooterComponent } from '../../../layout/footer/footer.component';
 import { RequestService } from '../../../core/services/request.service';
@@ -36,6 +37,7 @@ import { BloodGroup, BloodGroupLabels } from '../../../core/models/blood-group';
     MatIconModule,
     MatStepperModule,
     MatProgressSpinnerModule,
+    MatSnackBarModule,
     HeaderComponent,
     FooterComponent
   ],
@@ -250,7 +252,8 @@ export class RequestBloodComponent implements OnInit {
     private fb: FormBuilder,
     private requestService: RequestService,
     private locationService: LocationService,
-    private router: Router
+    private router: Router,
+    private snackBar: MatSnackBar
   ) {
     this.requestForm = this.fb.group({
       bloodGroup: ['', Validators.required],
@@ -306,6 +309,11 @@ export class RequestBloodComponent implements OnInit {
 
     this.requestService.createRequest(data).subscribe({
       next: (result) => {
+        this.snackBar.open('Blood request created! Finding matching donors...', 'Close', {
+          duration: 4000,
+          horizontalPosition: 'end',
+          verticalPosition: 'top'
+        });
         this.successMessage = 'Blood request submitted successfully! Donors will be notified.';
         setTimeout(() => {
           this.router.navigate(['/requester/dashboard']);

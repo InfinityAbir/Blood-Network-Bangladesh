@@ -15,6 +15,8 @@ public class BloodRequestService
     private readonly IRepository<Upazila> _upazilaRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMatchingService _matchingService;
+    private readonly INotificationService _notificationService;
+    private readonly IRepository<BloodRequestMatch> _matchRepository;
 
     public BloodRequestService(
         IRepository<BloodRequest> requestRepository,
@@ -22,7 +24,9 @@ public class BloodRequestService
         IRepository<District> districtRepository,
         IRepository<Upazila> upazilaRepository,
         IUnitOfWork unitOfWork,
-        IMatchingService matchingService)
+        IMatchingService matchingService,
+        INotificationService notificationService,
+        IRepository<BloodRequestMatch> matchRepository)
     {
         _requestRepository = requestRepository;
         _userRepository = userRepository;
@@ -30,6 +34,8 @@ public class BloodRequestService
         _upazilaRepository = upazilaRepository;
         _unitOfWork = unitOfWork;
         _matchingService = matchingService;
+        _notificationService = notificationService;
+        _matchRepository = matchRepository;
     }
 
     public async Task<Result<BloodRequestDto>> CreateRequestAsync(Guid requesterId, CreateBloodRequestRequest request, CancellationToken cancellationToken = default)
@@ -72,6 +78,13 @@ public class BloodRequestService
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _ = _matchingService.MatchRequestAsync(bloodRequest.Id);
+
+        await _notificationService.SendNotificationAsync(
+            requesterId,
+            "Blood Request Created",
+            $"Your blood request for {request.BloodGroup} blood ({request.UnitsRequired} units) at {request.HospitalName} has been posted. We are finding matching donors for you.",
+            NotificationType.RequestUpdate,
+            bloodRequest.Id);
 
         return Result<BloodRequestDto>.Success(MapToDto(bloodRequest, user, district, upazila));
     }
@@ -141,6 +154,21 @@ public class BloodRequestService
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+        var donorMatches = await _matchRepository.FindAsync(m => m.BloodRequestId == requestId, cancellationToken);
+        if (donorMatches.Count > 0)
+        {
+            var cancelledDonors = donorMatches.Where(m => m.DonorResponse != DonorResponse.Declined).ToList();
+            foreach (var match in cancelledDonors)
+            {
+                await _notificationService.SendNotificationAsync(
+                    match.DonorId,
+                    "Blood Request Cancelled",
+                    $"The blood request at {request.HospitalName} for {request.BloodGroup} blood has been cancelled by the requester.",
+                    NotificationType.RequestUpdate,
+                    requestId);
+            }
+        }
+
         var user = await _userRepository.GetByIdAsync(request.RequesterId, cancellationToken);
         var district = await _districtRepository.GetByIdAsync(request.DistrictId, cancellationToken);
         var upazila = await _upazilaRepository.GetByIdAsync(request.UpazilaId, cancellationToken);
@@ -182,6 +210,25 @@ public class BloodRequestService
         request.UpdatedAt = DateTime.UtcNow;
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        if (request.Status == RequestStatus.Fulfilled)
+        {
+            await _notificationService.SendNotificationAsync(
+                requesterId,
+                "Blood Request Fulfilled",
+                $"Great news! Your blood request at {request.HospitalName} has been fully fulfilled. Thank you for using Blood Network Bangladesh!",
+                NotificationType.RequestUpdate,
+                requestId);
+        }
+        else
+        {
+            await _notificationService.SendNotificationAsync(
+                requesterId,
+                "Blood Request Partially Fulfilled",
+                $"Your blood request at {request.HospitalName} has been partially fulfilled: {request.UnitsFulfilled}/{request.UnitsRequired} units. {request.UnitsRequired - request.UnitsFulfilled} more units needed.",
+                NotificationType.RequestUpdate,
+                requestId);
+        }
 
         var user = await _userRepository.GetByIdAsync(request.RequesterId, cancellationToken);
         var district = await _districtRepository.GetByIdAsync(request.DistrictId, cancellationToken);

@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
@@ -191,12 +191,14 @@ export class HeaderComponent implements OnInit, OnDestroy {
   constructor(
     public authService: AuthService,
     private notificationService: NotificationService,
+    private router: Router,
     public theme: ThemeService
   ) {}
 
   ngOnInit(): void {
     if (this.authService.isAuthenticated()) {
       this.notificationService.refreshUnreadCount();
+      this.notificationService.startPolling();
       this.sub = this.notificationService.unreadCount$.subscribe(count => {
         this.unreadCount = count;
       });
@@ -206,6 +208,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.sub?.unsubscribe();
+    this.notificationService.stopPolling();
   }
 
   loadNotifications(): void {
@@ -220,6 +223,23 @@ export class HeaderComponent implements OnInit, OnDestroy {
       this.notificationService.markAsRead(notif.id).subscribe();
       notif.isRead = true;
       this.unreadCount = Math.max(0, this.unreadCount - 1);
+    }
+
+    if (notif.relatedEntityId) {
+      switch (notif.type) {
+        case 'BloodRequestMatch':
+          this.router.navigate(['/donor/dashboard']);
+          break;
+        case 'DonorAccepted':
+        case 'DonorDeclined':
+        case 'RequestUpdate':
+          this.router.navigate(['/requester/dashboard']);
+          break;
+        default:
+          this.router.navigate([this.authService.getDashboardRoute()]);
+      }
+    } else {
+      this.router.navigate([this.authService.getDashboardRoute()]);
     }
   }
 

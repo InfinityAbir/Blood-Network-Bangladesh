@@ -8,6 +8,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { HeaderComponent } from '../../../layout/header/header.component';
 import { FooterComponent } from '../../../layout/footer/footer.component';
 import { AuthService } from '../../../core/services/auth.service';
@@ -25,6 +26,7 @@ import { AuthService } from '../../../core/services/auth.service';
     MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule,
+    MatSnackBarModule,
     HeaderComponent,
     FooterComponent
   ],
@@ -145,7 +147,8 @@ export class LoginComponent {
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private snackBar: MatSnackBar
   ) {
     this.loginForm = this.fb.group({
       phoneNumber: ['', [Validators.required, Validators.pattern(/^01[3-9]\d{8}$/)]],
@@ -163,6 +166,7 @@ export class LoginComponent {
 
     this.authService.login(phoneNumber, password).subscribe({
       next: (res) => {
+        this.snackBar.open('Welcome back!', 'Close', { duration: 3000, horizontalPosition: 'end', verticalPosition: 'top' });
         if ((res.user as any)?.mustChangePassword) {
           this.router.navigate(['/admin/first-login-change']);
           return;

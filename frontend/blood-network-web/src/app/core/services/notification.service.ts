@@ -1,6 +1,6 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject, tap } from 'rxjs';
+import { Observable, BehaviorSubject, tap, interval, Subject, takeUntil } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Notification } from '../models/notification';
 
@@ -11,8 +11,10 @@ export class NotificationService {
   private readonly apiUrl = `${environment.apiUrl}/notifications`;
   private unreadCountSubject = new BehaviorSubject<number>(0);
   unreadCount$ = this.unreadCountSubject.asObservable();
+  private destroy$ = new Subject<void>();
+  private isPolling = false;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private ngZone: NgZone) {}
 
   getNotifications(page = 1, pageSize = 20): Observable<Notification[]> {
     return this.http.get<Notification[]>(this.apiUrl, {
@@ -43,5 +45,26 @@ export class NotificationService {
 
   refreshUnreadCount(): void {
     this.getUnreadCount().subscribe();
+  }
+
+  startPolling(): void {
+    if (this.isPolling) return;
+    this.isPolling = true;
+    this.ngZone.runOutsideAngular(() => {
+      interval(30000).pipe(
+        takeUntil(this.destroy$)
+      ).subscribe(() => {
+        this.ngZone.run(() => {
+          this.refreshUnreadCount();
+        });
+      });
+    });
+  }
+
+  stopPolling(): void {
+    this.isPolling = false;
+    this.destroy$.next();
+    this.destroy$.complete();
+    this.destroy$ = new Subject<void>();
   }
 }

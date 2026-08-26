@@ -10,6 +10,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { HeaderComponent } from '../../../layout/header/header.component';
 import { FooterComponent } from '../../../layout/footer/footer.component';
 import { AuthService } from '../../../core/services/auth.service';
@@ -29,6 +30,7 @@ import { AuthService } from '../../../core/services/auth.service';
     MatSelectModule,
     MatRadioModule,
     MatProgressSpinnerModule,
+    MatSnackBarModule,
     HeaderComponent,
     FooterComponent
   ],
@@ -245,7 +247,8 @@ export class RegisterComponent {
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private snackBar: MatSnackBar
   ) {
     this.registerForm = this.fb.group({
       firstName: ['', Validators.required],
@@ -283,6 +286,7 @@ export class RegisterComponent {
 
     this.authService.register(registerData).subscribe({
       next: () => {
+        this.snackBar.open('Account created successfully!', 'Close', { duration: 3000, horizontalPosition: 'end', verticalPosition: 'top' });
         this.successMessage = 'Account created successfully! Redirecting...';
         setTimeout(() => {
           this.router.navigate([this.authService.getDashboardRoute()]);

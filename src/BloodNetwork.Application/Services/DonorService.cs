@@ -15,6 +15,9 @@ public class DonorService
     private readonly IRepository<Upazila> _upazilaRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapService _mapService;
+    private readonly INotificationService _notificationService;
+    private readonly IRepository<BloodRequest> _bloodRequestRepository;
+    private readonly IMatchingService _matchingService;
 
     public DonorService(
         IRepository<DonorProfile> donorProfileRepository,
@@ -22,7 +25,10 @@ public class DonorService
         IRepository<District> districtRepository,
         IRepository<Upazila> upazilaRepository,
         IUnitOfWork unitOfWork,
-        IMapService mapService)
+        IMapService mapService,
+        INotificationService notificationService,
+        IRepository<BloodRequest> bloodRequestRepository,
+        IMatchingService matchingService)
     {
         _donorProfileRepository = donorProfileRepository;
         _userRepository = userRepository;
@@ -30,6 +36,9 @@ public class DonorService
         _upazilaRepository = upazilaRepository;
         _unitOfWork = unitOfWork;
         _mapService = mapService;
+        _notificationService = notificationService;
+        _bloodRequestRepository = bloodRequestRepository;
+        _matchingService = matchingService;
     }
 
     public async Task<Result<DonorProfileDto>> CreateProfileAsync(Guid userId, CreateDonorProfileRequest request, CancellationToken cancellationToken = default)
@@ -134,6 +143,19 @@ public class DonorService
         profile.UpdatedAt = DateTime.UtcNow;
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        if (request.AvailabilityStatus == AvailabilityStatus.Available)
+        {
+            var openRequests = await _bloodRequestRepository.FindAsync(
+                r => (r.Status == RequestStatus.Open || r.Status == RequestStatus.PartiallyFulfilled) &&
+                     r.BloodGroup == profile.BloodGroup,
+                cancellationToken);
+
+            foreach (var openRequest in openRequests)
+            {
+                _ = _matchingService.MatchRequestAsync(openRequest.Id);
+            }
+        }
 
         var district = await _districtRepository.GetByIdAsync(profile.DistrictId, cancellationToken);
         var upazila = await _upazilaRepository.GetByIdAsync(profile.UpazilaId, cancellationToken);

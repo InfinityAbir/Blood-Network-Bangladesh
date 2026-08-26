@@ -6,5 +6,5 @@ declare global {
 
 export const environment = {
   production: false,
-  apiUrl: (typeof window !== 'undefined' && window.__env?.apiUrl) || 'http://localhost:5000/api'
+  apiUrl: (typeof window !== 'undefined' && window.__env?.apiUrl) || 'http://localhost:8080/api'
 };

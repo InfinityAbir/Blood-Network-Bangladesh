@@ -6,6 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { HeaderComponent } from '../../../layout/header/header.component';
 import { FooterComponent } from '../../../layout/footer/footer.component';
 import { DonorService } from '../../../core/services/donor.service';
@@ -25,6 +26,7 @@ import { BloodRequestMatch } from '../../../core/models/match';
     MatIconModule,
     MatChipsModule,
     MatProgressSpinnerModule,
+    MatSnackBarModule,
     HeaderComponent,
     FooterComponent
   ],
@@ -230,7 +232,8 @@ export class DonorDashboardComponent implements OnInit {
 
   constructor(
     private donorService: DonorService,
-    private matchService: MatchService
+    private matchService: MatchService,
+    private snackBar: MatSnackBar
   ) {}
 
   ngOnInit(): void {
@@ -264,13 +267,27 @@ export class DonorDashboardComponent implements OnInit {
 
   acceptMatch(matchId: string): void {
     this.matchService.respondToMatch(matchId, { response: 'Accepted' }).subscribe({
-      next: () => this.loadMatches()
+      next: () => {
+        this.snackBar.open('Match accepted!', 'Close', {
+          duration: 3000,
+          horizontalPosition: 'end',
+          verticalPosition: 'top'
+        });
+        this.loadMatches();
+      }
     });
   }
 
   declineMatch(matchId: string): void {
     this.matchService.respondToMatch(matchId, { response: 'Declined' }).subscribe({
-      next: () => this.loadMatches()
+      next: () => {
+        this.snackBar.open('Match declined.', 'Close', {
+          duration: 3000,
+          horizontalPosition: 'end',
+          verticalPosition: 'top'
+        });
+        this.loadMatches();
+      }
     });
   }
 
