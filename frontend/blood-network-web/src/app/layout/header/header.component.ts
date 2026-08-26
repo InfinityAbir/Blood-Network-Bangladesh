@@ -89,16 +89,26 @@ import { Notification } from '../../core/models/notification';
     </mat-toolbar>
   `,
   styles: [`
+    :host { display: block; }
     .bgn-header {
       position: sticky;
       top: 0;
       z-index: 100;
+      width: 100%;
+      left: 0;
+      right: 0;
+      box-sizing: border-box;
       background: var(--bgn-header-bg);
       color: #fff;
       height: 64px;
+      min-height: 64px;
       padding: 0 16px;
       box-shadow: var(--bgn-shadow-md);
-      gap: 4px;
+      gap: 6px;
+      display: flex;
+      align-items: center;
+      flex-wrap: nowrap;
+      overflow: visible;
     }
 
     .logo {
@@ -110,24 +120,37 @@ import { Notification } from '../../core/models/notification';
       font-weight: 700;
       font-size: 1.15rem;
       letter-spacing: 0.2px;
+      flex-shrink: 0;
+      min-width: 0;
+      white-space: nowrap;
     }
-    .logo-icon { color: #fff; height: 26px; width: 26px; font-size: 26px; }
+    .logo-icon { color: #fff; height: 26px; width: 26px; font-size: 26px; line-height: 26px; flex-shrink: 0; overflow: visible; }
     .logo-accent { color: #ffd2d2; font-weight: 800; }
+    .logo-text { white-space: nowrap; overflow: visible; }
 
-    .spacer { flex: 1 1 auto; }
+    .spacer { flex: 1 1 auto; min-width: 8px; }
 
     .nav-link {
       color: #fff !important;
       opacity: 0.92;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
     .nav-link:hover { opacity: 1; background: rgba(255,255,255,0.14) !important; }
 
-    .theme-toggle { color: #fff !important; }
+    .theme-toggle {
+      color: #fff !important;
+      flex-shrink: 0;
+      width: 40px; height: 40px;
+      display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 50%;
+    }
+    .theme-toggle mat-icon { font-size: 22px; height: 22px; width: 22px; line-height: 22px; }
 
-    .register-btn { color: #b71c1c !important; background: #fff !important; }
+    .register-btn { color: #b71c1c !important; background: #fff !important; flex-shrink: 0; white-space: nowrap; }
 
-    .notif-btn { color: #fff !important; }
-    .logout-btn { color: #fff !important; }
+    .notif-btn { color: #fff !important; flex-shrink: 0; }
+    .logout-btn { color: #fff !important; flex-shrink: 0; white-space: nowrap; }
 
     .notif-header {
       display: flex; justify-content: space-between; align-items: center;
