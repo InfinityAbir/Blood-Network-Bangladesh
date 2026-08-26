@@ -17,13 +17,16 @@ export enum RequestStatus {
 export interface BloodRequest {
   id: string;
   requesterId: string;
+  requesterName: string;
   bloodGroup: BloodGroup;
   unitsRequired: number;
   unitsFulfilled: number;
   hospitalName: string;
   hospitalAddress: string;
   districtId: string;
+  districtName?: string;
   upazilaId: string;
+  upazilaName?: string;
   area?: string;
   requiredBy: string;
   urgency: Urgency;
@@ -32,6 +35,8 @@ export interface BloodRequest {
   contactPhone: string;
   additionalInformation?: string;
   status: RequestStatus;
+  completedAt?: string;
+  cancelledAt?: string;
   createdAt: string;
 }
 

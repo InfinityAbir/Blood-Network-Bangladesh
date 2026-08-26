@@ -19,6 +19,7 @@ public static class DependencyInjection
 
         services.AddScoped<AuthService>();
         services.AddScoped<DonorService>();
+        services.AddScoped<BloodRequestService>();
 
         return services;
     }
