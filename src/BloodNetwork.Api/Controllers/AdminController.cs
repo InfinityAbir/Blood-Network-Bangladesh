@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using BloodNetwork.Application.Common;
 using BloodNetwork.Application.DTOs;
 using BloodNetwork.Application.Interfaces;
@@ -28,7 +29,7 @@ public class AdminController : ControllerBase
     }
 
     [HttpGet("users")]
-    public async Task<IActionResult> GetUsers([FromQuery] string? search, [FromQuery] UserRole? role, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    public async Task<IActionResult> GetUsers([FromQuery] string? search, [FromQuery] UserRole? role, [FromQuery] int page = 1, [FromQuery][Range(1, 50)] int pageSize = 20)
     {
         var users = await _adminService.GetUsersAsync(search, role, page, pageSize);
         var total = await _adminService.GetUserCountAsync(search, role);
@@ -46,6 +47,15 @@ public class AdminController : ControllerBase
     {
         var result = await _adminService.ToggleUserActiveAsync(userId, request.IsActive);
         if (result == null) return NotFound();
+
+        await _adminService.LogActionAsync(
+            GetUserId(),
+            "ToggleUserActive",
+            "User",
+            userId,
+            HttpContext.Connection.RemoteIpAddress?.ToString(),
+            $"Toggled active status to {request.IsActive} for user {userId}");
+
         return Ok(result);
     }
 
@@ -54,11 +64,20 @@ public class AdminController : ControllerBase
     {
         var result = await _adminService.VerifyDonorAsync(userId, request.Status);
         if (result == null) return NotFound();
+
+        await _adminService.LogActionAsync(
+            GetUserId(),
+            "VerifyDonor",
+            "DonorProfile",
+            userId,
+            HttpContext.Connection.RemoteIpAddress?.ToString(),
+            $"Set verification status to {request.Status} for user {userId}");
+
         return Ok(result);
     }
 
     [HttpGet("reports")]
-    public async Task<IActionResult> GetReports([FromQuery] ReportStatus? status, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    public async Task<IActionResult> GetReports([FromQuery] ReportStatus? status, [FromQuery] int page = 1, [FromQuery][Range(1, 50)] int pageSize = 20)
     {
         var reports = await _adminService.GetReportsAsync(status, page, pageSize);
         var total = await _adminService.GetReportCountAsync(status);
@@ -83,7 +102,7 @@ public class AdminController : ControllerBase
     }
 
     [HttpGet("audit-logs")]
-    public async Task<IActionResult> GetAuditLogs([FromQuery] string? entityType, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    public async Task<IActionResult> GetAuditLogs([FromQuery] string? entityType, [FromQuery] int page = 1, [FromQuery][Range(1, 50)] int pageSize = 20)
     {
         var logs = await _adminService.GetAuditLogsAsync(entityType, page, pageSize);
         var total = await _adminService.GetAuditLogCountAsync(entityType);

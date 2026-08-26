@@ -16,13 +16,19 @@ public class MatchesController : ControllerBase
 {
     private readonly IMatchingService _matchingService;
     private readonly IRepository<BloodRequest> _bloodRequestRepository;
+    private readonly IRepository<User> _userRepository;
+    private readonly IRepository<DonorProfile> _donorProfileRepository;
 
     public MatchesController(
         IMatchingService matchingService,
-        IRepository<BloodRequest> bloodRequestRepository)
+        IRepository<BloodRequest> bloodRequestRepository,
+        IRepository<User> userRepository,
+        IRepository<DonorProfile> donorProfileRepository)
     {
         _matchingService = matchingService;
         _bloodRequestRepository = bloodRequestRepository;
+        _userRepository = userRepository;
+        _donorProfileRepository = donorProfileRepository;
     }
 
     [HttpGet("request/{requestId}")]
@@ -41,7 +47,13 @@ public class MatchesController : ControllerBase
             return Forbid();
 
         var matches = await _matchingService.GetMatchesForRequestAsync(requestId);
-        return Ok(matches.Select(MapToDto));
+        var dtos = new List<BloodRequestMatchDto>();
+        foreach (var match in matches)
+        {
+            var dto = await MapToDto(match);
+            if (dto != null) dtos.Add(dto);
+        }
+        return Ok(dtos);
     }
 
     [HttpGet("donor")]
@@ -51,7 +63,13 @@ public class MatchesController : ControllerBase
         if (userId == null) return Unauthorized();
 
         var matches = await _matchingService.GetMatchesForDonorAsync(userId.Value);
-        return Ok(matches.Select(MapToDto));
+        var dtos = new List<BloodRequestMatchDto>();
+        foreach (var match in matches)
+        {
+            var dto = await MapToDto(match);
+            if (dto != null) dtos.Add(dto);
+        }
+        return Ok(dtos);
     }
 
     [HttpGet("{matchId}")]
@@ -70,7 +88,7 @@ public class MatchesController : ControllerBase
                 return Forbid();
         }
 
-        return Ok(MapToDto(match));
+        return Ok(await MapToDto(match));
     }
 
     [HttpPost("{matchId}/respond")]
@@ -82,7 +100,7 @@ public class MatchesController : ControllerBase
         var match = await _matchingService.RespondToMatchAsync(matchId, userId.Value, request.Response);
         if (match == null) return NotFound();
 
-        return Ok(MapToDto(match));
+        return Ok(await MapToDto(match));
     }
 
     [HttpPost("request/{requestId}/trigger-match")]
@@ -90,7 +108,13 @@ public class MatchesController : ControllerBase
     public async Task<IActionResult> TriggerMatching(Guid requestId)
     {
         var matches = await _matchingService.MatchRequestAsync(requestId);
-        return Ok(new { MatchCount = matches.Count, Matches = matches.Select(MapToDto) });
+        var dtos = new List<BloodRequestMatchDto>();
+        foreach (var match in matches)
+        {
+            var dto = await MapToDto(match);
+            if (dto != null) dtos.Add(dto);
+        }
+        return Ok(new { MatchCount = dtos.Count, Matches = dtos });
     }
 
     private Guid? GetUserId()
@@ -99,16 +123,22 @@ public class MatchesController : ControllerBase
         return claim != null ? Guid.Parse(claim.Value) : null;
     }
 
-    private static BloodRequestMatchDto MapToDto(BloodRequestMatch match)
+    private async Task<BloodRequestMatchDto?> MapToDto(BloodRequestMatch match)
     {
+        if (match == null) return null;
+
+        var donor = await _userRepository.GetByIdAsync(match.DonorId);
+        var donorProfile = (await _donorProfileRepository.GetAllAsync())
+            .FirstOrDefault(d => d.UserId == match.DonorId);
+
         return new BloodRequestMatchDto
         {
             Id = match.Id,
             BloodRequestId = match.BloodRequestId,
             DonorId = match.DonorId,
-            DonorName = match.Donor is not null ? $"{match.Donor.FirstName} {match.Donor.LastName}" : string.Empty,
-            DonorPhone = match.Donor?.PhoneNumber ?? string.Empty,
-            DonorBloodGroup = match.Donor?.DonorProfile?.BloodGroup.ToString() ?? string.Empty,
+            DonorName = donor != null ? $"{donor.FirstName} {donor.LastName}" : "Unknown",
+            DonorPhone = donor?.PhoneNumber ?? string.Empty,
+            DonorBloodGroup = donorProfile?.BloodGroup.ToString() ?? "Unknown",
             MatchScore = match.MatchScore,
             DistanceKm = match.DistanceKm,
             DonorResponse = match.DonorResponse,

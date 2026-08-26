@@ -4,6 +4,7 @@ using BloodNetwork.Application.Interfaces;
 using BloodNetwork.Domain.Entities;
 using BloodNetwork.Domain.Enums;
 using BloodNetwork.Domain.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace BloodNetwork.Application.Services;
 
@@ -18,6 +19,7 @@ public class DonorService
     private readonly INotificationService _notificationService;
     private readonly IRepository<BloodRequest> _bloodRequestRepository;
     private readonly IMatchingService _matchingService;
+    private readonly ILogger<DonorService> _logger;
 
     public DonorService(
         IRepository<DonorProfile> donorProfileRepository,
@@ -28,7 +30,8 @@ public class DonorService
         IMapService mapService,
         INotificationService notificationService,
         IRepository<BloodRequest> bloodRequestRepository,
-        IMatchingService matchingService)
+        IMatchingService matchingService,
+        ILogger<DonorService> logger)
     {
         _donorProfileRepository = donorProfileRepository;
         _userRepository = userRepository;
@@ -39,6 +42,7 @@ public class DonorService
         _notificationService = notificationService;
         _bloodRequestRepository = bloodRequestRepository;
         _matchingService = matchingService;
+        _logger = logger;
     }
 
     public async Task<Result<DonorProfileDto>> CreateProfileAsync(Guid userId, CreateDonorProfileRequest request, CancellationToken cancellationToken = default)
@@ -153,7 +157,17 @@ public class DonorService
 
             foreach (var openRequest in openRequests)
             {
-                _ = _matchingService.MatchRequestAsync(openRequest.Id);
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _matchingService.MatchRequestAsync(openRequest.Id);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Background matching failed for request {RequestId}", openRequest.Id);
+                    }
+                });
             }
         }
 

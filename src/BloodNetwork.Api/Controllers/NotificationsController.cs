@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using BloodNetwork.Application.DTOs;
 using BloodNetwork.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -19,7 +20,7 @@ public class NotificationsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetNotifications([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    public async Task<IActionResult> GetNotifications([FromQuery] int page = 1, [FromQuery][Range(1, 50)] int pageSize = 20)
     {
         var userId = GetUserId();
         if (userId == null) return Unauthorized();

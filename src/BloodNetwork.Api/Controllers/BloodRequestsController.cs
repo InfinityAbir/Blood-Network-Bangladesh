@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using BloodNetwork.Application.Common;
 using BloodNetwork.Application.DTOs;
@@ -47,16 +48,49 @@ public class BloodRequestsController : ControllerBase
     [HttpGet("{id:guid}")]
     [Authorize]
     [ProducesResponseType(typeof(BloodRequestDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PublicBloodRequestDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetRequest(Guid id, CancellationToken cancellationToken)
     {
+        var userId = GetCurrentUserId();
+        var isAdmin = User.IsInRole("Admin");
+
         var result = await _requestService.GetRequestByIdAsync(id, cancellationToken);
 
-        if (result.IsSuccess)
-            return Ok(result.Value);
+        if (!result.IsSuccess)
+            return NotFound(new { success = false, message = result.Error });
 
-        return NotFound(new { success = false, message = result.Error });
+        // Non-owners see public dto (no PII), owners and admins see full details
+        if (!isAdmin && result.Value!.RequesterId != userId)
+        {
+            var districtResult = await _requestService.GetRequestByIdAsync(id, cancellationToken);
+            if (!districtResult.IsSuccess)
+                return NotFound(new { success = false, message = districtResult.Error });
+
+            var fullDto = districtResult.Value!;
+            var publicDto = new PublicBloodRequestDto(
+                fullDto.Id,
+                fullDto.BloodGroup,
+                fullDto.UnitsRequired,
+                fullDto.UnitsFulfilled,
+                fullDto.HospitalName,
+                fullDto.HospitalAddress,
+                fullDto.DistrictId,
+                fullDto.DistrictName,
+                fullDto.UpazilaId,
+                fullDto.UpazilaName,
+                fullDto.Area,
+                fullDto.RequiredBy,
+                fullDto.Urgency,
+                fullDto.AdditionalInformation,
+                fullDto.Status,
+                fullDto.CreatedAt
+            );
+            return Ok(publicDto);
+        }
+
+        return Ok(result.Value);
     }
 
     [HttpGet("my")]
@@ -65,7 +99,7 @@ public class BloodRequestsController : ControllerBase
     public async Task<IActionResult> GetMyRequests(
         [FromQuery] RequestStatus? status,
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20,
+        [FromQuery][Range(1, 50)] int pageSize = 20,
         CancellationToken cancellationToken = default)
     {
         var userId = GetCurrentUserId();

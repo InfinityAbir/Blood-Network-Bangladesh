@@ -1,10 +1,11 @@
 import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { catchError, switchMap, throwError } from 'rxjs';
+import { catchError, switchMap, tap, throwError, Observable } from 'rxjs';
 import { AuthService } from '../services/auth.service';
+import { AuthResponse } from '../models/user';
 
-let isRefreshing = false;
+let refresh$: Observable<AuthResponse> | null = null;
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
@@ -17,24 +18,35 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     });
     return next(cloned).pipe(
       catchError((error: HttpErrorResponse) => {
-        if (error.status === 401 && !isRefreshing) {
+        if (error.status === 401) {
           const refreshToken = authService.getRefreshToken();
           if (refreshToken) {
-            isRefreshing = true;
-            return authService.refreshToken(refreshToken).pipe(
+            if (refresh$) {
+              return refresh$.pipe(
+                switchMap((response) => {
+                  const retryReq = req.clone({
+                    setHeaders: { Authorization: `Bearer ${response.accessToken}` }
+                  });
+                  return next(retryReq);
+                })
+              );
+            }
+            refresh$ = authService.refreshToken(refreshToken).pipe(
+              tap(() => { refresh$ = null; }),
+              catchError((refreshError) => {
+                refresh$ = null;
+                authService.logout();
+                router.navigate(['/login']);
+                return throwError(() => refreshError);
+              })
+            );
+            return refresh$.pipe(
               switchMap((response) => {
-                isRefreshing = false;
                 authService.storeAuth(response);
                 const retryReq = req.clone({
                   setHeaders: { Authorization: `Bearer ${response.accessToken}` }
                 });
                 return next(retryReq);
-              }),
-              catchError((refreshError) => {
-                isRefreshing = false;
-                authService.logout();
-                router.navigate(['/login']);
-                return throwError(() => refreshError);
               })
             );
           }

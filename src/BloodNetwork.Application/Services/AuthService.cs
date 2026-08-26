@@ -4,6 +4,7 @@ using BloodNetwork.Application.Interfaces;
 using BloodNetwork.Domain.Entities;
 using BloodNetwork.Domain.Enums;
 using BloodNetwork.Domain.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace BloodNetwork.Application.Services;
 
@@ -15,6 +16,7 @@ public class AuthService
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtTokenService _jwtTokenService;
     private readonly INotificationService _notificationService;
+    private readonly ILogger<AuthService> _logger;
 
     public AuthService(
         IRepository<User> userRepository,
@@ -22,7 +24,8 @@ public class AuthService
         IUnitOfWork unitOfWork,
         IPasswordHasher passwordHasher,
         IJwtTokenService jwtTokenService,
-        INotificationService notificationService)
+        INotificationService notificationService,
+        ILogger<AuthService> logger)
     {
         _userRepository = userRepository;
         _refreshTokenRepository = refreshTokenRepository;
@@ -30,6 +33,7 @@ public class AuthService
         _passwordHasher = passwordHasher;
         _jwtTokenService = jwtTokenService;
         _notificationService = notificationService;
+        _logger = logger;
     }
 
     public async Task<Result<AuthResponse>> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken = default)
@@ -47,6 +51,12 @@ public class AuthService
 
             if (existingEmail)
                 return Result<AuthResponse>.Failure("A user with this email already exists");
+        }
+
+        // Never trust client-provided role — force to Donor/Requester only
+        if (request.Role == UserRole.Admin || request.Role == UserRole.Volunteer)
+        {
+            return Result<AuthResponse>.Failure("Invalid role assignment.");
         }
 
         var user = new User
@@ -105,10 +115,33 @@ public class AuthService
     public async Task<Result<AuthResponse>> RefreshTokenAsync(string refreshTokenValue, CancellationToken cancellationToken = default)
     {
         var refreshToken = await _refreshTokenRepository.FirstOrDefaultAsync(
-            t => t.Token == refreshTokenValue && !t.IsRevoked, cancellationToken);
+            t => t.Token == refreshTokenValue, cancellationToken);
 
-        if (refreshToken == null || refreshToken.ExpiresAt < DateTime.UtcNow)
+        if (refreshToken == null)
+            return Result<AuthResponse>.Failure("Invalid refresh token");
+
+        if (refreshToken.ExpiresAt < DateTime.UtcNow)
             return Result<AuthResponse>.Failure("Invalid or expired refresh token");
+
+        // Detect refresh token reuse — if token is already revoked, it was stolen
+        if (refreshToken.IsRevoked)
+        {
+            _logger.LogWarning("Refresh token reuse detected for user {UserId}. Revoking all tokens.", refreshToken.UserId);
+
+            // Revoke ALL refresh tokens for this user
+            var allUserTokens = (await _refreshTokenRepository.GetAllAsync())
+                .Where(t => t.UserId == refreshToken.UserId && !t.IsRevoked)
+                .ToList();
+
+            foreach (var token in allUserTokens)
+            {
+                token.IsRevoked = true;
+                token.RevokedAt = DateTime.UtcNow;
+            }
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            return Result<AuthResponse>.Failure("Token reuse detected. Please log in again.");
+        }
 
         var user = await _userRepository.GetByIdAsync(refreshToken.UserId, cancellationToken);
         if (user == null || !user.IsActive)
@@ -178,6 +211,17 @@ public class AuthService
         user.Email = request.NewEmail;
         user.PasswordHash = _passwordHasher.HashPassword(request.NewPassword);
         user.MustChangePassword = false;
+
+        // Revoke all existing refresh tokens on password change
+        var existingTokens = (await _refreshTokenRepository.GetAllAsync())
+            .Where(t => t.UserId == user.Id && !t.IsRevoked)
+            .ToList();
+
+        foreach (var token in existingTokens)
+        {
+            token.IsRevoked = true;
+            token.RevokedAt = DateTime.UtcNow;
+        }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return Result<UserDto>.Success(MapToDto(user));

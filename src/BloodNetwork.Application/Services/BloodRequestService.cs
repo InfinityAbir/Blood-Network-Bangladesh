@@ -4,6 +4,7 @@ using BloodNetwork.Application.Interfaces;
 using BloodNetwork.Domain.Entities;
 using BloodNetwork.Domain.Enums;
 using BloodNetwork.Domain.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace BloodNetwork.Application.Services;
 
@@ -17,6 +18,7 @@ public class BloodRequestService
     private readonly IMatchingService _matchingService;
     private readonly INotificationService _notificationService;
     private readonly IRepository<BloodRequestMatch> _matchRepository;
+    private readonly ILogger<BloodRequestService> _logger;
 
     public BloodRequestService(
         IRepository<BloodRequest> requestRepository,
@@ -26,7 +28,8 @@ public class BloodRequestService
         IUnitOfWork unitOfWork,
         IMatchingService matchingService,
         INotificationService notificationService,
-        IRepository<BloodRequestMatch> matchRepository)
+        IRepository<BloodRequestMatch> matchRepository,
+        ILogger<BloodRequestService> logger)
     {
         _requestRepository = requestRepository;
         _userRepository = userRepository;
@@ -36,6 +39,7 @@ public class BloodRequestService
         _matchingService = matchingService;
         _notificationService = notificationService;
         _matchRepository = matchRepository;
+        _logger = logger;
     }
 
     public async Task<Result<BloodRequestDto>> CreateRequestAsync(Guid requesterId, CreateBloodRequestRequest request, CancellationToken cancellationToken = default)
@@ -77,7 +81,17 @@ public class BloodRequestService
         await _requestRepository.AddAsync(bloodRequest, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        _ = _matchingService.MatchRequestAsync(bloodRequest.Id);
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _matchingService.MatchRequestAsync(bloodRequest.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Background matching failed for request {RequestId}", bloodRequest.Id);
+            }
+        });
 
         await _notificationService.SendNotificationAsync(
             requesterId,

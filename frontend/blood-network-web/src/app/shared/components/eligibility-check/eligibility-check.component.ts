@@ -12,27 +12,29 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 
 interface EligibilityQuestion {
-  id: string;
-  type: 'yesno' | 'number';
-  key: string;
-  title: string;
-  titleEn: string;
-  titleBn: string;
+  id: number;
+  questionBn: string;
+  questionEn: string;
+  questionBanglish: string;
+  questionType: 'yesno' | 'number';
   unit?: string;
-  min?: number;
-  max?: number;
+  minValue: number;
+  maxValue: number;
 }
 
-interface QuestionResult {
-  questionId: string;
+interface EligibilityCheck {
+  questionId: number;
   passed: boolean;
   message: string;
+  messageBn: string;
 }
 
 interface EligibilityResult {
-  overallPassed: boolean;
+  isEligible: boolean;
   score: number;
-  results: QuestionResult[];
+  checks: EligibilityCheck[];
+  recommendationBn: string;
+  recommendationEn: string;
 }
 
 @Component({
@@ -84,39 +86,39 @@ interface EligibilityResult {
 
             <mat-card class="question-card">
               <div class="question-number">Q{{ currentIndex() + 1 }}</div>
-              <h2 class="question-title">{{ currentQuestion().titleEn }}</h2>
-              <p class="question-bn">{{ currentQuestion().titleBn }}</p>
+              <h2 class="question-title">{{ currentQuestion().questionEn }}</h2>
+              <p class="question-bn">{{ currentQuestion().questionBanglish }}</p>
 
-              @if (currentQuestion().type === 'yesno') {
+              @if (currentQuestion().questionType === 'yesno') {
                 <div class="yesno-options">
-                  <label class="radio-option" [class.selected]="answers()[currentQuestion().key] === 'yes'">
+                  <label class="radio-option" [class.selected]="answers()[qKey(currentQuestion())] === 'yes'">
                     <input
                       type="radio"
-                      [name]="currentQuestion().key"
+                      [name]="'q' + currentQuestion().id"
                       value="yes"
-                      [(ngModel)]="answers()[currentQuestion().key!]"
+                      [(ngModel)]="answers()[qKey(currentQuestion())]"
                     />
                     <span class="radio-label">Yes / হ্যাঁ</span>
                   </label>
-                  <label class="radio-option" [class.selected]="answers()[currentQuestion().key] === 'no'">
+                  <label class="radio-option" [class.selected]="answers()[qKey(currentQuestion())] === 'no'">
                     <input
                       type="radio"
-                      [name]="currentQuestion().key"
+                      [name]="'q' + currentQuestion().id"
                       value="no"
-                      [(ngModel)]="answers()[currentQuestion().key!]"
+                      [(ngModel)]="answers()[qKey(currentQuestion())]"
                     />
                     <span class="radio-label">No / না</span>
                   </label>
                 </div>
               } @else {
                 <mat-form-field appearance="outline" class="number-field">
-                  <mat-label>{{ currentQuestion().titleEn }}</mat-label>
+                  <mat-label>{{ currentQuestion().questionEn }}</mat-label>
                   <input
                     matInput
                     type="number"
-                    [min]="currentQuestion().min ?? null"
-                    [max]="currentQuestion().max ?? null"
-                    [(ngModel)]="answers()[currentQuestion().key!]"
+                    [min]="currentQuestion().minValue"
+                    [max]="currentQuestion().maxValue"
+                    [(ngModel)]="answers()[qKey(currentQuestion())]"
                     [placeholder]="currentQuestion().unit ?? ''"
                   />
                   @if (currentQuestion().unit) {
@@ -164,13 +166,13 @@ interface EligibilityResult {
           }
         } @else {
           <mat-card class="result-card">
-            <div class="result-header" [class.pass]="result()!.overallPassed" [class.fail]="!result()!.overallPassed">
+            <div class="result-header" [class.pass]="result()!.isEligible" [class.fail]="!result()!.isEligible">
               <mat-icon class="result-icon">
-                {{ result()!.overallPassed ? 'check_circle' : 'cancel' }}
+                {{ result()!.isEligible ? 'check_circle' : 'cancel' }}
               </mat-icon>
               <div>
-                <h2>{{ result()!.overallPassed ? 'Eligible to Donate!' : 'Not Eligible at This Time' }}</h2>
-                <p>{{ result()!.overallPassed
+                <h2>{{ result()!.isEligible ? 'Eligible to Donate!' : 'Not Eligible at This Time' }}</h2>
+                <p>{{ result()!.isEligible
                   ? 'আপনি রক্তদানের জন্য যোগ্য।'
                   : 'আপনি এখন রক্তদানের জন্য যোগ্য নন।' }}</p>
               </div>
@@ -182,10 +184,10 @@ interface EligibilityResult {
             </div>
 
             <div class="results-list">
-              @for (r of result()!.results; track r.questionId) {
+              @for (r of result()!.checks; track r.questionId) {
                 <div class="result-item" [class.pass]="r.passed" [class.fail]="!r.passed">
                   <mat-icon>{{ r.passed ? 'check_circle' : 'cancel' }}</mat-icon>
-                  <span>{{ r.message }}</span>
+                  <span>{{ r.messageBn }}</span>
                 </div>
               }
             </div>
@@ -404,6 +406,10 @@ export class EligibilityCheckComponent {
     return total === 0 ? 0 : Math.round(((this.currentIndex() + 1) / total) * 100);
   });
 
+  qKey(q: EligibilityQuestion): string {
+    return String(q.id);
+  }
+
   constructor(private http: HttpClient) {
     this.loadQuestions();
   }
@@ -426,9 +432,9 @@ export class EligibilityCheckComponent {
   canProceed(): boolean {
     const q = this.currentQuestion();
     if (!q) return false;
-    const val = this.answers()[q.key];
-    if (q.type === 'yesno') return val === 'yes' || val === 'no';
-    if (q.type === 'number') return val !== undefined && val !== null && val !== '';
+    const val = this.answers()[String(q.id)];
+    if (q.questionType === 'yesno') return val === 'yes' || val === 'no';
+    if (q.questionType === 'number') return val !== undefined && val !== null && val !== '';
     return false;
   }
 
@@ -449,18 +455,13 @@ export class EligibilityCheckComponent {
     this.submitting.set(true);
     this.error.set(null);
 
-    const answerPayload: Record<string, string | number> = {};
     const ans = this.answers();
-    for (const q of this.questions()) {
-      const val = ans[q.key];
-      if (q.type === 'number') {
-        answerPayload[q.key] = Number(val);
-      } else {
-        answerPayload[q.key] = val;
-      }
-    }
+    const answerPayload = this.questions().map(q => ({
+      questionId: q.id,
+      answer: ans[String(q.id)] ?? ''
+    }));
 
-    this.http.post<EligibilityResult>(`${this.apiUrl}/check`, { answers: answerPayload }).subscribe({
+    this.http.post<EligibilityResult>(`${this.apiUrl}/check`, answerPayload).subscribe({
       next: (res) => {
         this.result.set(res);
         this.submitting.set(false);

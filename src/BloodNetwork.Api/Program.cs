@@ -192,9 +192,9 @@ if (!app.Environment.IsEnvironment("Testing"))
     }
 }
 
-app.UseSwagger();
 if (app.Environment.IsDevelopment())
 {
+    app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Blood Network Bangladesh API v1");

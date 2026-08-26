@@ -1,12 +1,14 @@
 using BloodNetwork.Application.DTOs;
 using BloodNetwork.Application.Interfaces;
 using BloodNetwork.Domain.Enums;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BloodNetwork.Api.Controllers;
 
 [ApiController]
 [Route("api/ai")]
+[Authorize]
 public class AIController : ControllerBase
 {
     private readonly IEligibilityService _eligibilityService;
@@ -41,6 +43,7 @@ public class AIController : ControllerBase
     }
 
     [HttpGet("donors/re-engagement")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetTopEngagedDonors(
         [FromQuery] BloodGroup bloodGroup,
         [FromQuery] int count = 10)
@@ -50,6 +53,7 @@ public class AIController : ControllerBase
     }
 
     [HttpGet("donors/re-engagement/{donorId:guid}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetDonorEngagement(Guid donorId)
     {
         var result = await _donorEngagementService.GetDonorEngagementAsync(donorId);
@@ -58,6 +62,7 @@ public class AIController : ControllerBase
     }
 
     [HttpGet("matches/enhanced/{requestId:guid}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetEnhancedMatches(Guid requestId)
     {
         var rawMatches = await _matchingService.GetMatchesForRequestAsync(requestId);
