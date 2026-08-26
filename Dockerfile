@@ -20,6 +20,6 @@ ENV ASPNETCORE_URLS=http://+:8080 \
     DOTNET_HOSTBUILDER__RELOADCONFIG=false
 
 EXPOSE 8080
-RUN useradd -r -s /bin/false app
+RUN id -u app > /dev/null 2>&1 || useradd -r -s /bin/false app
 USER app
 ENTRYPOINT ["dotnet", "BloodNetwork.Api.dll"]
