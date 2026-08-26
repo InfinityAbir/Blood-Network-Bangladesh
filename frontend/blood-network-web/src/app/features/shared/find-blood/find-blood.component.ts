@@ -67,7 +67,7 @@ import { PagedResult } from '../../../core/models/paged-result';
 
             <mat-form-field appearance="outline">
               <mat-label>District</mat-label>
-              <mat-select formControlName="districtId" [disabled]="!searchForm.get('divisionId')?.value">
+              <mat-select formControlName="districtId" [disabled]="!searchForm.get('divisionId')?.value" (selectionChange)="onDistrictChange()">
                 <mat-option value="">All Districts</mat-option>
                 @for (district of districts; track district.id) {
                   <mat-option [value]="district.id">{{ district.name }}</mat-option>
