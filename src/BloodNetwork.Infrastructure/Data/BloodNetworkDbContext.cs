@@ -1,12 +1,18 @@
 using BloodNetwork.Domain.Entities;
 using BloodNetwork.Infrastructure.Data.Seeds;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace BloodNetwork.Infrastructure.Data;
 
 public class BloodNetworkDbContext : DbContext
 {
     public BloodNetworkDbContext(DbContextOptions<BloodNetworkDbContext> options) : base(options) { }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        optionsBuilder.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
+    }
 
     public DbSet<User> Users => Set<User>();
     public DbSet<DonorProfile> DonorProfiles => Set<DonorProfile>();
