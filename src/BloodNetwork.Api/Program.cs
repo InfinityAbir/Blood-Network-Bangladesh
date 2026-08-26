@@ -19,7 +19,10 @@ var builder = WebApplication.CreateEmptyBuilder(new WebApplicationOptions
     ContentRootPath = Directory.GetCurrentDirectory()
 });
 
-builder.WebHost.UseKestrel();
+builder.WebHost.UseKestrel(options =>
+{
+    options.ListenAnyIP(8080);
+});
 
 builder.Configuration
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
