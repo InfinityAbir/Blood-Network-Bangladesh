@@ -62,8 +62,7 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddScoped<INotificationService, NotificationService>();
-builder.Services.AddScoped<IMapService, HaversineMapService>();
-builder.Services.AddInfrastructure();
+builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<BloodNetworkDbContext>();

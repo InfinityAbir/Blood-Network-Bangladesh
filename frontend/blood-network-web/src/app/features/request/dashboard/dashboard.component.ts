@@ -5,14 +5,14 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
-import { MatSelectModule } from '@angular/material/select';
-import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTabsModule } from '@angular/material/tabs';
 import { HeaderComponent } from '../../../layout/header/header.component';
 import { FooterComponent } from '../../../layout/footer/footer.component';
 import { RequestService } from '../../../core/services/request.service';
-import { BloodRequest, RequestStatus, Urgency } from '../../../core/models/blood-request';
+import { MatchService } from '../../../core/services/match.service';
+import { BloodRequest, RequestStatus } from '../../../core/models/blood-request';
+import { BloodRequestMatch } from '../../../core/models/match';
 import { BloodGroupLabels } from '../../../core/models/blood-group';
 import { PagedResult } from '../../../core/models/paged-result';
 
@@ -26,8 +26,6 @@ import { PagedResult } from '../../../core/models/paged-result';
     MatButtonModule,
     MatIconModule,
     MatChipsModule,
-    MatSelectModule,
-    MatFormFieldModule,
     MatProgressSpinnerModule,
     MatTabsModule,
     HeaderComponent,
@@ -88,8 +86,27 @@ import { PagedResult } from '../../../core/models/paged-result';
                           <span>{{ request.createdAt | date:'medium' }}</span>
                         </div>
                       </div>
+                      @if (matchesMap[request.id]) {
+                        <div class="matches-inline">
+                          <h4>Matched Donors ({{ matchesMap[request.id].length }})</h4>
+                          @for (match of matchesMap[request.id]; track match.id) {
+                            <div class="match-row">
+                              <span class="blood-badge small">{{ getBloodGroupLabel(match.donorBloodGroup) }}</span>
+                              <span class="match-name">{{ match.donorName }}</span>
+                              <span class="match-score">{{ match.matchScore }}/100</span>
+                              <span class="status-chip" [class]="'response-' + match.donorResponse.toLowerCase()">{{ match.donorResponse }}</span>
+                              @if (match.distanceKm != null) {
+                                <span class="match-distance">{{ match.distanceKm | number:'1.1-1' }}km</span>
+                              }
+                            </div>
+                          }
+                        </div>
+                      }
                     </mat-card-content>
                     <mat-card-actions align="end">
+                      <button mat-button (click)="loadMatches(request.id)">
+                        <mat-icon>people</mat-icon> {{ matchesMap[request.id] ? 'Hide' : 'View' }} Matches
+                      </button>
                       @if (request.status === 'Open' || request.status === 'PartiallyFulfilled') {
                         <button mat-button color="warn" (click)="cancelRequest(request.id)">
                           <mat-icon>cancel</mat-icon> Cancel
@@ -97,13 +114,6 @@ import { PagedResult } from '../../../core/models/paged-result';
                       }
                     </mat-card-actions>
                   </mat-card>
-                }
-                @if (allRequests.totalPages > 1) {
-                  <div class="pagination">
-                    <button mat-button [disabled]="!allRequests.hasPrevious" (click)="loadAll(allRequests.page - 1)">Previous</button>
-                    <span>Page {{ allRequests.page }} of {{ allRequests.totalPages }}</span>
-                    <button mat-button [disabled]="!allRequests.hasNext" (click)="loadAll(allRequests.page + 1)">Next</button>
-                  </div>
                 }
               } @else {
                 <div class="no-results">
@@ -140,8 +150,24 @@ import { PagedResult } from '../../../core/models/paged-result';
                           <span>{{ request.contactPhone }}</span>
                         </div>
                       </div>
+                      @if (matchesMap[request.id]) {
+                        <div class="matches-inline">
+                          <h4>Matched Donors ({{ matchesMap[request.id].length }})</h4>
+                          @for (match of matchesMap[request.id]; track match.id) {
+                            <div class="match-row">
+                              <span class="blood-badge small">{{ getBloodGroupLabel(match.donorBloodGroup) }}</span>
+                              <span class="match-name">{{ match.donorName }}</span>
+                              <span class="match-score">{{ match.matchScore }}/100</span>
+                              <span class="status-chip" [class]="'response-' + match.donorResponse.toLowerCase()">{{ match.donorResponse }}</span>
+                            </div>
+                          }
+                        </div>
+                      }
                     </mat-card-content>
                     <mat-card-actions align="end">
+                      <button mat-button (click)="loadMatches(request.id)">
+                        <mat-icon>people</mat-icon> {{ matchesMap[request.id] ? 'Hide' : 'View' }} Matches
+                      </button>
                       <button mat-button color="warn" (click)="cancelRequest(request.id)">
                         <mat-icon>cancel</mat-icon> Cancel
                       </button>
@@ -201,6 +227,7 @@ import { PagedResult } from '../../../core/models/paged-result';
     .request-card { margin-bottom: 12px; }
     .request-card.fulfilled { border-left: 4px solid #2e7d32; }
     .blood-badge { background: #c62828; color: white; padding: 4px 12px; border-radius: 16px; font-weight: bold; font-size: 16px; margin-right: 12px; display: inline-block; }
+    .blood-badge.small { font-size: 13px; padding: 2px 8px; margin-right: 8px; }
     .request-info { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 8px; }
     .info-item { display: flex; align-items: center; gap: 4px; }
     .info-item .label { color: #666; font-size: 13px; }
@@ -213,18 +240,32 @@ import { PagedResult } from '../../../core/models/paged-result';
     .status-fulfilled { background: #e8f5e9; color: #2e7d32; }
     .status-cancelled { background: #f5f5f5; color: #666; }
     .status-expired { background: #f5f5f5; color: #999; }
+    .response-accepted { background: #e8f5e9; color: #2e7d32; }
+    .response-declined { background: #ffebee; color: #c62828; }
+    .response-pending { background: #fff3e0; color: #e65100; }
     .no-results { text-align: center; padding: 60px; color: #999; }
     .no-results mat-icon { font-size: 48px; width: 48px; height: 48px; }
     .pagination { display: flex; justify-content: center; align-items: center; gap: 16px; margin-top: 16px; }
+    .matches-inline { margin-top: 16px; padding: 12px; background: #f9f9f9; border-radius: 8px; }
+    .matches-inline h4 { margin: 0 0 8px; font-size: 14px; color: #666; }
+    .match-row { display: flex; align-items: center; gap: 12px; padding: 6px 0; border-bottom: 1px solid #eee; }
+    .match-row:last-child { border-bottom: none; }
+    .match-name { font-weight: 500; }
+    .match-score { color: #666; font-size: 13px; }
+    .match-distance { color: #999; font-size: 13px; margin-left: auto; }
   `]
 })
 export class RequesterDashboardComponent implements OnInit {
   allRequests: PagedResult<BloodRequest> | null = null;
   activeRequests: PagedResult<BloodRequest> | null = null;
   fulfilledRequests: PagedResult<BloodRequest> | null = null;
+  matchesMap: Record<string, BloodRequestMatch[]> = {};
   isLoading = true;
 
-  constructor(private requestService: RequestService) {}
+  constructor(
+    private requestService: RequestService,
+    private matchService: MatchService
+  ) {}
 
   ngOnInit(): void {
     this.loadAll(1);
@@ -253,6 +294,18 @@ export class RequesterDashboardComponent implements OnInit {
         next: (result) => this.fulfilledRequests = result
       });
     }
+  }
+
+  loadMatches(requestId: string): void {
+    if (this.matchesMap[requestId]) {
+      delete this.matchesMap[requestId];
+      return;
+    }
+    this.matchService.getMatchesForRequest(requestId).subscribe({
+      next: (matches) => {
+        this.matchesMap[requestId] = matches;
+      }
+    });
   }
 
   cancelRequest(id: string): void {

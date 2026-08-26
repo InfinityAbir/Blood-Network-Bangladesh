@@ -1,5 +1,6 @@
 using BloodNetwork.Application.Common;
 using BloodNetwork.Application.DTOs;
+using BloodNetwork.Application.Interfaces;
 using BloodNetwork.Domain.Entities;
 using BloodNetwork.Domain.Enums;
 using BloodNetwork.Domain.Interfaces;
@@ -13,19 +14,22 @@ public class BloodRequestService
     private readonly IRepository<District> _districtRepository;
     private readonly IRepository<Upazila> _upazilaRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IMatchingService _matchingService;
 
     public BloodRequestService(
         IRepository<BloodRequest> requestRepository,
         IRepository<User> userRepository,
         IRepository<District> districtRepository,
         IRepository<Upazila> upazilaRepository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IMatchingService matchingService)
     {
         _requestRepository = requestRepository;
         _userRepository = userRepository;
         _districtRepository = districtRepository;
         _upazilaRepository = upazilaRepository;
         _unitOfWork = unitOfWork;
+        _matchingService = matchingService;
     }
 
     public async Task<Result<BloodRequestDto>> CreateRequestAsync(Guid requesterId, CreateBloodRequestRequest request, CancellationToken cancellationToken = default)
@@ -66,6 +70,8 @@ public class BloodRequestService
 
         await _requestRepository.AddAsync(bloodRequest, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        _ = _matchingService.MatchRequestAsync(bloodRequest.Id);
 
         return Result<BloodRequestDto>.Success(MapToDto(bloodRequest, user, district, upazila));
     }
