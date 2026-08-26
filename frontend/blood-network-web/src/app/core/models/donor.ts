@@ -19,13 +19,19 @@ export interface DonorProfile {
   userId: string;
   bloodGroup: BloodGroup;
   gender?: string;
+  dateOfBirth?: string;
   districtId: string;
+  districtName?: string;
   upazilaId: string;
+  upazilaName?: string;
   area?: string;
   lastDonationDate?: string;
   availabilityStatus: AvailabilityStatus;
   verificationStatus: VerificationStatus;
   totalDonationCount: number;
+  latitude?: number;
+  longitude?: number;
+  createdAt: string;
 }
 
 export interface PublicDonor {

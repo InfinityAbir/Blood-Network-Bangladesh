@@ -1,19 +1,286 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatSelectModule } from '@angular/material/select';
+import { MatIconModule } from '@angular/material/icon';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { HeaderComponent } from '../../../layout/header/header.component';
 import { FooterComponent } from '../../../layout/footer/footer.component';
+import { DonorService, DonorSearchFilters } from '../../../core/services/donor.service';
+import { LocationService, Division, District, Upazila } from '../../../core/services/location.service';
+import { PublicDonor, AvailabilityStatus, VerificationStatus } from '../../../core/models/donor';
+import { BloodGroup, BloodGroupLabels } from '../../../core/models/blood-group';
+import { PagedResult } from '../../../core/models/paged-result';
 
 @Component({
   selector: 'app-find-blood',
   standalone: true,
-  imports: [HeaderComponent, FooterComponent],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatSelectModule,
+    MatIconModule,
+    MatChipsModule,
+    MatProgressSpinnerModule,
+    HeaderComponent,
+    FooterComponent
+  ],
   template: `
     <app-header />
-    <main style="padding: 20px; max-width: 900px; margin: 0 auto;">
-      <h1>Find Blood Donors</h1>
-      <p>Search for available donors by blood group and location.</p>
-      <p><em>Search functionality will be implemented in Phase C.</em></p>
+    <main class="search-container">
+      <div class="search-header">
+        <h1>Find Blood Donors</h1>
+        <p>Search for verified blood donors across Bangladesh</p>
+      </div>
+
+      <mat-card class="filter-card">
+        <form [formGroup]="searchForm" (ngSubmit)="onSearch()">
+          <div class="filter-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Blood Group</mat-label>
+              <mat-select formControlName="bloodGroup">
+                <mat-option value="">All Blood Groups</mat-option>
+                @for (group of bloodGroups; track group.value) {
+                  <mat-option [value]="group.value">{{ group.label }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Division</mat-label>
+              <mat-select formControlName="divisionId" (selectionChange)="onDivisionChange()">
+                <mat-option value="">All Divisions</mat-option>
+                @for (division of divisions; track division.id) {
+                  <mat-option [value]="division.id">{{ division.name }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>District</mat-label>
+              <mat-select formControlName="districtId" [disabled]="!searchForm.get('divisionId')?.value">
+                <mat-option value="">All Districts</mat-option>
+                @for (district of districts; track district.id) {
+                  <mat-option [value]="district.id">{{ district.name }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Upazila</mat-label>
+              <mat-select formControlName="upazilaId" [disabled]="!searchForm.get('districtId')?.value">
+                <mat-option value="">All Upazilas</mat-option>
+                @for (upazila of upazilas; track upazila.id) {
+                  <mat-option [value]="upazila.id">{{ upazila.name }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Availability</mat-label>
+              <mat-select formControlName="availabilityStatus">
+                <mat-option value="">All</mat-option>
+                <mat-option value="Available">Available Now</mat-option>
+                <mat-option value="Unavailable">Unavailable</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <button mat-raised-button color="primary" type="submit">
+              <mat-icon>search</mat-icon> Search
+            </button>
+          </div>
+        </form>
+      </mat-card>
+
+      @if (isLoading) {
+        <div class="loading">
+          <mat-spinner diameter="40"></mat-spinner>
+        </div>
+      } @else if (results) {
+        <div class="results-header">
+          <span>{{ results.totalCount }} donor(s) found</span>
+        </div>
+
+        <div class="results-grid">
+          @for (donor of results.items; track donor.id) {
+            <mat-card class="donor-card">
+              <mat-card-header>
+                <mat-card-title>{{ donor.firstName }}</mat-card-title>
+                <mat-card-subtitle>{{ donor.districtName }}, {{ donor.upazilaName }}</mat-card-subtitle>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="donor-info">
+                  <span class="blood-badge">{{ getBloodGroupLabel(donor.bloodGroup) }}</span>
+                  <div class="status-chip" [class]="'status-' + donor.availabilityStatus.toLowerCase()">
+                    {{ donor.availabilityStatus }}
+                  </div>
+                </div>
+                @if (donor.area) {
+                  <p class="area">{{ donor.area }}</p>
+                }
+                @if (donor.distanceKm !== null && donor.distanceKm !== undefined) {
+                  <p class="distance">
+                    <mat-icon>location_on</mat-icon>
+                    {{ donor.distanceKm | number:'1.1-1' }} km away
+                  </p>
+                }
+              </mat-card-content>
+            </mat-card>
+          } @empty {
+            <div class="no-results">
+              <mat-icon>search_off</mat-icon>
+              <p>No donors found matching your criteria</p>
+            </div>
+          }
+        </div>
+
+        @if (results.totalPages > 1) {
+          <div class="pagination">
+            <button mat-button [disabled]="!results.hasPrevious" (click)="goToPage(results.page - 1)">Previous</button>
+            <span>Page {{ results.page }} of {{ results.totalPages }}</span>
+            <button mat-button [disabled]="!results.hasNext" (click)="goToPage(results.page + 1)">Next</button>
+          </div>
+        }
+      }
     </main>
     <app-footer />
-  `
+  `,
+  styles: [`
+    .search-container { flex: 1; padding: 24px; max-width: 1200px; margin: 0 auto; width: 100%; }
+    .search-header { margin-bottom: 24px; }
+    .search-header h1 { margin: 0 0 4px; font-size: 24px; }
+    .search-header p { margin: 0; color: #666; }
+    .filter-card { margin-bottom: 24px; }
+    .filter-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-start; }
+    .filter-row mat-form-field { flex: 1; min-width: 150px; }
+    .loading { display: flex; justify-content: center; padding: 60px; }
+    .results-header { margin-bottom: 16px; color: #666; }
+    .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .donor-card { cursor: default; }
+    .donor-info { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
+    .blood-badge { background: #c62828; color: white; padding: 4px 12px; border-radius: 16px; font-weight: bold; font-size: 16px; }
+    .status-chip { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; }
+    .status-available { background: #e8f5e9; color: #2e7d32; }
+    .status-unavailable { background: #ffebee; color: #c62828; }
+    .status-recentlydonated { background: #fff3e0; color: #e65100; }
+    .status-unknown { background: #f5f5f5; color: #666; }
+    .area { color: #666; font-size: 14px; margin: 4px 0; }
+    .distance { color: #1565c0; font-size: 13px; display: flex; align-items: center; gap: 4px; }
+    .distance mat-icon { font-size: 16px; width: 16px; height: 16px; }
+    .no-results { grid-column: 1 / -1; text-align: center; padding: 60px; color: #999; }
+    .no-results mat-icon { font-size: 48px; width: 48px; height: 48px; }
+    .pagination { display: flex; justify-content: center; align-items: center; gap: 16px; }
+  `]
 })
-export class FindBloodComponent {}
+export class FindBloodComponent implements OnInit {
+  searchForm: FormGroup;
+  isLoading = false;
+  results: PagedResult<PublicDonor> | null = null;
+
+  divisions: Division[] = [];
+  districts: District[] = [];
+  upazilas: Upazila[] = [];
+
+  bloodGroups = Object.entries(BloodGroupLabels).map(([value, label]) => ({ value, label }));
+
+  constructor(
+    private fb: FormBuilder,
+    private donorService: DonorService,
+    private locationService: LocationService
+  ) {
+    this.searchForm = this.fb.group({
+      bloodGroup: [''],
+      divisionId: [''],
+      districtId: [''],
+      upazilaId: [''],
+      availabilityStatus: ['']
+    });
+  }
+
+  ngOnInit(): void {
+    this.locationService.getDivisions().subscribe(divs => this.divisions = divs);
+    this.onSearch();
+  }
+
+  onDivisionChange(): void {
+    const divisionId = this.searchForm.get('divisionId')?.value;
+    this.searchForm.patchValue({ districtId: '', upazilaId: '' });
+    this.upazilas = [];
+    if (divisionId) {
+      this.locationService.getDistricts(divisionId).subscribe(d => this.districts = d);
+    } else {
+      this.districts = [];
+    }
+  }
+
+  onDistrictChange(): void {
+    const districtId = this.searchForm.get('districtId')?.value;
+    this.searchForm.patchValue({ upazilaId: '' });
+    if (districtId) {
+      this.locationService.getUpazilas(districtId).subscribe(u => this.upazilas = u);
+    } else {
+      this.upazilas = [];
+    }
+  }
+
+  onSearch(): void {
+    this.isLoading = true;
+    const formValue = this.searchForm.value;
+
+    const filters: DonorSearchFilters = {
+      bloodGroup: formValue.bloodGroup || undefined,
+      districtId: formValue.districtId || undefined,
+      upazilaId: formValue.upazilaId || undefined,
+      availabilityStatus: formValue.availabilityStatus || undefined,
+      page: 1,
+      pageSize: 20
+    };
+
+    this.donorService.searchDonors(filters).subscribe({
+      next: (results) => {
+        this.results = results;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.isLoading = false;
+      }
+    });
+  }
+
+  goToPage(page: number): void {
+    this.isLoading = true;
+    const formValue = this.searchForm.value;
+
+    const filters: DonorSearchFilters = {
+      bloodGroup: formValue.bloodGroup || undefined,
+      districtId: formValue.districtId || undefined,
+      upazilaId: formValue.upazilaId || undefined,
+      availabilityStatus: formValue.availabilityStatus || undefined,
+      page,
+      pageSize: 20
+    };
+
+    this.donorService.searchDonors(filters).subscribe({
+      next: (results) => {
+        this.results = results;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.isLoading = false;
+      }
+    });
+  }
+
+  getBloodGroupLabel(group: string): string {
+    return (BloodGroupLabels as any)[group] || group;
+  }
+}

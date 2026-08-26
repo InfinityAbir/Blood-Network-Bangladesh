@@ -1,4 +1,5 @@
 using BloodNetwork.Domain.Entities;
+using BloodNetwork.Infrastructure.Data.Seeds;
 using Microsoft.EntityFrameworkCore;
 
 namespace BloodNetwork.Infrastructure.Data;
@@ -23,6 +24,18 @@ public class BloodNetworkDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(BloodNetworkDbContext).Assembly);
+        SeedLocations(modelBuilder);
         base.OnModelCreating(modelBuilder);
+    }
+
+    private static void SeedLocations(ModelBuilder modelBuilder)
+    {
+        var divisions = BangladeshLocationSeed.GetDivisions();
+        var districts = BangladeshLocationSeed.GetDistricts();
+        var upazilas = BangladeshLocationSeed.GetUpazilas();
+
+        modelBuilder.Entity<Division>().HasData(divisions);
+        modelBuilder.Entity<District>().HasData(districts);
+        modelBuilder.Entity<Upazila>().HasData(upazilas);
     }
 }
