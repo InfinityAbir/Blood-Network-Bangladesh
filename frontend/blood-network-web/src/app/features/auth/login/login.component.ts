@@ -90,12 +90,16 @@ import { AuthService } from '../../../core/services/auth.service';
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: 40px 16px;
-      background: #f5f5f5;
+      padding: 48px 16px;
+      background: var(--bgn-bg);
     }
     .auth-card {
       width: 100%;
       max-width: 420px;
+      padding: 12px 18px;
+      border-radius: var(--bgn-radius-lg) !important;
+      border: 1px solid var(--bgn-border) !important;
+      box-shadow: var(--bgn-shadow-lg) !important;
     }
     .full-width {
       width: 100%;
@@ -103,22 +107,24 @@ import { AuthService } from '../../../core/services/auth.service';
     .submit-btn {
       margin-top: 16px;
       height: 48px;
+      border-radius: var(--bgn-radius-pill) !important;
     }
     .error-banner {
-      background: #ffebee;
-      color: #c62828;
+      background: color-mix(in srgb, var(--bgn-danger) 12%, transparent);
+      color: var(--bgn-danger);
       padding: 12px 16px;
-      border-radius: 4px;
+      border-radius: var(--bgn-radius-sm);
       margin-bottom: 16px;
       font-size: 14px;
+      border: 1px solid color-mix(in srgb, var(--bgn-danger) 30%, transparent);
     }
     .auth-link {
       margin: 0;
       font-size: 14px;
-      color: #666;
+      color: var(--bgn-text-muted);
     }
     .auth-link a {
-      color: #7b1fa2;
+      color: var(--bgn-primary);
       text-decoration: none;
       font-weight: 500;
     }

@@ -1,18 +1,180 @@
 @use '@angular/material' as mat;
 
+// ============================================================
+//  Base Material 3 theme (red = blood brand, violet = tertiary)
+// ============================================================
 html {
+  color-scheme: light;
   @include mat.theme((
     color: (
-      primary: mat.$violet-palette,
-      tertiary: mat.$red-palette,
+      primary: mat.$red-palette,
+      tertiary: mat.$violet-palette,
     ),
     typography: Roboto,
     density: 0,
   ));
 }
 
+html.dark {
+  color-scheme: dark;
+  @include mat.theme((
+    color: (
+      primary: mat.$red-palette,
+      tertiary: mat.$violet-palette,
+    ),
+    typography: Roboto,
+    density: 0,
+  ));
+}
+
+// ============================================================
+//  Design tokens (light mode defaults)
+// ============================================================
+:root {
+  --bgn-primary: #e53935;
+  --bgn-primary-darker: #b71c1c;
+  --bgn-primary-contrast: #ffffff;
+
+  --bgn-bg: #f6f7f9;
+  --bgn-surface: #ffffff;
+  --bgn-surface-2: #f1f3f5;
+  --bgn-surface-hover: #f5f5f5;
+
+  --bgn-text: #1b1f24;
+  --bgn-text-muted: #5f6b7a;
+  --bgn-text-faint: #8a94a3;
+
+  --bgn-border: #e4e8ee;
+  --bgn-border-strong: #d4dae2;
+
+  --bgn-shadow-sm: 0 1px 3px rgba(16, 24, 40, 0.08);
+  --bgn-shadow-md: 0 6px 20px rgba(16, 24, 40, 0.10);
+  --bgn-shadow-lg: 0 18px 48px rgba(16, 24, 40, 0.16);
+
+  --bgn-success: #2e7d32;
+  --bgn-warning: #ed6c02;
+  --bgn-danger: #d32f2f;
+
+  --bgn-radius-sm: 8px;
+  --bgn-radius-md: 14px;
+  --bgn-radius-lg: 22px;
+  --bgn-radius-pill: 999px;
+
+  --bgn-gradient: linear-gradient(135deg, #ef5350 0%, #b71c1c 100%);
+  --bgn-header-bg: linear-gradient(135deg, #e53935 0%, #b71c1c 100%);
+}
+
+// ============================================================
+//  Design tokens (dark mode)
+// ============================================================
+html.dark {
+  --bgn-primary: #ef5350;
+  --bgn-primary-darker: #ff7961;
+  --bgn-primary-contrast: #1a0000;
+
+  --bgn-bg: #0e1116;
+  --bgn-surface: #171b22;
+  --bgn-surface-2: #1f242d;
+  --bgn-surface-hover: #232a34;
+
+  --bgn-text: #e7ebf0;
+  --bgn-text-muted: #9aa6b5;
+  --bgn-text-faint: #6b7685;
+
+  --bgn-border: #2a313c;
+  --bgn-border-strong: #3a434f;
+
+  --bgn-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
+  --bgn-shadow-md: 0 6px 20px rgba(0, 0, 0, 0.55);
+  --bgn-shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.65);
+
+  --bgn-success: #66bb6a;
+  --bgn-warning: #ffa726;
+  --bgn-danger: #ef5350;
+
+  --bgn-gradient: linear-gradient(135deg, #ff5b5b 0%, #c62828 100%);
+  --bgn-header-bg: linear-gradient(135deg, #c62828 0%, #7f0000 100%);
+}
+
+// ============================================================
+//  Global base
+// ============================================================
+* { box-sizing: border-box; }
+
 html, body {
   height: 100%;
   margin: 0;
+}
+
+body {
+  background: var(--bgn-bg);
+  color: var(--bgn-text);
   font-family: Roboto, "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+a { color: inherit; }
+
+// ============================================================
+//  Reusable utility classes
+// ============================================================
+.container {
+  width: 100%;
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card-surface {
+  background: var(--bgn-surface);
+  border: 1px solid var(--bgn-border);
+  border-radius: var(--bgn-radius-md);
+  box-shadow: var(--bgn-shadow-sm);
+}
+
+.mat-mdc-card,
+.bgn-card {
+  background: var(--bgn-surface) !important;
+  color: var(--bgn-text) !important;
+  border: 1px solid var(--bgn-border);
+}
+
+// Smooth color transitions when toggling theme
+.bgn-theme-transition,
+mat-toolbar,
+.mat-mdc-card,
+.mat-mdc-button,
+.mat-mdc-raised-button {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+// ============================================================
+//  Global helpers so non-themed custom sections still adapt
+// ============================================================
+.mat-mdc-card-title,
+.mat-mdc-card-subtitle,
+.mat-mdc-card-content,
+.mat-mdc-list-item,
+.mat-mdc-table {
+  color: var(--bgn-text) !important;
+}
+
+table {
+  color: var(--bgn-text);
+}
+
+a.link-accent,
+.link-accent {
+  color: var(--bgn-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+a.link-accent:hover,
+.link-accent:hover { text-decoration: underline; }
+
+.page-wrap {
+  min-height: calc(100vh - 64px);
+  background: var(--bgn-bg);
+  color: var(--bgn-text);
 }

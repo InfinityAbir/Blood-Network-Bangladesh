@@ -8,9 +8,11 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatListModule } from '@angular/material/list';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Subscription } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { ThemeService } from '../../core/services/theme.service';
 import { Notification } from '../../core/models/notification';
 
 @Component({
@@ -25,20 +27,35 @@ import { Notification } from '../../core/models/notification';
     MatIconModule,
     MatBadgeModule,
     MatListModule,
-    MatDividerModule
+    MatDividerModule,
+    MatTooltipModule
   ],
   template: `
-    <mat-toolbar color="primary">
-      <a routerLink="/" class="logo">Blood Network BD</a>
+    <mat-toolbar class="bgn-header">
+      <a routerLink="/" class="logo" aria-label="Blood Network Bangladesh home">
+        <mat-icon class="logo-icon">water_drop</mat-icon>
+        <span class="logo-text">Blood Network <span class="logo-accent">BD</span></span>
+      </a>
+
       <span class="spacer"></span>
-      <a mat-button routerLink="/find-blood">Find Blood</a>
-      <a mat-button routerLink="/request-blood">Need Blood</a>
+
+      <button
+        mat-icon-button
+        class="theme-toggle"
+        (click)="theme.toggle()"
+        [matTooltip]="theme.mode() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+        [attr.aria-label]="theme.mode() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
+        <mat-icon>{{ theme.mode() === 'dark' ? 'light_mode' : 'dark_mode' }}</mat-icon>
+      </button>
+
+      <a mat-button routerLink="/find-blood" class="nav-link">Find Blood</a>
+      <a mat-button routerLink="/request-blood" class="nav-link">Need Blood</a>
+
       @if (authService.isAuthenticated()) {
-        <a mat-button [routerLink]="authService.getDashboardRoute()">Dashboard</a>
+        <a mat-button [routerLink]="authService.getDashboardRoute()" class="nav-link">Dashboard</a>
         <button mat-icon-button [matMenuTriggerFor]="notifMenu" class="notif-btn">
-          <mat-icon [matBadge]="unreadCount > 0 ? unreadCount : null" matBadgeColor="accent" matBadgeSize="small">
-            notifications
-          </mat-icon>
+          <mat-icon [matBadge]="unreadCount > 0 ? unreadCount : null"
+                    matBadgeColor="warn" matBadgeSize="small">notifications</mat-icon>
         </button>
         <mat-menu #notifMenu="matMenu" class="notif-menu" xPosition="before">
           <div class="notif-header">
@@ -64,30 +81,79 @@ import { Notification } from '../../core/models/notification';
             </button>
           }
         </mat-menu>
-        <button mat-button (click)="authService.logout()">Logout</button>
+        <button mat-button class="logout-btn" (click)="authService.logout()">Logout</button>
       } @else {
-        <a mat-button routerLink="/login">Login</a>
-        <a mat-raised-button color="accent" routerLink="/register">Register</a>
+        <a mat-button routerLink="/login" class="nav-link">Login</a>
+        <a mat-raised-button color="primary" routerLink="/register" class="register-btn">Register</a>
       }
     </mat-toolbar>
   `,
   styles: [`
-    .logo { text-decoration: none; color: white; font-weight: bold; font-size: 1.2em; }
+    .bgn-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bgn-header-bg);
+      color: #fff;
+      height: 64px;
+      padding: 0 16px;
+      box-shadow: var(--bgn-shadow-md);
+      gap: 4px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      color: #fff;
+      font-weight: 700;
+      font-size: 1.15rem;
+      letter-spacing: 0.2px;
+    }
+    .logo-icon { color: #fff; height: 26px; width: 26px; font-size: 26px; }
+    .logo-accent { color: #ffd2d2; font-weight: 800; }
+
     .spacer { flex: 1 1 auto; }
-    .notif-btn { color: white; }
-    .notif-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; font-weight: 500; min-width: 300px; }
-    .notif-empty { padding: 24px; text-align: center; color: #999; }
-    .notif-item { height: auto !important; padding: 8px 16px !important; }
-    .notif-item.unread { background: #e3f2fd; }
+
+    .nav-link {
+      color: #fff !important;
+      opacity: 0.92;
+    }
+    .nav-link:hover { opacity: 1; background: rgba(255,255,255,0.14) !important; }
+
+    .theme-toggle { color: #fff !important; }
+
+    .register-btn { color: #b71c1c !important; background: #fff !important; }
+
+    .notif-btn { color: #fff !important; }
+    .logout-btn { color: #fff !important; }
+
+    .notif-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 16px; font-weight: 600; min-width: 300px;
+      color: var(--bgn-text);
+    }
+    .notif-empty { padding: 24px; text-align: center; color: var(--bgn-text-faint); }
+    .notif-item { height: auto !important; padding: 8px 16px !important; white-space: normal; }
+    .notif-item.unread { background: rgba(229,57,53,0.08); }
     .notif-icon { margin-right: 12px; flex-shrink: 0; }
     .notif-icon.type-bloodrequestmatch { color: #c62828; }
     .notif-icon.type-donoraccepted { color: #2e7d32; }
-    .notif-icon.type-donordeclined { color: #f57c00; }
+    .notif-icon.type-donordeclined { color: #ed6c02; }
     .notif-icon.type-requestupdate { color: #1565c0; }
     .notif-content { min-width: 0; }
-    .notif-title { font-weight: 500; font-size: 13px; }
-    .notif-message { font-size: 12px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px; }
-    .notif-time { font-size: 11px; color: #999; margin-top: 2px; }
+    .notif-title { font-weight: 500; font-size: 13px; color: var(--bgn-text); }
+    .notif-message {
+      font-size: 12px; color: var(--bgn-text-muted);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;
+    }
+    .notif-time { font-size: 11px; color: var(--bgn-text-faint); margin-top: 2px; }
+
+    @media (max-width: 600px) {
+      .nav-link, .logout-btn { display: none; }
+      .logo-text { font-size: 1rem; }
+    }
   `]
 })
 export class HeaderComponent implements OnInit, OnDestroy {
@@ -97,7 +163,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   constructor(
     public authService: AuthService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    public theme: ThemeService
   ) {}
 
   ngOnInit(): void {
@@ -116,9 +183,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   loadNotifications(): void {
     this.notificationService.getNotifications(1, 10).subscribe({
-      next: (notifications) => {
-        this.notifications = notifications;
-      }
+      next: (notifications) => { this.notifications = notifications; }
     });
   }
 

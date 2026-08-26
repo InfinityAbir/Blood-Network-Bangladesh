@@ -10,6 +10,19 @@
 </head>
 <body>
   <script src="env.js"></script>
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('bgn-theme');
+        if (!t) {
+          t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        var r = document.documentElement;
+        r.classList.add(t);
+        r.style.colorScheme = t;
+      } catch (e) {}
+    })();
+  </script>
   <app-root></app-root>
 </body>
 </html>
