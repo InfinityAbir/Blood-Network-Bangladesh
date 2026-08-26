@@ -2,7 +2,6 @@ import { Injectable, NgZone } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
 import { Subject } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { AuthService } from './auth.service';
 
 export interface RealtimeNotification {
   title: string;
@@ -24,13 +23,12 @@ export class SignalRService {
   unreadCount$ = this.unreadCountSubject.asObservable();
   connectionState$ = this.connectionStateSubject.asObservable();
 
-  constructor(private ngZone: NgZone, private auth: AuthService) {}
+  constructor(private ngZone: NgZone) {}
 
   async start(): Promise<void> {
     if (this.hubConnection?.state === signalR.HubConnectionState.Connected) return;
-    if (!this.auth.isAuthenticated()) return;
 
-    const token = this.auth.getToken();
+    const token = localStorage.getItem('access_token');
     if (!token) return;
 
     const hubUrl = environment.apiUrl.replace('/api', '') + '/hubs/notifications';
