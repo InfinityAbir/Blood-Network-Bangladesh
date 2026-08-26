@@ -153,41 +153,43 @@ if (!app.Environment.IsEnvironment("Testing"))
 
     if (string.IsNullOrWhiteSpace(adminPhone) || string.IsNullOrWhiteSpace(adminPassword))
     {
-        Log.Fatal("Admin credentials not configured. Set ADMIN_PHONE and ADMIN_PASSWORD environment variables.");
-        throw new InvalidOperationException("Admin credentials not configured. Set ADMIN_PHONE and ADMIN_PASSWORD environment variables.");
+        Log.Warning("Admin credentials not configured. Set ADMIN_PHONE and ADMIN_PASSWORD environment variables. Skipping admin seed.");
     }
 
-    var adminExists = await db.Users.AnyAsync(u => u.PhoneNumber == adminPhone);
-    if (!adminExists)
+    if (!string.IsNullOrWhiteSpace(adminPhone) && !string.IsNullOrWhiteSpace(adminPassword))
     {
-        var hasher = new BloodNetwork.Infrastructure.Authentication.PasswordHasher();
-        var admin = new BloodNetwork.Domain.Entities.User
+        var adminExists = await db.Users.AnyAsync(u => u.PhoneNumber == adminPhone);
+        if (!adminExists)
         {
-            Id = Guid.NewGuid(),
-            FirstName = "System",
-            LastName = "Admin",
-            PhoneNumber = adminPhone,
-            Email = adminEmail,
-            PasswordHash = hasher.HashPassword(adminPassword),
-            Role = BloodNetwork.Domain.Enums.UserRole.Admin,
-            IsActive = true,
-            IsPhoneVerified = true,
-            MustChangePassword = true,
-            CreatedAt = DateTime.UtcNow
-        };
-        db.Users.Add(admin);
-        await db.SaveChangesAsync();
-        Log.Information("Seeded default admin {Phone}", adminPhone);
-    }
-    else
-    {
-        // Ensure existing default admin is forced to change password on first login
-        var existing = await db.Users.FirstOrDefaultAsync(u => u.PhoneNumber == adminPhone);
-        if (existing != null && !existing.MustChangePassword && existing.LastLoginAt == null)
-        {
-            existing.MustChangePassword = true;
+            var hasher = new BloodNetwork.Infrastructure.Authentication.PasswordHasher();
+            var admin = new BloodNetwork.Domain.Entities.User
+            {
+                Id = Guid.NewGuid(),
+                FirstName = "System",
+                LastName = "Admin",
+                PhoneNumber = adminPhone,
+                Email = adminEmail,
+                PasswordHash = hasher.HashPassword(adminPassword),
+                Role = BloodNetwork.Domain.Enums.UserRole.Admin,
+                IsActive = true,
+                IsPhoneVerified = true,
+                MustChangePassword = true,
+                CreatedAt = DateTime.UtcNow
+            };
+            db.Users.Add(admin);
             await db.SaveChangesAsync();
-            Log.Information("Updated existing admin {Phone} to require password change", adminPhone);
+            Log.Information("Seeded default admin {Phone}", adminPhone);
+        }
+        else
+        {
+            // Ensure existing default admin is forced to change password on first login
+            var existing = await db.Users.FirstOrDefaultAsync(u => u.PhoneNumber == adminPhone);
+            if (existing != null && !existing.MustChangePassword && existing.LastLoginAt == null)
+            {
+                existing.MustChangePassword = true;
+                await db.SaveChangesAsync();
+                Log.Information("Updated existing admin {Phone} to require password change", adminPhone);
+            }
         }
     }
 }
