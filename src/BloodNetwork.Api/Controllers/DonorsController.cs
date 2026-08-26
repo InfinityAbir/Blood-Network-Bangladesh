@@ -4,6 +4,7 @@ using BloodNetwork.Application.DTOs;
 using BloodNetwork.Application.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace BloodNetwork.Api.Controllers;
 
@@ -98,6 +99,7 @@ public class DonorsController : ControllerBase
     }
 
     [HttpGet("search")]
+    [EnableRateLimiting("search")]
     [ProducesResponseType(typeof(PagedResult<PublicDonorDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> SearchDonors([FromQuery] DonorSearchRequest request, CancellationToken cancellationToken)
     {

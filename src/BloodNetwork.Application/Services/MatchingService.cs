@@ -22,10 +22,10 @@ public class MatchingService : IMatchingService
 
     private static readonly Dictionary<BloodGroup, BloodGroup[]> BloodCompatibility = new()
     {
-        { BloodGroup.APositive, new[] { BloodGroup.APositive, BloodGroup.ANegative } },
-        { BloodGroup.ANegative, new[] { BloodGroup.ANegative } },
-        { BloodGroup.BPositive, new[] { BloodGroup.BPositive, BloodGroup.BNegative } },
-        { BloodGroup.BNegative, new[] { BloodGroup.BNegative } },
+        { BloodGroup.APositive, new[] { BloodGroup.APositive, BloodGroup.ANegative, BloodGroup.OPositive, BloodGroup.ONegative } },
+        { BloodGroup.ANegative, new[] { BloodGroup.ANegative, BloodGroup.ONegative } },
+        { BloodGroup.BPositive, new[] { BloodGroup.BPositive, BloodGroup.BNegative, BloodGroup.OPositive, BloodGroup.ONegative } },
+        { BloodGroup.BNegative, new[] { BloodGroup.BNegative, BloodGroup.ONegative } },
         { BloodGroup.ABPositive, new[] { BloodGroup.ABPositive, BloodGroup.ABNegative, BloodGroup.APositive, BloodGroup.ANegative, BloodGroup.BPositive, BloodGroup.BNegative, BloodGroup.OPositive, BloodGroup.ONegative } },
         { BloodGroup.ABNegative, new[] { BloodGroup.ABNegative, BloodGroup.ANegative, BloodGroup.BNegative, BloodGroup.ONegative } },
         { BloodGroup.OPositive, new[] { BloodGroup.OPositive, BloodGroup.ONegative } },

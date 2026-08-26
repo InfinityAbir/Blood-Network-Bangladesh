@@ -31,6 +31,7 @@ public class RegisterRequestValidator : AbstractValidator<RegisterRequest>
             .When(x => !string.IsNullOrEmpty(x.Email));
 
         RuleFor(x => x.Role)
-            .IsInEnum().WithMessage("Invalid role");
+            .Must(role => role == Domain.Enums.UserRole.Donor || role == Domain.Enums.UserRole.Requester)
+            .WithMessage("Only Donor and Requester roles are allowed for self-registration");
     }
 }

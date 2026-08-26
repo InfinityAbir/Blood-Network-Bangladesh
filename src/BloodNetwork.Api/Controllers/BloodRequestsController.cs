@@ -5,6 +5,7 @@ using BloodNetwork.Application.Services;
 using BloodNetwork.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace BloodNetwork.Api.Controllers;
 
@@ -78,6 +79,7 @@ public class BloodRequestsController : ControllerBase
     }
 
     [HttpGet("open")]
+    [EnableRateLimiting("search")]
     [ProducesResponseType(typeof(PagedResult<BloodRequestDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> SearchOpenRequests([FromQuery] BloodRequestSearchRequest request, CancellationToken cancellationToken)
     {
