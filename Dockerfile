@@ -14,10 +14,10 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 COPY --from=build /app/publish .
 
-ENV ASPNETCORE_URLS=http://+:8080
-ENV ASPNETCORE_ENVIRONMENT=Production
-ENV DOTNET_ROLL_FORWARD=LatestMajor
-ENV DOTNET_HOSTBUILDER__RELOADCONFIG=false
+ENV ASPNETCORE_URLS=http://+:8080 \
+    ASPNETCORE_ENVIRONMENT=Production \
+    DOTNET_ROLL_FORWARD=LatestMajor \
+    DOTNET_HOSTBUILDER__RELOADCONFIG=false
 
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "BloodNetwork.Api.dll"]
