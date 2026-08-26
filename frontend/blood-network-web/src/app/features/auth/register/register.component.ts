@@ -1,18 +1,290 @@
 import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterLink, Router } from '@angular/router';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatSelectModule } from '@angular/material/select';
+import { MatRadioModule } from '@angular/material/radio';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { HeaderComponent } from '../../../layout/header/header.component';
 import { FooterComponent } from '../../../layout/footer/footer.component';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [HeaderComponent, FooterComponent],
+  imports: [
+    CommonModule,
+    RouterLink,
+    ReactiveFormsModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatIconModule,
+    MatSelectModule,
+    MatRadioModule,
+    MatProgressSpinnerModule,
+    HeaderComponent,
+    FooterComponent
+  ],
   template: `
     <app-header />
-    <main style="padding: 20px; max-width: 500px; margin: 0 auto;">
-      <h1>Register</h1>
-      <p><em>Registration form will be implemented in Phase B.</em></p>
+    <main class="auth-container">
+      <mat-card class="auth-card">
+        <mat-card-header>
+          <mat-card-title>Register</mat-card-title>
+          <mat-card-subtitle>Join Blood Network Bangladesh</mat-card-subtitle>
+        </mat-card-header>
+
+        <mat-card-content>
+          @if (errorMessage) {
+            <div class="error-banner">{{ errorMessage }}</div>
+          }
+
+          @if (successMessage) {
+            <div class="success-banner">{{ successMessage }}</div>
+          }
+
+          <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+            <div class="name-row">
+              <mat-form-field appearance="outline">
+                <mat-label>First Name</mat-label>
+                <input matInput formControlName="firstName" maxlength="50" />
+                @if (registerForm.get('firstName')?.hasError('required') && registerForm.get('firstName')?.touched) {
+                  <mat-error>Required</mat-error>
+                }
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Last Name</mat-label>
+                <input matInput formControlName="lastName" maxlength="50" />
+                @if (registerForm.get('lastName')?.hasError('required') && registerForm.get('lastName')?.touched) {
+                  <mat-error>Required</mat-error>
+                }
+              </mat-form-field>
+            </div>
+
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Phone Number</mat-label>
+              <input matInput formControlName="phoneNumber" placeholder="01712345678" maxlength="11" />
+              <mat-icon matPrefix>phone</mat-icon>
+              @if (registerForm.get('phoneNumber')?.hasError('required') && registerForm.get('phoneNumber')?.touched) {
+                <mat-error>Phone number is required</mat-error>
+              }
+              @if (registerForm.get('phoneNumber')?.hasError('pattern') && registerForm.get('phoneNumber')?.touched) {
+                <mat-error>Enter a valid Bangladeshi number (01XXXXXXXXX)</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Email (optional)</mat-label>
+              <input matInput formControlName="email" type="email" />
+              <mat-icon matPrefix>email</mat-icon>
+              @if (registerForm.get('email')?.hasError('email') && registerForm.get('email')?.touched) {
+                <mat-error>Enter a valid email address</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Password</mat-label>
+              <input matInput [type]="hidePassword ? 'password' : 'text'" formControlName="password" />
+              <button mat-icon-button matSuffix (click)="hidePassword = !hidePassword" type="button">
+                <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+              </button>
+              @if (registerForm.get('password')?.hasError('required') && registerForm.get('password')?.touched) {
+                <mat-error>Password is required</mat-error>
+              }
+              @if (registerForm.get('password')?.hasError('minlength') && registerForm.get('password')?.touched) {
+                <mat-error>Minimum 8 characters</mat-error>
+              }
+              @if (registerForm.get('password')?.hasError('pattern') && registerForm.get('password')?.touched) {
+                <mat-error>Must include uppercase, lowercase, and a number</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Confirm Password</mat-label>
+              <input matInput [type]="hideConfirmPassword ? 'password' : 'text'" formControlName="confirmPassword" />
+              <button mat-icon-button matSuffix (click)="hideConfirmPassword = !hideConfirmPassword" type="button">
+                <mat-icon>{{ hideConfirmPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+              </button>
+              @if (registerForm.get('confirmPassword')?.hasError('required') && registerForm.get('confirmPassword')?.touched) {
+                <mat-error>Please confirm your password</mat-error>
+              }
+              @if (registerForm.get('confirmPassword')?.hasError('passwordMismatch') && registerForm.get('confirmPassword')?.touched) {
+                <mat-error>Passwords do not match</mat-error>
+              }
+            </mat-form-field>
+
+            <div class="role-section">
+              <label class="role-label">I want to:</label>
+              <mat-radio-group formControlName="role" class="role-radio-group">
+                <mat-radio-button value="Requester">Request Blood</mat-radio-button>
+                <mat-radio-button value="Donor">Donate Blood</mat-radio-button>
+              </mat-radio-group>
+            </div>
+
+            <button mat-raised-button color="primary" type="submit" class="full-width submit-btn"
+                    [disabled]="registerForm.invalid || isLoading">
+              @if (isLoading) {
+                <mat-spinner diameter="20"></mat-spinner>
+              } @else {
+                Create Account
+              }
+            </button>
+          </form>
+        </mat-card-content>
+
+        <mat-card-actions align="end">
+          <p class="auth-link">Already have an account? <a routerLink="/login">Login here</a></p>
+        </mat-card-actions>
+      </mat-card>
     </main>
     <app-footer />
-  `
+  `,
+  styles: [`
+    .auth-container {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 40px 16px;
+      background: #f5f5f5;
+    }
+    .auth-card {
+      width: 100%;
+      max-width: 500px;
+    }
+    .full-width {
+      width: 100%;
+    }
+    .name-row {
+      display: flex;
+      gap: 16px;
+    }
+    .name-row mat-form-field {
+      flex: 1;
+    }
+    .submit-btn {
+      margin-top: 16px;
+      height: 48px;
+    }
+    .error-banner {
+      background: #ffebee;
+      color: #c62828;
+      padding: 12px 16px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+    .success-banner {
+      background: #e8f5e9;
+      color: #2e7d32;
+      padding: 12px 16px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+    .role-section {
+      margin: 16px 0;
+    }
+    .role-label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: #666;
+    }
+    .role-radio-group {
+      display: flex;
+      gap: 24px;
+    }
+    .auth-link {
+      margin: 0;
+      font-size: 14px;
+      color: #666;
+    }
+    .auth-link a {
+      color: #7b1fa2;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .auth-link a:hover {
+      text-decoration: underline;
+    }
+    mat-card-actions {
+      padding: 16px !important;
+    }
+    @media (max-width: 480px) {
+      .name-row {
+        flex-direction: column;
+        gap: 0;
+      }
+    }
+  `]
 })
-export class RegisterComponent {}
+export class RegisterComponent {
+  registerForm: FormGroup;
+  isLoading = false;
+  hidePassword = true;
+  hideConfirmPassword = true;
+  errorMessage = '';
+  successMessage = '';
+
+  constructor(
+    private fb: FormBuilder,
+    private authService: AuthService,
+    private router: Router
+  ) {
+    this.registerForm = this.fb.group({
+      firstName: ['', Validators.required],
+      lastName: ['', Validators.required],
+      phoneNumber: ['', [Validators.required, Validators.pattern(/^01[3-9]\d{8}$/)]],
+      email: ['', Validators.email],
+      password: ['', [
+        Validators.required,
+        Validators.minLength(8),
+        Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/)
+      ]],
+      confirmPassword: ['', Validators.required],
+      role: ['Requester', Validators.required]
+    }, { validators: this.passwordMatchValidator });
+  }
+
+  passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
+    const password = control.get('password');
+    const confirmPassword = control.get('confirmPassword');
+    if (password && confirmPassword && password.value !== confirmPassword.value) {
+      confirmPassword.setErrors({ passwordMismatch: true });
+      return { passwordMismatch: true };
+    }
+    return null;
+  }
+
+  onSubmit(): void {
+    if (this.registerForm.invalid) return;
+
+    this.isLoading = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    const { confirmPassword, ...registerData } = this.registerForm.value;
+
+    this.authService.register(registerData).subscribe({
+      next: () => {
+        this.successMessage = 'Account created successfully! Redirecting...';
+        setTimeout(() => {
+          this.router.navigate([this.authService.getDashboardRoute()]);
+        }, 1500);
+      },
+      error: (err) => {
+        this.isLoading = false;
+        this.errorMessage = err.error?.message || 'Registration failed. Please try again.';
+      }
+    });
+  }
+}

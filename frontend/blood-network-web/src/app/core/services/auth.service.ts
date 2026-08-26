@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { User, AuthResponse } from '../models/user';
+import { User, AuthResponse, UserRole } from '../models/user';
 
 @Injectable({
   providedIn: 'root'
@@ -14,7 +14,9 @@ export class AuthService {
 
   currentUser = this.currentUserSignal.asReadonly();
   isAuthenticated = computed(() => !!this.currentUserSignal());
-  isAdmin = computed(() => this.currentUserSignal()?.role === 'Admin');
+  isAdmin = computed(() => this.currentUserSignal()?.role === UserRole.Admin);
+  isDonor = computed(() => this.currentUserSignal()?.role === UserRole.Donor);
+  isRequester = computed(() => this.currentUserSignal()?.role === UserRole.Requester);
 
   constructor(
     private http: HttpClient,
@@ -23,39 +25,78 @@ export class AuthService {
     this.loadStoredUser();
   }
 
-  register(data: { firstName: string; lastName: string; phoneNumber: string; password: string }): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/register`, data);
+  register(data: {
+    firstName: string;
+    lastName: string;
+    phoneNumber: string;
+    password: string;
+    email?: string;
+    role?: string;
+  }): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/register`, data)
+      .pipe(
+        tap(response => {
+          this.storeAuth(response);
+        })
+      );
   }
 
   login(phoneNumber: string, password: string): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/login`, { phoneNumber, password })
       .pipe(
         tap(response => {
-          localStorage.setItem('token', response.token);
-          localStorage.setItem('user', JSON.stringify(response.user));
-          this.currentUserSignal.set(response.user);
+          this.storeAuth(response);
         })
       );
   }
 
   logout(): void {
-    localStorage.removeItem('token');
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
     this.currentUserSignal.set(null);
-    this.router.navigate(['/login']);
+    this.router.navigate(['/']);
   }
 
   getToken(): string | null {
-    return localStorage.getItem('token');
+    return localStorage.getItem('access_token');
+  }
+
+  getRefreshToken(): string | null {
+    return localStorage.getItem('refresh_token');
+  }
+
+  getDashboardRoute(): string {
+    const role = this.currentUserSignal()?.role;
+    switch (role) {
+      case UserRole.Admin:
+        return '/admin';
+      case UserRole.Donor:
+        return '/donor/dashboard';
+      case UserRole.Requester:
+        return '/requester/dashboard';
+      default:
+        return '/';
+    }
+  }
+
+  private storeAuth(response: AuthResponse): void {
+    localStorage.setItem('access_token', response.accessToken);
+    localStorage.setItem('refresh_token', response.refreshToken);
+    localStorage.setItem('user', JSON.stringify(response.user));
+    this.currentUserSignal.set(response.user);
   }
 
   private loadStoredUser(): void {
+    const token = localStorage.getItem('access_token');
     const userJson = localStorage.getItem('user');
-    if (userJson) {
+    if (token && userJson) {
       try {
         const user = JSON.parse(userJson) as User;
         this.currentUserSignal.set(user);
       } catch {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
         localStorage.removeItem('user');
       }
     }

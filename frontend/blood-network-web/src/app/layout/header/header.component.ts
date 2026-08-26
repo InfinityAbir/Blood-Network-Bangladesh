@@ -2,12 +2,14 @@ import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [RouterLink, MatToolbarModule, MatButtonModule],
+  imports: [RouterLink, MatToolbarModule, MatButtonModule, MatMenuModule, MatIconModule],
   template: `
     <mat-toolbar color="primary">
       <a routerLink="/" class="logo">Blood Network BD</a>
@@ -15,7 +17,7 @@ import { AuthService } from '../../core/services/auth.service';
       <a mat-button routerLink="/find-blood">Find Blood</a>
       <a mat-button routerLink="/request-blood">Need Blood</a>
       @if (authService.isAuthenticated()) {
-        <a mat-button routerLink="/donor/dashboard">Dashboard</a>
+        <a mat-button [routerLink]="authService.getDashboardRoute()">Dashboard</a>
         <button mat-button (click)="authService.logout()">Logout</button>
       } @else {
         <a mat-button routerLink="/login">Login</a>
