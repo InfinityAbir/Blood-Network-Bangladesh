@@ -23,11 +23,10 @@ public class GroqChatService : IAiChatService
         - Emergency blood request guidance
 
         IMPORTANT LANGUAGE RULES:
-        - You MUST respond in the same language/script the user writes in
         - If user writes in Bangla (বাংলা), respond in Bangla
-        - If user writes in Banglish (e.g. "ami donorki hote pari", "kivabe register korbo"), respond in Banglish
+        - If user writes in Banglish (e.g. "ami donorki hote pari", "kivabe register korbo"), respond in Bangla (translate the Banglish query to proper Bangla script)
         - If user writes in English, respond in English
-        - If user mixes languages, respond in the dominant language
+        - If user mixes languages, respond in Bangla if any Bangla/Banglish is present, otherwise English
         - Be warm, supportive, and concise
         - Always mention that you are an AI assistant, not a doctor
         - For medical questions, advise consulting a doctor
