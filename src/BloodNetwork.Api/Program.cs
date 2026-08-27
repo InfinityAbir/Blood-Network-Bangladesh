@@ -227,6 +227,13 @@ if (!app.Environment.IsEnvironment("Testing"))
                 {
                     var hasher = new BloodNetwork.Infrastructure.Authentication.PasswordHasher();
                     bool needsUpdate = false;
+                    // If stored hash still matches default env password, force change (covers post-reset case)
+                    if (!existing.MustChangePassword && hasher.VerifyPassword(adminPassword, existing.PasswordHash))
+                    {
+                        existing.MustChangePassword = true;
+                        needsUpdate = true;
+                        Log.Information("Forced admin {Phone} to mustChangePassword (still default password)", adminPhone);
+                    }
                     // Only re-hash before first login (prevents overwriting user-changed password)
                     if (existing.MustChangePassword && existing.LastLoginAt == null && !hasher.VerifyPassword(adminPassword, existing.PasswordHash))
                     {
