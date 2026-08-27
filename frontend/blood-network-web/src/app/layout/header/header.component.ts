@@ -54,50 +54,69 @@ import { Notification } from '../../core/models/notification';
         }
       </button>
 
-      <a mat-button routerLink="/find-blood" class="nav-link">Find Blood</a>
-      <a mat-button routerLink="/request-blood" class="nav-link">Need Blood</a>
+      <nav class="desktop-nav">
+        <a mat-button routerLink="/find-blood" class="nav-link">Find Blood</a>
+        <a mat-button routerLink="/request-blood" class="nav-link">Need Blood</a>
+        @if (authService.isAuthenticated()) {
+          <a mat-button [routerLink]="authService.getDashboardRoute()" class="nav-link">Dashboard</a>
+          <button mat-icon-button [matMenuTriggerFor]="notifMenu" class="notif-btn">
+            <mat-icon [matBadge]="unreadCount > 0 ? unreadCount : null"
+                      matBadgeColor="warn" matBadgeSize="small">notifications</mat-icon>
+          </button>
+          <button mat-button class="logout-btn" (click)="authService.logout()">Logout</button>
+        } @else {
+          <a mat-button routerLink="/login" class="nav-link">Login</a>
+          <a mat-raised-button color="primary" routerLink="/register" class="register-btn">Register</a>
+        }
+      </nav>
 
-      @if (authService.isAuthenticated()) {
-        <a mat-button [routerLink]="authService.getDashboardRoute()" class="nav-link">Dashboard</a>
-        <button mat-icon-button [matMenuTriggerFor]="notifMenu" class="notif-btn">
-          <mat-icon [matBadge]="unreadCount > 0 ? unreadCount : null"
-                    matBadgeColor="warn" matBadgeSize="small">notifications</mat-icon>
-        </button>
-        <mat-menu #notifMenu="matMenu" class="notif-menu" xPosition="before">
-          <div class="notif-header">
-            <span>Notifications</span>
-            @if (unreadCount > 0) {
-              <button mat-button color="primary" (click)="markAllRead($event)">Mark all read</button>
-            }
-          </div>
-          <mat-divider></mat-divider>
-          @if (notifications.length === 0) {
-            <div class="notif-empty">No notifications</div>
-          }
-          @for (notif of notifications; track notif.id) {
-            <button mat-menu-item class="notif-item" [class.unread]="!notif.isRead" (click)="onNotifClick($event, notif)">
-              <mat-icon class="notif-icon" [class]="'type-' + notif.type.toLowerCase()">
-                {{ getNotifIcon(notif.type) }}
-              </mat-icon>
-              <div class="notif-content">
-                <div class="notif-title">{{ notif.title }}</div>
-                <div class="notif-message">{{ notif.message }}</div>
-                <div class="notif-time">{{ notif.createdAt | date:'short' }}</div>
-              </div>
-            </button>
-          }
-          <mat-divider></mat-divider>
-          <a mat-menu-item routerLink="/notifications" (click)="$event.stopPropagation()">
-            <mat-icon>list</mat-icon>
-            <span>View All Notifications</span>
-          </a>
-        </mat-menu>
-        <button mat-button class="logout-btn" (click)="authService.logout()">Logout</button>
-      } @else {
-        <a mat-button routerLink="/login" class="nav-link">Login</a>
-        <a mat-raised-button color="primary" routerLink="/register" class="register-btn">Register</a>
-      }
+      <button mat-icon-button class="mobile-menu-btn" [matMenuTriggerFor]="mobileNav" aria-label="Open menu">
+        <mat-icon>menu</mat-icon>
+      </button>
     </mat-toolbar>
+
+    <mat-menu #notifMenu="matMenu" class="notif-menu" xPosition="before">
+      <div class="notif-header">
+        <span>Notifications</span>
+        @if (unreadCount > 0) {
+          <button mat-button color="primary" (click)="markAllRead($event)">Mark all read</button>
+        }
+      </div>
+      <mat-divider></mat-divider>
+      @if (notifications.length === 0) {
+        <div class="notif-empty">No notifications</div>
+      }
+      @for (notif of notifications; track notif.id) {
+        <button mat-menu-item class="notif-item" [class.unread]="!notif.isRead" (click)="onNotifClick($event, notif)">
+          <mat-icon class="notif-icon" [class]="'type-' + notif.type.toLowerCase()">
+            {{ getNotifIcon(notif.type) }}
+          </mat-icon>
+          <div class="notif-content">
+            <div class="notif-title">{{ notif.title }}</div>
+            <div class="notif-message">{{ notif.message }}</div>
+            <div class="notif-time">{{ notif.createdAt | date:'short' }}</div>
+          </div>
+        </button>
+      }
+      <mat-divider></mat-divider>
+      <a mat-menu-item routerLink="/notifications" (click)="$event.stopPropagation()">
+        <mat-icon>list</mat-icon>
+        <span>View All Notifications</span>
+      </a>
+    </mat-menu>
+
+    <mat-menu #mobileNav="matMenu" class="mobile-nav-menu">
+      <a mat-menu-item routerLink="/find-blood"><mat-icon>bloodtype</mat-icon><span>Find Blood</span></a>
+      <a mat-menu-item routerLink="/request-blood"><mat-icon>volunteer_activism</mat-icon><span>Need Blood</span></a>
+      @if (authService.isAuthenticated()) {
+        <a mat-menu-item [routerLink]="authService.getDashboardRoute()"><mat-icon>dashboard</mat-icon><span>Dashboard</span></a>
+        <a mat-menu-item routerLink="/notifications"><mat-icon>notifications</mat-icon><span>Notifications @if(unreadCount>0){ ({{unreadCount}})}</span></a>
+        <button mat-menu-item (click)="authService.logout()"><mat-icon>logout</mat-icon><span>Logout</span></button>
+      } @else {
+        <a mat-menu-item routerLink="/login"><mat-icon>login</mat-icon><span>Login</span></a>
+        <a mat-menu-item routerLink="/register"><mat-icon>person_add</mat-icon><span>Register</span></a>
+      }
+    </mat-menu>
   `,
   styles: [`
     :host { display: block; }
@@ -184,11 +203,18 @@ import { Notification } from '../../core/models/notification';
     }
     .notif-time { font-size: 11px; color: var(--bgn-text-faint); margin-top: 2px; }
 
-    @media (max-width: 600px) {
-      .bgn-header { overflow-x: auto; scrollbar-width: none; gap: 4px; padding: 0 8px; }
-      .bgn-header::-webkit-scrollbar { display: none; }
-      .nav-link, .logout-btn { display: inline-flex; font-size: 0.85rem; padding: 0 6px; }
+    .desktop-nav { display: flex; align-items: center; gap: 6px; }
+    .mobile-menu-btn { display: none !important; color: #fff !important; }
+
+    @media (max-width: 820px) {
+      .bgn-header { gap: 4px; padding: 0 8px; }
+      .desktop-nav { display: none !important; }
+      .mobile-menu-btn { display: inline-flex !important; }
       .logo-text { font-size: 1rem; }
+    }
+    @media (max-width: 400px) {
+      .logo-text { font-size: 0.95rem; }
+      .bgn-header { padding: 0 6px; }
     }
   `]
 })
