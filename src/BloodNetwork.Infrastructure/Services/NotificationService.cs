@@ -85,6 +85,11 @@ public class NotificationService : INotificationService
 
     public async Task<IReadOnlyList<NotificationDto>> GetUserNotificationsAsync(Guid userId, int page = 1, int pageSize = 20)
     {
+        // NOTE: Ideally push OrderBy/Skip/Take to DB via IRepository with IQueryable or paginated Find.
+        // Current repo returns IReadOnlyList; filtering at DB via predicate but ordering/paging in memory.
+        // Clamp pagination to avoid excessive memory load.
+        page = Math.Max(page, 1);
+        pageSize = Math.Clamp(pageSize, 1, 50);
         var allNotifications = await _notificationRepo.FindAsync(n => n.UserId == userId);
         return allNotifications
             .OrderByDescending(n => n.CreatedAt)

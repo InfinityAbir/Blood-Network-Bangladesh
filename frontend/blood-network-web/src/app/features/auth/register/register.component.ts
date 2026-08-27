@@ -286,9 +286,11 @@ export class RegisterComponent {
 
     this.authService.register(registerData).subscribe({
       next: () => {
+        this.isLoading = false;
         this.snackBar.open('Account created successfully!', 'Close', { duration: 3000, horizontalPosition: 'end', verticalPosition: 'top' });
         this.successMessage = 'Account created successfully! Redirecting...';
         setTimeout(() => {
+          this.isLoading = false;
           this.router.navigate([this.authService.getDashboardRoute()]);
         }, 1500);
       },

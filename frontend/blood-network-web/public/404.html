@@ -4,8 +4,12 @@
   <meta charset="utf-8">
   <script>
     // SPA fallback: redirect all 404s to root for client-side routing
-    var path = window.location.pathname;
-    window.location.replace('/#' + path);
+    (function () {
+      var l = window.location;
+      var path = l.pathname + l.search + l.hash;
+      // Avoid double slash: '/#' + '/foo' => '/#/foo' (not '/#//foo')
+      window.location.replace('/#' + path);
+    })();
   </script>
 </head>
 <body>

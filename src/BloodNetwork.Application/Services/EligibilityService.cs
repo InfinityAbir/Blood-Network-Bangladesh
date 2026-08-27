@@ -77,7 +77,7 @@ public class EligibilityService : IEligibilityService
         }
     };
 
-    private static readonly HashSet<int> CriticalQuestionIds = new() { 1, 2, 3, 6, 7 };
+    private static readonly HashSet<int> CriticalQuestionIds = new() { 1, 2, 3, 5, 6, 7 };
 
     public IReadOnlyList<EligibilityQuestionDto> GetQuestions()
     {

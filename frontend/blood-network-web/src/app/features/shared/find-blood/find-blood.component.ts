@@ -210,7 +210,7 @@ export class FindBloodComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.locationService.getDivisions().subscribe(divs => this.divisions = divs);
+    this.locationService.getDivisions().subscribe({ next: divs => this.divisions = divs, error: (e) => console.debug(e) });
     this.onSearch();
   }
 
@@ -219,7 +219,7 @@ export class FindBloodComponent implements OnInit {
     this.searchForm.patchValue({ districtId: '', upazilaId: '' });
     this.upazilas = [];
     if (divisionId) {
-      this.locationService.getDistricts(divisionId).subscribe(d => this.districts = d);
+      this.locationService.getDistricts(divisionId).subscribe({ next: d => this.districts = d, error: (e) => console.debug(e) });
     } else {
       this.districts = [];
     }
@@ -229,7 +229,7 @@ export class FindBloodComponent implements OnInit {
     const districtId = this.searchForm.get('districtId')?.value;
     this.searchForm.patchValue({ upazilaId: '' });
     if (districtId) {
-      this.locationService.getUpazilas(districtId).subscribe(u => this.upazilas = u);
+      this.locationService.getUpazilas(districtId).subscribe({ next: u => this.upazilas = u, error: (e) => console.debug(e) });
     } else {
       this.upazilas = [];
     }
@@ -253,7 +253,8 @@ export class FindBloodComponent implements OnInit {
         this.results = results;
         this.isLoading = false;
       },
-      error: () => {
+      error: (e) => {
+        console.debug(e);
         this.isLoading = false;
       }
     });
@@ -277,7 +278,8 @@ export class FindBloodComponent implements OnInit {
         this.results = results;
         this.isLoading = false;
       },
-      error: () => {
+      error: (e) => {
+        console.debug(e);
         this.isLoading = false;
       }
     });

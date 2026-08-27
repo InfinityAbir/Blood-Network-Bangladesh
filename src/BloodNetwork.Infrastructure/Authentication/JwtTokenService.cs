@@ -63,23 +63,12 @@ public class JwtTokenService : IJwtTokenService
         if (string.IsNullOrWhiteSpace(token))
             return false;
 
+        // Refresh tokens are opaque base64 strings (64 random bytes), not JWTs.
+        // Validate only format; expiry/revocation is checked via DB.
+        if (token.Length < 32) return false;
         try
         {
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
-            var handler = new JwtSecurityTokenHandler();
-            var parameters = new TokenValidationParameters
-            {
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = key,
-                ValidateIssuer = true,
-                ValidIssuer = _issuer,
-                ValidateAudience = true,
-                ValidAudience = _audience,
-                ValidateLifetime = true,
-                ClockSkew = TimeSpan.Zero
-            };
-
-            handler.ValidateToken(token, parameters, out _);
+            Convert.FromBase64String(token);
             return true;
         }
         catch

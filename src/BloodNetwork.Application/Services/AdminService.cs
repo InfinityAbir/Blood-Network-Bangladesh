@@ -69,24 +69,39 @@ public class AdminService : IAdminService
 
     public async Task<IReadOnlyList<AdminUserDto>> GetUsersAsync(string? search, UserRole? role, int page = 1, int pageSize = 20)
     {
-        var allUsers = await _userRepo.GetAllAsync();
-
-        var query = allUsers.AsEnumerable();
-
+        IReadOnlyList<User> filteredUsers;
         if (!string.IsNullOrWhiteSpace(search))
         {
             var term = search.ToLower();
-            query = query.Where(u =>
-                u.FirstName.ToLower().Contains(term) ||
-                u.LastName.ToLower().Contains(term) ||
-                u.PhoneNumber.Contains(term) ||
-                (u.Email != null && u.Email.ToLower().Contains(term)));
+            if (role.HasValue)
+            {
+                var r = role.Value;
+                filteredUsers = await _userRepo.FindAsync(u =>
+                    (u.FirstName.ToLower().Contains(term) ||
+                     u.LastName.ToLower().Contains(term) ||
+                     u.PhoneNumber.Contains(term) ||
+                     (u.Email != null && u.Email.ToLower().Contains(term))) &&
+                    u.Role == r);
+            }
+            else
+            {
+                filteredUsers = await _userRepo.FindAsync(u =>
+                    u.FirstName.ToLower().Contains(term) ||
+                    u.LastName.ToLower().Contains(term) ||
+                    u.PhoneNumber.Contains(term) ||
+                    (u.Email != null && u.Email.ToLower().Contains(term)));
+            }
+        }
+        else if (role.HasValue)
+        {
+            filteredUsers = await _userRepo.FindAsync(u => u.Role == role.Value);
+        }
+        else
+        {
+            filteredUsers = await _userRepo.GetAllAsync();
         }
 
-        if (role.HasValue)
-            query = query.Where(u => u.Role == role.Value);
-
-        var sorted = query.OrderByDescending(u => u.CreatedAt).ToList();
+        var sorted = filteredUsers.OrderByDescending(u => u.CreatedAt).ToList();
         var pagedUsers = sorted.Skip((page - 1) * pageSize).Take(pageSize).ToList();
         var pagedIds = pagedUsers.Select(u => u.Id).ToList();
         var profiles = await _donorProfileRepo.FindAsync(p => pagedIds.Contains(p.UserId));
@@ -110,14 +125,23 @@ public class AdminService : IAdminService
                 : await _userRepo.CountAsync();
         }
 
-        var allUsers = await _userRepo.GetAllAsync();
         var term = search.ToLower();
-        return allUsers.Count(u =>
-            (u.FirstName.ToLower().Contains(term) ||
-             u.LastName.ToLower().Contains(term) ||
-             u.PhoneNumber.Contains(term) ||
-             (u.Email != null && u.Email.ToLower().Contains(term))) &&
-            (!role.HasValue || u.Role == role.Value));
+        if (role.HasValue)
+        {
+            var r = role.Value;
+            return await _userRepo.CountAsync(u =>
+                (u.FirstName.ToLower().Contains(term) ||
+                 u.LastName.ToLower().Contains(term) ||
+                 u.PhoneNumber.Contains(term) ||
+                 (u.Email != null && u.Email.ToLower().Contains(term))) &&
+                u.Role == r);
+        }
+
+        return await _userRepo.CountAsync(u =>
+            u.FirstName.ToLower().Contains(term) ||
+            u.LastName.ToLower().Contains(term) ||
+            u.PhoneNumber.Contains(term) ||
+            (u.Email != null && u.Email.ToLower().Contains(term)));
     }
 
     public async Task<AdminUserDto?> ToggleUserActiveAsync(Guid userId, bool isActive)
@@ -160,13 +184,11 @@ public class AdminService : IAdminService
 
     public async Task<IReadOnlyList<AdminReportDto>> GetReportsAsync(ReportStatus? status, int page = 1, int pageSize = 20)
     {
-        var allReports = await _reportRepo.GetAllAsync();
+        var filteredReports = status.HasValue
+            ? await _reportRepo.FindAsync(r => r.Status == status.Value)
+            : await _reportRepo.GetAllAsync();
 
-        var query = allReports.AsEnumerable();
-        if (status.HasValue)
-            query = query.Where(r => r.Status == status.Value);
-
-        var sorted = query.OrderByDescending(r => r.CreatedAt).ToList();
+        var sorted = filteredReports.OrderByDescending(r => r.CreatedAt).ToList();
         var pagedReports = sorted.Skip((page - 1) * pageSize).Take(pageSize).ToList();
         var userIds = pagedReports
             .SelectMany(r => new[] { r.ReporterUserId, r.ReportedUserId, r.ReviewedBy ?? Guid.Empty })
@@ -215,13 +237,11 @@ public class AdminService : IAdminService
 
     public async Task<IReadOnlyList<AdminAuditLogDto>> GetAuditLogsAsync(string? entityType, int page = 1, int pageSize = 20)
     {
-        var allLogs = await _auditLogRepo.GetAllAsync();
+        var filteredLogs = !string.IsNullOrWhiteSpace(entityType)
+            ? await _auditLogRepo.FindAsync(l => l.EntityType == entityType)
+            : await _auditLogRepo.GetAllAsync();
 
-        var query = allLogs.AsEnumerable();
-        if (!string.IsNullOrWhiteSpace(entityType))
-            query = query.Where(l => l.EntityType == entityType);
-
-        var sorted = query.OrderByDescending(l => l.CreatedAt).ToList();
+        var sorted = filteredLogs.OrderByDescending(l => l.CreatedAt).ToList();
         var pagedLogs = sorted.Skip((page - 1) * pageSize).Take(pageSize).ToList();
         var userIds = pagedLogs
             .Select(l => l.UserId)

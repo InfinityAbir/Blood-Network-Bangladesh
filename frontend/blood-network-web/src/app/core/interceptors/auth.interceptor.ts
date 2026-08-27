@@ -1,7 +1,7 @@
 import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { catchError, switchMap, tap, throwError, Observable } from 'rxjs';
+import { catchError, switchMap, tap, throwError, Observable, finalize } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 import { AuthResponse } from '../models/user';
 
@@ -39,17 +39,16 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
               );
             }
             refresh$ = authService.refreshToken(refreshToken).pipe(
-              tap(() => { refresh$ = null; }),
+              tap((response) => authService.storeAuth(response)),
               catchError((refreshError) => {
-                refresh$ = null;
                 authService.logout();
                 router.navigate(['/login']);
                 return throwError(() => refreshError);
-              })
+              }),
+              finalize(() => { refresh$ = null; })
             );
             return refresh$.pipe(
               switchMap((response) => {
-                authService.storeAuth(response);
                 const retryReq = req.clone({
                   setHeaders: { Authorization: `Bearer ${response.accessToken}` }
                 });

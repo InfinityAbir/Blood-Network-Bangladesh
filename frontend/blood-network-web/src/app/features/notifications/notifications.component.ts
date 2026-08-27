@@ -190,7 +190,8 @@ export class NotificationsComponent implements OnInit, OnDestroy {
         this.hasMore = notifications.length >= this.pageSize;
         this.isLoading = false;
       },
-      error: () => {
+      error: (e) => {
+        console.debug(e);
         this.isLoading = false;
       }
     });
@@ -214,7 +215,7 @@ export class NotificationsComponent implements OnInit, OnDestroy {
 
   onNotifClick(notif: Notification): void {
     if (!notif.isRead) {
-      this.notificationService.markAsRead(notif.id).subscribe();
+      this.notificationService.markAsRead(notif.id).subscribe({ error: (e) => console.debug(e) });
       notif.isRead = true;
       this.unreadCount = Math.max(0, this.unreadCount - 1);
     }
@@ -244,7 +245,8 @@ export class NotificationsComponent implements OnInit, OnDestroy {
       next: () => {
         this.notifications.forEach(n => n.isRead = true);
         this.unreadCount = 0;
-      }
+      },
+      error: (e) => console.debug(e)
     });
   }
 

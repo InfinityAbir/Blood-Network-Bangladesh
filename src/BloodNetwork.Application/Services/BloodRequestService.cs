@@ -4,6 +4,7 @@ using BloodNetwork.Application.Interfaces;
 using BloodNetwork.Domain.Entities;
 using BloodNetwork.Domain.Enums;
 using BloodNetwork.Domain.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace BloodNetwork.Application.Services;
@@ -19,6 +20,7 @@ public class BloodRequestService
     private readonly INotificationService _notificationService;
     private readonly IRepository<BloodRequestMatch> _matchRepository;
     private readonly ILogger<BloodRequestService> _logger;
+    private readonly IServiceScopeFactory _scopeFactory;
 
     public BloodRequestService(
         IRepository<BloodRequest> requestRepository,
@@ -29,7 +31,8 @@ public class BloodRequestService
         IMatchingService matchingService,
         INotificationService notificationService,
         IRepository<BloodRequestMatch> matchRepository,
-        ILogger<BloodRequestService> logger)
+        ILogger<BloodRequestService> logger,
+        IServiceScopeFactory scopeFactory)
     {
         _requestRepository = requestRepository;
         _userRepository = userRepository;
@@ -40,6 +43,7 @@ public class BloodRequestService
         _notificationService = notificationService;
         _matchRepository = matchRepository;
         _logger = logger;
+        _scopeFactory = scopeFactory;
     }
 
     public async Task<Result<BloodRequestDto>> CreateRequestAsync(Guid requesterId, CreateBloodRequestRequest request, CancellationToken cancellationToken = default)
@@ -55,6 +59,9 @@ public class BloodRequestService
         var upazila = await _upazilaRepository.GetByIdAsync(request.UpazilaId, cancellationToken);
         if (upazila is null)
             return Result<BloodRequestDto>.Failure("Invalid upazila");
+
+        if (upazila.DistrictId != request.DistrictId)
+            return Result<BloodRequestDto>.Failure("Upazila does not belong to district");
 
         var bloodRequest = new BloodRequest
         {
@@ -81,15 +88,19 @@ public class BloodRequestService
         await _requestRepository.AddAsync(bloodRequest, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+        var capturedId = bloodRequest.Id;
         _ = Task.Run(async () =>
         {
+            using var scope = _scopeFactory.CreateScope();
+            var matching = scope.ServiceProvider.GetRequiredService<IMatchingService>();
+            var logger = scope.ServiceProvider.GetRequiredService<ILogger<BloodRequestService>>();
             try
             {
-                await _matchingService.MatchRequestAsync(bloodRequest.Id);
+                await matching.MatchRequestAsync(capturedId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Background matching failed for request {RequestId}", bloodRequest.Id);
+                logger.LogError(ex, "Background matching failed for request {RequestId}", capturedId);
             }
         });
 

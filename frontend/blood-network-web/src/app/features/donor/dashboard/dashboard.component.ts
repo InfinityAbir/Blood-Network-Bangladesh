@@ -7,6 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { finalize } from 'rxjs';
 import { HeaderComponent } from '../../../layout/header/header.component';
 import { FooterComponent } from '../../../layout/footer/footer.component';
 import { DonorService } from '../../../core/services/donor.service';
@@ -140,8 +141,8 @@ import { BloodRequestMatch } from '../../../core/models/match';
                   </div>
                 </mat-card-content>
                 <mat-card-actions align="end">
-                  <button mat-button color="warn" (click)="declineMatch(match.id)">Decline</button>
-                  <button mat-raised-button color="primary" (click)="acceptMatch(match.id)">Accept</button>
+                  <button mat-button color="warn" (click)="declineMatch(match.id)" [disabled]="isResponding[match.id]">Decline</button>
+                  <button mat-raised-button color="primary" (click)="acceptMatch(match.id)" [disabled]="isResponding[match.id]">Accept</button>
                 </mat-card-actions>
               </mat-card>
             }
@@ -229,6 +230,7 @@ export class DonorDashboardComponent implements OnInit {
   pendingMatches: BloodRequestMatch[] = [];
   otherMatches: BloodRequestMatch[] = [];
   isLoading = true;
+  isResponding: Record<string, boolean> = {};
 
   constructor(
     private donorService: DonorService,
@@ -246,8 +248,10 @@ export class DonorDashboardComponent implements OnInit {
         this.profile = profile;
         this.loadMatches();
       },
-      error: () => {
+      error: (e) => {
+        console.debug(e);
         this.isLoading = false;
+        this.snackBar.open(e.error?.message || 'Failed to load profile.', 'Close', { duration: 3000 });
       }
     });
   }
@@ -259,14 +263,17 @@ export class DonorDashboardComponent implements OnInit {
         this.otherMatches = matches.filter(m => m.donorResponse !== 'Pending');
         this.isLoading = false;
       },
-      error: () => {
+      error: (e) => {
+        console.debug(e);
         this.isLoading = false;
       }
     });
   }
 
   acceptMatch(matchId: string): void {
-    this.matchService.respondToMatch(matchId, { response: 'Accepted' }).subscribe({
+    if (this.isResponding[matchId]) return;
+    this.isResponding[matchId] = true;
+    this.matchService.respondToMatch(matchId, { response: 'Accepted' }).pipe(finalize(() => this.isResponding[matchId] = false)).subscribe({
       next: () => {
         this.snackBar.open('Match accepted!', 'Close', {
           duration: 3000,
@@ -274,12 +281,18 @@ export class DonorDashboardComponent implements OnInit {
           verticalPosition: 'top'
         });
         this.loadMatches();
+      },
+      error: (e) => {
+        console.debug(e);
+        this.snackBar.open(e.error?.message || 'Failed to accept match.', 'Close', { duration: 3000 });
       }
     });
   }
 
   declineMatch(matchId: string): void {
-    this.matchService.respondToMatch(matchId, { response: 'Declined' }).subscribe({
+    if (this.isResponding[matchId]) return;
+    this.isResponding[matchId] = true;
+    this.matchService.respondToMatch(matchId, { response: 'Declined' }).pipe(finalize(() => this.isResponding[matchId] = false)).subscribe({
       next: () => {
         this.snackBar.open('Match declined.', 'Close', {
           duration: 3000,
@@ -287,6 +300,10 @@ export class DonorDashboardComponent implements OnInit {
           verticalPosition: 'top'
         });
         this.loadMatches();
+      },
+      error: (e) => {
+        console.debug(e);
+        this.snackBar.open(e.error?.message || 'Failed to decline match.', 'Close', { duration: 3000 });
       }
     });
   }
@@ -309,6 +326,10 @@ export class DonorDashboardComponent implements OnInit {
     this.donorService.toggleAvailability(newStatus).subscribe({
       next: (updated) => {
         this.profile = updated;
+      },
+      error: (e) => {
+        console.debug(e);
+        this.snackBar.open(e.error?.message || 'Failed to update availability.', 'Close', { duration: 3000 });
       }
     });
   }

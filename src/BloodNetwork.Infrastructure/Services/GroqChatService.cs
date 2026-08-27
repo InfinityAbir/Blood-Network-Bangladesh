@@ -68,7 +68,9 @@ public class GroqChatService : IAiChatService
             {
                 foreach (var msg in history)
                 {
-                    var role = msg.Role?.ToLowerInvariant() == "assistant" ? "assistant" : "user";
+                    var rawRole = msg.Role?.ToLowerInvariant();
+                    if (rawRole == "system") continue;
+                    var role = rawRole == "assistant" ? "assistant" : "user";
                     messages.Add(new { role, content = msg.Content });
                 }
             }
@@ -92,7 +94,8 @@ public class GroqChatService : IAiChatService
 
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogError("Groq API returned {StatusCode}: {Response}", response.StatusCode, responseString);
+                var truncatedError = responseString.Length > 200 ? responseString.Substring(0, 200) + "...[truncated]" : responseString;
+                _logger.LogError("Groq API returned {StatusCode}: {Response}", response.StatusCode, truncatedError);
                 return "Sorry, I'm having trouble connecting right now. Please try again later. / দুঃখিত, আমি এখন সংযোগ করতে সমস্যা হচ্ছে। পরে আবার চেষ্টা করুন।";
             }
 
@@ -109,7 +112,8 @@ public class GroqChatService : IAiChatService
                 }
             }
 
-            _logger.LogWarning("Unexpected Groq API response structure: {Response}", responseString);
+            var truncatedResponse = responseString.Length > 200 ? responseString.Substring(0, 200) + "...[truncated]" : responseString;
+            _logger.LogWarning("Unexpected Groq API response structure: {Response}", truncatedResponse);
             return "Sorry, I couldn't understand the response. Please try again. / দুঃখিত, আমি উত্তরটি বুঝতে পারিনি। আবার চেষ্টা করুন।";
         }
         catch (Exception ex)

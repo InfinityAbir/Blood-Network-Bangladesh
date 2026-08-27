@@ -139,7 +139,8 @@ export class AdminDashboardComponent implements OnInit {
         this.stats = stats;
         this.isLoading = false;
       },
-      error: () => {
+      error: (e) => {
+        console.debug(e);
         this.isLoading = false;
       }
     });

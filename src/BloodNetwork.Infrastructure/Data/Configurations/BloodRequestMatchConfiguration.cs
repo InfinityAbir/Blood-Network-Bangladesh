@@ -23,5 +23,6 @@ public class BloodRequestMatchConfiguration : IEntityTypeConfiguration<BloodRequ
 
         builder.HasIndex(m => m.BloodRequestId);
         builder.HasIndex(m => m.DonorId);
+        builder.HasIndex(m => new { m.BloodRequestId, m.DonorId }).IsUnique();
     }
 }

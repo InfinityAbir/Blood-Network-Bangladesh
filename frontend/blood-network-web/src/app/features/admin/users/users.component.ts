@@ -147,7 +147,8 @@ export class UserManagementComponent implements OnInit {
         this.result = result;
         this.isLoading = false;
       },
-      error: () => {
+      error: (e) => {
+        console.debug(e);
         this.isLoading = false;
       }
     });
@@ -160,19 +161,22 @@ export class UserManagementComponent implements OnInit {
       role: this.selectedRole || undefined,
       page
     }).subscribe({
-      next: (result) => this.result = result
+      next: (result) => this.result = result,
+      error: (e) => console.debug(e)
     });
   }
 
   toggleActive(userId: string, isActive: boolean): void {
     this.adminService.toggleUserActive(userId, isActive).subscribe({
-      next: () => this.loadUsers()
+      next: () => this.loadUsers(),
+      error: (e) => console.debug(e)
     });
   }
 
   verifyDonor(userId: string, status: string): void {
     this.adminService.verifyDonor(userId, status).subscribe({
-      next: () => this.loadUsers()
+      next: () => this.loadUsers(),
+      error: (e) => console.debug(e)
     });
   }
 }

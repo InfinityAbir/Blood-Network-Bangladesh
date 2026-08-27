@@ -31,10 +31,10 @@ export class SignalRService {
     const token = localStorage.getItem('access_token');
     if (!token) return;
 
-    const hubUrl = environment.apiUrl.replace('/api', '') + '/hubs/notifications';
+    const hubUrl = environment.apiUrl.replace(/\/api\/?$/, '') + '/hubs/notifications';
 
     this.hubConnection = new signalR.HubConnectionBuilder()
-      .withUrl(hubUrl, { accessTokenFactory: () => token })
+      .withUrl(hubUrl, { accessTokenFactory: () => localStorage.getItem('access_token') || '' })
       .withAutomaticReconnect([0, 2, 5, 10, 15, 30])
       .configureLogging(signalR.LogLevel.Warning)
       .build();

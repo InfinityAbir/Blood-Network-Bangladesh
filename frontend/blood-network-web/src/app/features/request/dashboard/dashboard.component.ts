@@ -7,6 +7,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTabsModule } from '@angular/material/tabs';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { finalize } from 'rxjs';
 import { HeaderComponent } from '../../../layout/header/header.component';
 import { FooterComponent } from '../../../layout/footer/footer.component';
 import { RequestService } from '../../../core/services/request.service';
@@ -28,6 +30,7 @@ import { PagedResult } from '../../../core/models/paged-result';
     MatChipsModule,
     MatProgressSpinnerModule,
     MatTabsModule,
+    MatSnackBarModule,
     HeaderComponent,
     FooterComponent
   ],
@@ -108,7 +111,7 @@ import { PagedResult } from '../../../core/models/paged-result';
                         <mat-icon>people</mat-icon> {{ matchesMap[request.id] ? 'Hide' : 'View' }} Matches
                       </button>
                       @if (request.status === 'Open' || request.status === 'PartiallyFulfilled') {
-                        <button mat-button color="warn" (click)="cancelRequest(request.id)">
+                        <button mat-button color="warn" (click)="cancelRequest(request.id)" [disabled]="isResponding[request.id]">
                           <mat-icon>cancel</mat-icon> Cancel
                         </button>
                       }
@@ -168,7 +171,7 @@ import { PagedResult } from '../../../core/models/paged-result';
                       <button mat-button (click)="loadMatches(request.id)">
                         <mat-icon>people</mat-icon> {{ matchesMap[request.id] ? 'Hide' : 'View' }} Matches
                       </button>
-                      <button mat-button color="warn" (click)="cancelRequest(request.id)">
+                      <button mat-button color="warn" (click)="cancelRequest(request.id)" [disabled]="isResponding[request.id]">
                         <mat-icon>cancel</mat-icon> Cancel
                       </button>
                     </mat-card-actions>
@@ -261,10 +264,12 @@ export class RequesterDashboardComponent implements OnInit {
   fulfilledRequests: PagedResult<BloodRequest> | null = null;
   matchesMap: Record<string, BloodRequestMatch[]> = {};
   isLoading = true;
+  isResponding: Record<string, boolean> = {};
 
   constructor(
     private requestService: RequestService,
-    private matchService: MatchService
+    private matchService: MatchService,
+    private snackBar: MatSnackBar
   ) {}
 
   ngOnInit(): void {
@@ -278,8 +283,10 @@ export class RequesterDashboardComponent implements OnInit {
         this.allRequests = result;
         this.isLoading = false;
       },
-      error: () => {
+      error: (e) => {
+        console.debug(e);
         this.isLoading = false;
+        this.snackBar.open(e.error?.message || 'Failed to load requests.', 'Close', { duration: 3000 });
       }
     });
   }
@@ -287,11 +294,13 @@ export class RequesterDashboardComponent implements OnInit {
   onTabChange(index: number): void {
     if (index === 1 && !this.activeRequests) {
       this.requestService.getMyRequests(RequestStatus.Open).subscribe({
-        next: (result) => this.activeRequests = result
+        next: (result) => this.activeRequests = result,
+        error: (e) => console.debug(e)
       });
     } else if (index === 2 && !this.fulfilledRequests) {
       this.requestService.getMyRequests(RequestStatus.Fulfilled).subscribe({
-        next: (result) => this.fulfilledRequests = result
+        next: (result) => this.fulfilledRequests = result,
+        error: (e) => console.debug(e)
       });
     }
   }
@@ -304,17 +313,25 @@ export class RequesterDashboardComponent implements OnInit {
     this.matchService.getMatchesForRequest(requestId).subscribe({
       next: (matches) => {
         this.matchesMap[requestId] = matches;
-      }
+      },
+      error: (e) => console.debug(e)
     });
   }
 
   cancelRequest(id: string): void {
+    if (this.isResponding[id]) return;
     if (confirm('Are you sure you want to cancel this blood request?')) {
-      this.requestService.cancelRequest(id).subscribe({
+      this.isResponding[id] = true;
+      this.requestService.cancelRequest(id).pipe(finalize(() => this.isResponding[id] = false)).subscribe({
         next: () => {
           this.loadAll(1);
           this.activeRequests = null;
           this.fulfilledRequests = null;
+          this.snackBar.open('Request cancelled.', 'Close', { duration: 3000 });
+        },
+        error: (e) => {
+          console.debug(e);
+          this.snackBar.open(e.error?.message || 'Failed to cancel request.', 'Close', { duration: 3000 });
         }
       });
     }

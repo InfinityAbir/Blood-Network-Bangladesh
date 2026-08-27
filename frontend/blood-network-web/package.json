@@ -5,7 +5,7 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
-    "build:prod": "node -e \"const fs=require('fs');const url=process.env.API_URL||'http://localhost:5000/api';fs.writeFileSync('public/env.js','window.__env = window.__env || {};\\nwindow.__env.apiUrl = \\''+url+'\\';');\" && ng build --configuration production",
+    "build:prod": "node -e \"const fs=require('fs');const url=process.env.API_URL||'http://localhost:8080/api';fs.writeFileSync('public/env.js','window.__env = window.__env || {};\\nwindow.__env.apiUrl = \\''+url+'\\';');\" && ng build --configuration production",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },

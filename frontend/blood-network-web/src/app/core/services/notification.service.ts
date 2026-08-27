@@ -55,7 +55,10 @@ export class NotificationService {
   }
 
   refreshUnreadCount(): void {
-    this.getUnreadCount().subscribe();
+    this.getUnreadCount().subscribe({
+      next: () => {},
+      error: (e) => console.debug(e)
+    });
   }
 
   startConnection(): void {

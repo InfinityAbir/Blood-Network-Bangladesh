@@ -11,6 +11,10 @@ public class BloodNetworkDbContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
+        // PendingModelChangesWarning is intentionally suppressed during development to avoid noisy warnings
+        // when the model has pending changes before a migration is scaffolded. The app applies migrations at
+        // startup (see Program.cs), so this warning is not critical at runtime. Re-enable the warning once
+        // the model stabilizes or if you need strict migration drift detection.
         optionsBuilder.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
     }
 
@@ -33,7 +37,27 @@ public class BloodNetworkDbContext : DbContext
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(BloodNetworkDbContext).Assembly);
         SeedLocations(modelBuilder);
         ConfigureIndexes(modelBuilder);
+        ConfigureSoftDeleteFilters(modelBuilder);
         base.OnModelCreating(modelBuilder);
+    }
+
+    private static void ConfigureSoftDeleteFilters(ModelBuilder modelBuilder)
+    {
+        // Global query filters for soft delete - hides soft-deleted rows by default.
+        // Repository.DeleteAsync performs soft delete (IsDeleted=true). Use IgnoreQueryFilters() when hard access needed.
+        modelBuilder.Entity<User>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<DonorProfile>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<BloodRequest>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<BloodRequestMatch>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<DonationRecord>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<Notification>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<VerificationRecord>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<Report>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<AuditLog>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<RefreshToken>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<Division>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<District>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<Upazila>().HasQueryFilter(e => !e.IsDeleted);
     }
 
     private static void ConfigureIndexes(ModelBuilder modelBuilder)

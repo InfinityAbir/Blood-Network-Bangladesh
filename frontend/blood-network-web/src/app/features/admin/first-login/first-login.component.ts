@@ -126,8 +126,12 @@ export class AdminFirstLoginComponent {
     const { currentPassword, newEmail, newPassword } = this.form.value;
     this.auth.changeFirstLoginCredentials(currentPassword, newEmail, newPassword).subscribe({
       next: () => {
+        this.isLoading = false;
         this.successMessage = 'Credentials updated. Redirecting...';
-        setTimeout(() => this.router.navigate(['/admin']), 1200);
+        setTimeout(() => {
+          this.isLoading = false;
+          this.router.navigate(['/admin']);
+        }, 1200);
       },
       error: (err) => {
         this.isLoading = false;

@@ -74,12 +74,19 @@ public class AuthService
         await _userRepository.AddAsync(user, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        await _notificationService.SendNotificationAsync(
-            user.Id,
-            "Welcome to Blood Network Bangladesh!",
-            $"Hi {user.FirstName}, welcome to Blood Network Bangladesh! Complete your donor profile to start saving lives, or create a blood request to find donors.",
-            NotificationType.System,
-            null);
+        try
+        {
+            await _notificationService.SendNotificationAsync(
+                user.Id,
+                "Welcome to Blood Network Bangladesh!",
+                $"Hi {user.FirstName}, welcome to Blood Network Bangladesh! Complete your donor profile to start saving lives, or create a blood request to find donors.",
+                NotificationType.System,
+                null);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to send welcome notification for user {UserId}", user.Id);
+        }
 
         var dto = MapToDto(user);
         var accessToken = _jwtTokenService.GenerateAccessToken(user.Id, user.PhoneNumber, user.Role);
@@ -129,8 +136,7 @@ public class AuthService
             _logger.LogWarning("Refresh token reuse detected for user {UserId}. Revoking all tokens.", refreshToken.UserId);
 
             // Revoke ALL refresh tokens for this user
-            var allUserTokens = (await _refreshTokenRepository.GetAllAsync())
-                .Where(t => t.UserId == refreshToken.UserId && !t.IsRevoked)
+            var allUserTokens = (await _refreshTokenRepository.FindAsync(t => t.UserId == refreshToken.UserId && !t.IsRevoked, cancellationToken))
                 .ToList();
 
             foreach (var token in allUserTokens)
@@ -213,8 +219,7 @@ public class AuthService
         user.MustChangePassword = false;
 
         // Revoke all existing refresh tokens on password change
-        var existingTokens = (await _refreshTokenRepository.GetAllAsync())
-            .Where(t => t.UserId == user.Id && !t.IsRevoked)
+        var existingTokens = (await _refreshTokenRepository.FindAsync(t => t.UserId == user.Id && !t.IsRevoked, cancellationToken))
             .ToList();
 
         foreach (var token in existingTokens)

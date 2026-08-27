@@ -274,7 +274,7 @@ export class RequestBloodComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.locationService.getDivisions().subscribe(divs => this.divisions = divs);
+    this.locationService.getDivisions().subscribe({ next: divs => this.divisions = divs, error: (e) => console.debug(e) });
   }
 
   onDivisionChange(): void {
@@ -282,7 +282,7 @@ export class RequestBloodComponent implements OnInit {
     this.requestForm.patchValue({ districtId: '', upazilaId: '' });
     this.upazilas = [];
     if (divisionId) {
-      this.locationService.getDistricts(divisionId).subscribe(d => this.districts = d);
+      this.locationService.getDistricts(divisionId).subscribe({ next: d => this.districts = d, error: (e) => console.debug(e) });
     } else {
       this.districts = [];
     }
@@ -292,7 +292,7 @@ export class RequestBloodComponent implements OnInit {
     const districtId = this.requestForm.get('districtId')?.value;
     this.requestForm.patchValue({ upazilaId: '' });
     if (districtId) {
-      this.locationService.getUpazilas(districtId).subscribe(u => this.upazilas = u);
+      this.locationService.getUpazilas(districtId).subscribe({ next: u => this.upazilas = u, error: (e) => console.debug(e) });
     } else {
       this.upazilas = [];
     }
@@ -309,6 +309,7 @@ export class RequestBloodComponent implements OnInit {
 
     this.requestService.createRequest(data).subscribe({
       next: (result) => {
+        this.isLoading = false;
         this.snackBar.open('Blood request created! Finding matching donors...', 'Close', {
           duration: 4000,
           horizontalPosition: 'end',
@@ -316,6 +317,7 @@ export class RequestBloodComponent implements OnInit {
         });
         this.successMessage = 'Blood request submitted successfully! Donors will be notified.';
         setTimeout(() => {
+          this.isLoading = false;
           this.router.navigate(['/requester/dashboard']);
         }, 2000);
       },

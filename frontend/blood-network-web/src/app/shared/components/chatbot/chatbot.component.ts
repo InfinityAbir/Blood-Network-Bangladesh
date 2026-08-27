@@ -85,8 +85,10 @@ interface ChatMsg {
               matInput
               [(ngModel)]="userInput"
               (keydown.enter)="sendMessage()"
+              (compositionstart)="onCompositionStart()"
               (compositionend)="onCompositionEnd($event)"
               placeholder="Ask about blood donation..."
+              maxlength="500"
               [disabled]="loading()"
               #inputField
             />
@@ -287,6 +289,7 @@ export class ChatbotComponent implements AfterViewChecked {
   ]);
 
   userInput = '';
+  isComposing = false;
   private shouldScroll = false;
   private apiUrl = `${environment.apiUrl}/chat`;
 
@@ -306,12 +309,18 @@ export class ChatbotComponent implements AfterViewChecked {
     }
   }
 
+  onCompositionStart(): void {
+    this.isComposing = true;
+  }
+
   onCompositionEnd(event: CompositionEvent): void {
+    this.isComposing = false;
     const target = event.target as HTMLInputElement;
     this.userInput = target.value;
   }
 
   sendMessage(): void {
+    if (this.isComposing) return;
     const text = this.userInput.trim();
     if (!text || this.loading()) return;
 
@@ -321,7 +330,7 @@ export class ChatbotComponent implements AfterViewChecked {
     this.shouldScroll = true;
 
     const history = this.messages()
-      .slice(1)
+      .slice(-20)
       .map((m) => ({ Role: m.role === 'user' ? 'User' : 'Assistant', Content: m.content }));
 
     this.http

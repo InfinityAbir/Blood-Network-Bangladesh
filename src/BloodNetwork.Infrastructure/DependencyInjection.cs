@@ -40,7 +40,7 @@ public static class DependencyInjection
         services.Configure<MatchScoreWeightsOptions>(
             configuration.GetSection("AppSettings:MatchScoreWeights"));
 
-        services.AddHttpClient<IAiChatService, GroqChatService>();
+        services.AddHttpClient<IAiChatService, GroqChatService>(c => c.Timeout = TimeSpan.FromSeconds(30));
 
         return services;
     }

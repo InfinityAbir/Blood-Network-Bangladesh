@@ -124,6 +124,9 @@ interface EligibilityResult {
                   @if (currentQuestion().unit) {
                     <mat-hint>{{ currentQuestion().unit }}</mat-hint>
                   }
+                  @if (answers()[qKey(currentQuestion())] !== undefined && answers()[qKey(currentQuestion())] !== '' && isNumberOutOfRange()) {
+                    <mat-error>Value must be between {{ currentQuestion().minValue }} and {{ currentQuestion().maxValue }} {{ currentQuestion().unit ?? '' }}</mat-error>
+                  }
                 </mat-form-field>
               }
 
@@ -434,8 +437,21 @@ export class EligibilityCheckComponent {
     if (!q) return false;
     const val = this.answers()[String(q.id)];
     if (q.questionType === 'yesno') return val === 'yes' || val === 'no';
-    if (q.questionType === 'number') return val !== undefined && val !== null && val !== '';
+    if (q.questionType === 'number') {
+      if (val === undefined || val === null || val === '') return false;
+      const num = Number(val);
+      return !isNaN(num) && num >= q.minValue && num <= q.maxValue;
+    }
     return false;
+  }
+
+  isNumberOutOfRange(): boolean {
+    const q = this.currentQuestion();
+    if (!q || q.questionType !== 'number') return false;
+    const val = this.answers()[String(q.id)];
+    if (val === undefined || val === null || val === '') return false;
+    const num = Number(val);
+    return isNaN(num) || num < q.minValue || num > q.maxValue;
   }
 
   next(): void {

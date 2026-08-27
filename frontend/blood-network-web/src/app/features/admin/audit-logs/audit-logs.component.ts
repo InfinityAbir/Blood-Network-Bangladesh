@@ -128,7 +128,8 @@ export class AuditLogViewerComponent implements OnInit {
         this.result = result;
         this.isLoading = false;
       },
-      error: () => {
+      error: (e) => {
+        console.debug(e);
         this.isLoading = false;
       }
     });
@@ -140,7 +141,8 @@ export class AuditLogViewerComponent implements OnInit {
       entityType: this.entityTypeFilter || undefined,
       page
     }).subscribe({
-      next: (result) => this.result = result
+      next: (result) => this.result = result,
+      error: (e) => console.debug(e)
     });
   }
 }

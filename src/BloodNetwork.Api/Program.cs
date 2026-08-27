@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 
@@ -55,13 +56,13 @@ else
 builder.Services.AddControllers();
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddFluentValidationClientsideAdapters();
-builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddValidatorsFromAssembly(typeof(BloodNetwork.Application.DTOs.RegisterRequest).Assembly);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-var jwtSecret = builder.Configuration["Jwt:Secret"]!;
+var jwtSecret = builder.Configuration["Jwt:Secret"] ?? throw new InvalidOperationException("Jwt:Secret missing");
+if (Encoding.UTF8.GetByteCount(jwtSecret) < 32) throw new InvalidOperationException("Jwt:Secret must be >=32 bytes");
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -153,7 +154,9 @@ builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.Configure<GroqOptions>(builder.Configuration.GetSection(GroqOptions.SectionName));
 
-builder.Services.AddHealthChecks();
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<BloodNetworkDbContext>("db", tags: new[] { "ready" })
+    .AddCheck("self", () => HealthCheckResult.Healthy(), tags: new[] { "ready" });
 
 var app = builder.Build();
 
@@ -256,11 +259,18 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
-app.UseForwardedHeaders(new ForwardedHeadersOptions
+// ForwardedHeaders must be first middleware to correctly capture client IP/scheme behind proxies
+var forwardedHeadersOptions = new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-});
+};
+forwardedHeadersOptions.KnownProxies.Clear();
+#pragma warning disable ASPDEPR005
+forwardedHeadersOptions.KnownNetworks.Clear();
+#pragma warning restore ASPDEPR005
+forwardedHeadersOptions.KnownIPNetworks.Clear();
+app.UseForwardedHeaders(forwardedHeadersOptions);
+app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 app.UseHttpsRedirection();
 app.UseCors("AllowAngularApp");
 app.UseRateLimiter();

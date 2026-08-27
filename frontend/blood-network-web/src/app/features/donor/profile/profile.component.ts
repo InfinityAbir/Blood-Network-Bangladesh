@@ -176,13 +176,13 @@ export class DonorProfileComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.locationService.getDivisions().subscribe(divs => this.divisions = divs);
+    this.locationService.getDivisions().subscribe({ next: divs => this.divisions = divs, error: (e) => console.debug(e) });
 
     this.donorService.getMyProfile().subscribe({
       next: (profile) => {
         this.router.navigate(['/donor/dashboard']);
       },
-      error: () => {}
+      error: (e) => console.debug(e)
     });
   }
 
@@ -191,7 +191,7 @@ export class DonorProfileComponent implements OnInit {
     this.profileForm.patchValue({ districtId: '', upazilaId: '' });
     this.upazilas = [];
     if (divisionId) {
-      this.locationService.getDistricts(divisionId).subscribe(d => this.districts = d);
+      this.locationService.getDistricts(divisionId).subscribe({ next: d => this.districts = d, error: (e) => console.debug(e) });
     } else {
       this.districts = [];
     }
@@ -201,7 +201,7 @@ export class DonorProfileComponent implements OnInit {
     const districtId = this.profileForm.get('districtId')?.value;
     this.profileForm.patchValue({ upazilaId: '' });
     if (districtId) {
-      this.locationService.getUpazilas(districtId).subscribe(u => this.upazilas = u);
+      this.locationService.getUpazilas(districtId).subscribe({ next: u => this.upazilas = u, error: (e) => console.debug(e) });
     } else {
       this.upazilas = [];
     }
@@ -217,6 +217,7 @@ export class DonorProfileComponent implements OnInit {
 
     this.donorService.createProfile(data).subscribe({
       next: () => {
+        this.isLoading = false;
         this.snackBar.open('Profile saved successfully!', 'Close', { duration: 3000, horizontalPosition: 'end', verticalPosition: 'top' });
         this.router.navigate(['/donor/dashboard']);
       },

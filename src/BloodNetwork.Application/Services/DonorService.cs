@@ -4,6 +4,7 @@ using BloodNetwork.Application.Interfaces;
 using BloodNetwork.Domain.Entities;
 using BloodNetwork.Domain.Enums;
 using BloodNetwork.Domain.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace BloodNetwork.Application.Services;
@@ -20,6 +21,7 @@ public class DonorService
     private readonly IRepository<BloodRequest> _bloodRequestRepository;
     private readonly IMatchingService _matchingService;
     private readonly ILogger<DonorService> _logger;
+    private readonly IServiceScopeFactory _scopeFactory;
 
     public DonorService(
         IRepository<DonorProfile> donorProfileRepository,
@@ -31,7 +33,8 @@ public class DonorService
         INotificationService notificationService,
         IRepository<BloodRequest> bloodRequestRepository,
         IMatchingService matchingService,
-        ILogger<DonorService> logger)
+        ILogger<DonorService> logger,
+        IServiceScopeFactory scopeFactory)
     {
         _donorProfileRepository = donorProfileRepository;
         _userRepository = userRepository;
@@ -43,6 +46,7 @@ public class DonorService
         _bloodRequestRepository = bloodRequestRepository;
         _matchingService = matchingService;
         _logger = logger;
+        _scopeFactory = scopeFactory;
     }
 
     public async Task<Result<DonorProfileDto>> CreateProfileAsync(Guid userId, CreateDonorProfileRequest request, CancellationToken cancellationToken = default)
@@ -64,6 +68,9 @@ public class DonorService
         var upazila = await _upazilaRepository.GetByIdAsync(request.UpazilaId, cancellationToken);
         if (upazila is null)
             return Result<DonorProfileDto>.Failure("Invalid upazila");
+
+        if (upazila.DistrictId != request.DistrictId)
+            return Result<DonorProfileDto>.Failure("Upazila does not belong to district");
 
         var profile = new DonorProfile
         {
@@ -105,6 +112,9 @@ public class DonorService
         var upazila = await _upazilaRepository.GetByIdAsync(request.UpazilaId, cancellationToken);
         if (upazila is null)
             return Result<DonorProfileDto>.Failure("Invalid upazila");
+
+        if (upazila.DistrictId != request.DistrictId)
+            return Result<DonorProfileDto>.Failure("Upazila does not belong to district");
 
         profile.BloodGroup = request.BloodGroup;
         profile.Gender = request.Gender;
@@ -157,15 +167,19 @@ public class DonorService
 
             foreach (var openRequest in openRequests)
             {
+                var capturedRequestId = openRequest.Id;
                 _ = Task.Run(async () =>
                 {
+                    using var scope = _scopeFactory.CreateScope();
+                    var matching = scope.ServiceProvider.GetRequiredService<IMatchingService>();
+                    var logger = scope.ServiceProvider.GetRequiredService<ILogger<DonorService>>();
                     try
                     {
-                        await _matchingService.MatchRequestAsync(openRequest.Id);
+                        await matching.MatchRequestAsync(capturedRequestId);
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Background matching failed for request {RequestId}", openRequest.Id);
+                        logger.LogError(ex, "Background matching failed for request {RequestId}", capturedRequestId);
                     }
                 });
             }

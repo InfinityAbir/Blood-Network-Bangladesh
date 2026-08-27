@@ -15,7 +15,12 @@ export class AuthService {
   private signalR = inject(SignalRService);
 
   currentUser = this.currentUserSignal.asReadonly();
-  isAuthenticated = computed(() => !!this.currentUserSignal());
+  isAuthenticated = computed(() => {
+    const user = this.currentUserSignal();
+    if (!user) return false;
+    if (this.isTokenExpired()) return false;
+    return true;
+  });
   isAdmin = computed(() => this.currentUserSignal()?.role === UserRole.Admin);
   isDonor = computed(() => this.currentUserSignal()?.role === UserRole.Donor);
   isRequester = computed(() => this.currentUserSignal()?.role === UserRole.Requester);
@@ -109,10 +114,28 @@ export class AuthService {
     this.signalR.start();
   }
 
+  isTokenExpired(token?: string | null): boolean {
+    const t = token ?? localStorage.getItem('access_token');
+    if (!t) return true;
+    try {
+      const payload = JSON.parse(atob(t.split('.')[1]));
+      if (!payload.exp) return false;
+      return payload.exp * 1000 < Date.now();
+    } catch {
+      return true;
+    }
+  }
+
   private loadStoredUser(): void {
     const token = localStorage.getItem('access_token');
     const userJson = localStorage.getItem('user');
     if (token && userJson) {
+      if (this.isTokenExpired(token)) {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user');
+        return;
+      }
       try {
         const user = JSON.parse(userJson) as User;
         this.currentUserSignal.set(user);

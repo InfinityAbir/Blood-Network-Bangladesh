@@ -46,7 +46,11 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
 
     public virtual Task DeleteAsync(T entity, CancellationToken cancellationToken = default)
     {
-        _dbSet.Remove(entity);
+        // Soft delete: mark as deleted instead of hard removing to preserve audit/history and allow query filters
+        entity.IsDeleted = true;
+        entity.DeletedAt = DateTime.UtcNow;
+        entity.UpdatedAt = DateTime.UtcNow;
+        _dbSet.Update(entity);
         return Task.CompletedTask;
     }
 

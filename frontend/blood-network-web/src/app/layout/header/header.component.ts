@@ -185,7 +185,9 @@ import { Notification } from '../../core/models/notification';
     .notif-time { font-size: 11px; color: var(--bgn-text-faint); margin-top: 2px; }
 
     @media (max-width: 600px) {
-      .nav-link, .logout-btn { display: none; }
+      .bgn-header { overflow-x: auto; scrollbar-width: none; gap: 4px; padding: 0 8px; }
+      .bgn-header::-webkit-scrollbar { display: none; }
+      .nav-link, .logout-btn { display: inline-flex; font-size: 0.85rem; padding: 0 6px; }
       .logo-text { font-size: 1rem; }
     }
   `]
@@ -241,19 +243,20 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.subscriptions.forEach(s => s.unsubscribe());
-    this.notificationService.stopConnection();
+    // SignalR lifecycle is owned by AuthService (storeAuth/logout); do not stop on header destroy to avoid flicker
   }
 
   loadNotifications(): void {
     this.notificationService.getNotifications(1, 10).subscribe({
-      next: (notifications) => { this.notifications = notifications; }
+      next: (notifications) => { this.notifications = notifications; },
+      error: (e) => console.debug(e)
     });
   }
 
   onNotifClick(event: Event, notif: Notification): void {
     event.stopPropagation();
     if (!notif.isRead) {
-      this.notificationService.markAsRead(notif.id).subscribe();
+      this.notificationService.markAsRead(notif.id).subscribe({ error: (e) => console.debug(e) });
       notif.isRead = true;
       this.unreadCount = Math.max(0, this.unreadCount - 1);
     }
@@ -286,7 +289,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
       next: () => {
         this.notifications.forEach(n => n.isRead = true);
         this.unreadCount = 0;
-      }
+      },
+      error: (e) => console.debug(e)
     });
   }
 

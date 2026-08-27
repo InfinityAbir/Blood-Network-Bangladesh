@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using BloodNetwork.Application.DTOs;
 using BloodNetwork.Application.Interfaces;
 using BloodNetwork.Domain.Enums;
@@ -29,6 +30,7 @@ public class AIController : ControllerBase
     }
 
     [HttpGet("eligibility/questions")]
+    [AllowAnonymous]
     public IActionResult GetEligibilityQuestions()
     {
         var questions = _eligibilityService.GetQuestions();
@@ -36,6 +38,7 @@ public class AIController : ControllerBase
     }
 
     [HttpPost("eligibility/check")]
+    [AllowAnonymous]
     public IActionResult CheckEligibility([FromBody] List<EligibilityAnswerDto> answers)
     {
         var result = _eligibilityService.EvaluateAnswers(answers);
@@ -45,10 +48,12 @@ public class AIController : ControllerBase
     [HttpGet("donors/re-engagement")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetTopEngagedDonors(
-        [FromQuery] BloodGroup bloodGroup,
-        [FromQuery] int count = 10)
+        [FromQuery] BloodGroup? bloodGroup,
+        [FromQuery][Range(1, 50)] int count = 10)
     {
-        var donors = await _donorEngagementService.GetTopEngagedDonorsAsync(bloodGroup, count);
+        if (!bloodGroup.HasValue)
+            return BadRequest("BloodGroup is required");
+        var donors = await _donorEngagementService.GetTopEngagedDonorsAsync(bloodGroup.Value, count);
         return Ok(donors);
     }
 

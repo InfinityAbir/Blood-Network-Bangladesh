@@ -139,7 +139,8 @@ export class ReportManagementComponent implements OnInit {
         this.result = result;
         this.isLoading = false;
       },
-      error: () => {
+      error: (e) => {
+        console.debug(e);
         this.isLoading = false;
       }
     });
@@ -151,14 +152,16 @@ export class ReportManagementComponent implements OnInit {
       status: this.selectedStatus || undefined,
       page
     }).subscribe({
-      next: (result) => this.result = result
+      next: (result) => this.result = result,
+      error: (e) => console.debug(e)
     });
   }
 
   resolveReport(reportId: string, status: string): void {
     const resolution = prompt('Resolution notes (optional):');
     this.adminService.resolveReport(reportId, status, resolution || undefined).subscribe({
-      next: () => this.loadReports()
+      next: () => this.loadReports(),
+      error: (e) => console.debug(e)
     });
   }
 }
