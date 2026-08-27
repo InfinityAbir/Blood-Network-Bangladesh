@@ -172,6 +172,11 @@ import { BloodGroup, BloodGroupLabels } from '../../../core/models/blood-group';
       padding: 12px 16px; border-radius: var(--bgn-radius-md); border: 1px solid color-mix(in srgb, var(--bgn-danger) 30%, transparent);
       margin-bottom: 16px; font-size: 14px;
     }
+    @media (max-width: 600px) {
+      .profile-container { padding: 24px 16px; }
+      .form-actions { flex-direction: column; gap: 8px; }
+      .action-btn { width: 100%; max-width: none; height: 48px; border-radius: var(--bgn-radius-pill) !important; }
+    }
   `]
 })
 export class DonorProfileComponent implements OnInit {

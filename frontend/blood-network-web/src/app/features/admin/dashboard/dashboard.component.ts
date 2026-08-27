@@ -150,6 +150,13 @@ import { AdminDashboardStats } from '../../../core/models/admin';
     .stat-detail { font-size: 13px; color: #666; }
     .nav-cards { display: flex; gap: 12px; flex-wrap: wrap; }
     .nav-cards a { display: flex; align-items: center; gap: 8px; }
+    @media (max-width: 600px) {
+      .dashboard-container { padding: 16px; }
+      .cards-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+      .stat-value { font-size: 24px; }
+      .nav-cards { flex-direction: column; }
+      .nav-cards a { width: 100%; justify-content: center; height: 48px; }
+    }
   `]
 })
 export class AdminDashboardComponent implements OnInit {

@@ -147,6 +147,14 @@ import { PagedResult } from '../../../core/models/paged-result';
     .detail { font-size: 12px; color: #999; }
     .no-results { text-align: center; padding: 60px; color: #999; }
     .pagination { display: flex; justify-content: center; align-items: center; gap: 16px; margin-top: 16px; }
+    @media (max-width: 600px) {
+      .container { padding: 16px; }
+      .filters { flex-direction: column; align-items: stretch; }
+      .filters mat-form-field { min-width: 0; }
+      .filters button { width: 100%; }
+      .user-card mat-card-actions { flex-wrap: wrap; gap: 8px !important; }
+      .user-card mat-card-actions button { flex: 1; min-width: 80px; }
+    }
   `]
 })
 export class UserManagementComponent implements OnInit {

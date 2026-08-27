@@ -284,6 +284,10 @@ import { PagedResult } from '../../../core/models/paged-result';
     .match-name { font-weight: 500; }
     .match-score { color: #666; font-size: 13px; }
     .match-distance { color: #999; font-size: 13px; margin-left: auto; }
+    @media (max-width: 600px) {
+      .dashboard-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .dashboard-header a { width: 100%; justify-content: center; }
+    }
   `]
 })
 export class RequesterDashboardComponent implements OnInit {

@@ -134,6 +134,13 @@ import { PagedResult } from '../../../core/models/paged-result';
     .metadata { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .no-results { text-align: center; padding: 60px; color: #999; }
     .pagination { display: flex; justify-content: center; align-items: center; gap: 16px; margin-top: 16px; }
+    @media (max-width: 600px) {
+      .filters { flex-direction: column; align-items: stretch; }
+      .filters mat-form-field { min-width: 0; }
+      .filters button { width: 100%; }
+      .audit-table { font-size: 11px; display: block; overflow-x: auto; }
+      .audit-table th, .audit-table td { padding: 6px 4px; white-space: nowrap; }
+    }
   `]
 })
 export class AuditLogViewerComponent implements OnInit {

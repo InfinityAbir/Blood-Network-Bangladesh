@@ -98,6 +98,7 @@ import { AuthService } from '../../../core/services/auth.service';
     .banner { padding:12px 16px; border-radius: var(--bgn-radius-sm); margin-bottom:16px; font-size:14px; border:1px solid; }
     .banner.error { background: color-mix(in srgb, var(--bgn-danger) 12%, transparent); color: var(--bgn-danger); border-color: color-mix(in srgb, var(--bgn-danger) 30%, transparent); }
     .banner.success { background: color-mix(in srgb, var(--bgn-success) 14%, transparent); color: var(--bgn-success); border-color: color-mix(in srgb, var(--bgn-success) 30%, transparent); }
+    @media (max-width: 600px) { .form-actions { flex-direction: column; gap: 8px; } .form-actions .cancel-btn, .form-actions .submit { width: 100%; max-width: none; height: 48px; border-radius: var(--bgn-radius-pill) !important; } }
   `]
 })
 export class AdminSettingsComponent {
