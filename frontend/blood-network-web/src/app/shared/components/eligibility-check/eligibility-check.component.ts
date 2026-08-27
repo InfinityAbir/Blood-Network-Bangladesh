@@ -1,6 +1,8 @@
 import { Component, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
+import { HeaderComponent } from '../../../layout/header/header.component';
 import { MatCardModule } from '@angular/material/card';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatButtonModule } from '@angular/material/button';
@@ -44,6 +46,8 @@ interface EligibilityResult {
   imports: [
     CommonModule,
     FormsModule,
+    RouterLink,
+    HeaderComponent,
     MatCardModule,
     MatRadioModule,
     MatButtonModule,
@@ -53,6 +57,7 @@ interface EligibilityResult {
     MatFormFieldModule,
   ],
   template: `
+    <app-header />
     <div class="eligibility-page page-wrap">
       <div class="container eligibility-container">
         <div class="page-header">
@@ -202,6 +207,14 @@ interface EligibilityResult {
             </div>
 
             <div class="result-actions">
+              <a mat-stroked-button routerLink="/">
+                <mat-icon>home</mat-icon>
+                Home / হোম
+              </a>
+              <a mat-stroked-button routerLink="/find-blood">
+                <mat-icon>search</mat-icon>
+                Find Blood / রক্ত খুঁজুন
+              </a>
               <button mat-flat-button color="primary" (click)="reset()">
                 <mat-icon>refresh</mat-icon>
                 Retake / আবার করুন
@@ -390,7 +403,7 @@ interface EligibilityResult {
     .disclaimer-box mat-icon { color: var(--bgn-warning); flex-shrink: 0; margin-top: 2px; }
     .disclaimer-box p { margin: 0; font-size: 0.85rem; color: var(--bgn-text-muted); }
 
-    .result-actions { text-align: center; }
+    .result-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
   `]
 })
 export class EligibilityCheckComponent {
