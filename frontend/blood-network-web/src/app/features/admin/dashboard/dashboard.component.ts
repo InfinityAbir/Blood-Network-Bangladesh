@@ -37,6 +37,12 @@ import { AdminDashboardStats } from '../../../core/models/admin';
         <div class="loading">
           <mat-spinner diameter="40"></mat-spinner>
         </div>
+      } @else if (errorMessage) {
+        <div class="error-banner">
+          <mat-icon>error</mat-icon>
+          <span>{{ errorMessage }}</span>
+          <button mat-button (click)="retry()">Retry</button>
+        </div>
       } @else if (stats) {
         <div class="cards-grid">
           <mat-card>
@@ -130,10 +136,17 @@ import { AdminDashboardStats } from '../../../core/models/admin';
 export class AdminDashboardComponent implements OnInit {
   stats: AdminDashboardStats | null = null;
   isLoading = true;
+  errorMessage = '';
 
   constructor(private adminService: AdminService) {}
 
   ngOnInit(): void {
+    this.load();
+  }
+
+  load(): void {
+    this.isLoading = true;
+    this.errorMessage = '';
     this.adminService.getDashboardStats().subscribe({
       next: (stats) => {
         this.stats = stats;
@@ -141,8 +154,13 @@ export class AdminDashboardComponent implements OnInit {
       },
       error: (e) => {
         console.debug(e);
+        this.errorMessage = e.error?.message || e.message || 'Failed to load dashboard. Please retry.';
         this.isLoading = false;
       }
     });
+  }
+
+  retry(): void {
+    this.load();
   }
 }
