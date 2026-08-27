@@ -95,9 +95,12 @@ import { PagedResult } from '../../../core/models/paged-result';
               </div>
             </mat-card-content>
             <mat-card-actions align="end">
-              @if (user.role === 'Donor' && user.donorVerificationStatus === 'Pending') {
+              @if (user.role === 'Donor' && (user.donorVerificationStatus === 'Pending' || user.donorVerificationStatus === 'Unverified')) {
                 <button mat-button color="primary" (click)="verifyDonor(user.id, 'Verified')">Verify</button>
                 <button mat-button color="warn" (click)="verifyDonor(user.id, 'Rejected')">Reject</button>
+              }
+              @if (user.role === 'Donor' && user.donorVerificationStatus === 'Verified') {
+                <button mat-button color="warn" (click)="verifyDonor(user.id, 'Rejected')">Unverify</button>
               }
               <button mat-button [color]="user.isActive ? 'warn' : 'primary'" (click)="toggleActive(user.id, !user.isActive)">
                 {{ user.isActive ? 'Deactivate' : 'Activate' }}
