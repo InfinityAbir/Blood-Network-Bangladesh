@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using BloodNetwork.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace BloodNetwork.Api.Controllers;
 
@@ -17,6 +18,8 @@ public class ChatController : ControllerBase
     }
 
     [HttpPost]
+    [AllowAnonymous]
+    [EnableRateLimiting("search")]
     [ProducesResponseType(typeof(ChatResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> Chat([FromBody] ChatRequest request, CancellationToken cancellationToken)
     {

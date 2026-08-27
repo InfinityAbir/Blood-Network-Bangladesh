@@ -117,7 +117,8 @@ public class AdminController : ControllerBase
 
     private Guid? GetUserId()
     {
-        var claim = User.FindFirst(ClaimTypes.NameIdentifier);
-        return claim != null ? Guid.Parse(claim.Value) : null;
+        var claim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst("sub") ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub);
+        if (claim == null || !Guid.TryParse(claim.Value, out var id)) return null;
+        return id;
     }
 }

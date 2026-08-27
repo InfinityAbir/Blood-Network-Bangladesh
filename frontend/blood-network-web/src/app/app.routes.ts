@@ -12,7 +12,8 @@ export const routes: Routes = [
   },
   {
     path: 'request-blood',
-    loadComponent: () => import('./features/request/request-blood/request-blood.component').then(m => m.RequestBloodComponent)
+    loadComponent: () => import('./features/request/request-blood/request-blood.component').then(m => m.RequestBloodComponent),
+    canActivate: [authGuard]
   },
   {
     path: 'eligibility',

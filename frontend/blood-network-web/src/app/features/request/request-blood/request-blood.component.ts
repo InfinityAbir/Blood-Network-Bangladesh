@@ -14,6 +14,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatStepperModule } from '@angular/material/stepper';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { finalize } from 'rxjs';
 import { HeaderComponent } from '../../../layout/header/header.component';
 import { FooterComponent } from '../../../layout/footer/footer.component';
 import { RequestService } from '../../../core/services/request.service';
@@ -328,23 +329,25 @@ export class RequestBloodComponent implements OnInit {
 
     const { divisionId, ...data } = this.requestForm.value;
 
-    this.requestService.createRequest(data).subscribe({
-      next: (result) => {
-        this.isLoading = false;
+    this.requestService.createRequest(data).pipe(
+      finalize(() => this.isLoading = false)
+    ).subscribe({
+      next: () => {
         this.snackBar.open('Blood request created! Finding matching donors...', 'Close', {
           duration: 4000,
           horizontalPosition: 'end',
           verticalPosition: 'top'
         });
         this.successMessage = 'Blood request submitted successfully! Donors will be notified.';
-        setTimeout(() => {
-          this.isLoading = false;
-          this.router.navigate(['/requester/dashboard']);
-        }, 2000);
+        setTimeout(() => this.router.navigate(['/requester/dashboard']), 1500);
       },
       error: (err) => {
-        this.isLoading = false;
-        this.errorMessage = err.error?.message || 'Failed to submit request. Please try again.';
+        if (err.status === 401) {
+          this.errorMessage = 'Please login to request blood. Redirecting to login...';
+          setTimeout(() => this.router.navigate(['/login']), 1200);
+        } else {
+          this.errorMessage = err.error?.message || err.error?.Message || 'Failed to submit request. Please try again.';
+        }
       }
     });
   }
