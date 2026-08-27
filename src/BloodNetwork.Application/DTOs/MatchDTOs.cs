@@ -10,6 +10,9 @@ public class BloodRequestMatchDto
     public string DonorName { get; set; } = string.Empty;
     public string DonorPhone { get; set; } = string.Empty;
     public string DonorBloodGroup { get; set; } = string.Empty;
+    public string HospitalName { get; set; } = string.Empty;
+    public string RequesterName { get; set; } = string.Empty;
+    public string RequesterPhone { get; set; } = string.Empty;
     public int MatchScore { get; set; }
     public double? DistanceKm { get; set; }
     public DonorResponse DonorResponse { get; set; }

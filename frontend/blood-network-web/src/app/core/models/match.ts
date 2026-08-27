@@ -5,6 +5,9 @@ export interface BloodRequestMatch {
   donorName: string;
   donorPhone: string;
   donorBloodGroup: string;
+  hospitalName: string;
+  requesterName: string;
+  requesterPhone: string;
   matchScore: number;
   distanceKm?: number;
   donorResponse: 'Pending' | 'Accepted' | 'Declined' | 'NoResponse';

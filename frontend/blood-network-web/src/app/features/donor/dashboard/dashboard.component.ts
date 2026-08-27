@@ -160,32 +160,28 @@ import { BloodRequestMatch } from '../../../core/models/match';
           } @else if (pendingMatches.length > 0) {
             @for (match of pendingMatches; track match.id) {
               <mat-card class="match-card">
-                <mat-card-header>
-                  <div class="title-row">
-                    <span class="blood-badge">{{ getBloodGroupLabel(match.donorBloodGroup) }}</span>
-                    <mat-card-title>{{ formatScore(match.matchScore) }}% Match</mat-card-title>
-                  </div>
-                  <mat-card-subtitle>
-                    @if (match.distanceKm != null) {
-                      {{ match.distanceKm | number:'1.1-1' }} km away
-                    } @else {
-                      Distance unknown
-                    }
-                  </mat-card-subtitle>
-                </mat-card-header>
                 <mat-card-content>
-                  <div class="match-info">
-                    <div class="info-item">
-                      <span class="label">Score:</span>
-                      <span>{{ match.matchScore }}/100</span>
-                    </div>
+                  <div class="match-top-row">
+                    <span class="blood-badge">{{ getBloodGroupLabel(match.donorBloodGroup) }}</span>
+                    <span class="match-score-badge">{{ formatScore(match.matchScore) }}% Match</span>
+                  </div>
+                  <div class="match-hospital">
+                    <mat-icon class="match-icon">local_hospital</mat-icon>
+                    {{ match.hospitalName || 'Hospital' }}
+                  </div>
+                  <div class="match-meta">
+                    @if (match.distanceKm != null) {
+                      <span class="meta-item"><mat-icon>location_on</mat-icon> {{ match.distanceKm | number:'1.1-1' }} km away</span>
+                    }
+                    <span class="meta-item">Score: {{ match.matchScore }}/100</span>
+                    <span class="meta-item">Requested by {{ match.requesterName || 'Someone' }}</span>
                   </div>
                 </mat-card-content>
                 <mat-card-actions align="end">
-                  <button mat-button color="warn" (click)="declineMatch(match.id)" [disabled]="isResponding[match.id]">
+                  <button mat-stroked-button color="warn" (click)="declineMatch(match.id)" [disabled]="isResponding[match.id]" class="action-btn">
                     @if (isResponding[match.id]) { <mat-spinner diameter="16"></mat-spinner> } @else { Decline }
                   </button>
-                  <button mat-raised-button color="primary" (click)="acceptMatch(match.id)" [disabled]="isResponding[match.id]">
+                  <button mat-raised-button color="primary" (click)="acceptMatch(match.id)" [disabled]="isResponding[match.id]" class="action-btn">
                     @if (isResponding[match.id]) { <mat-spinner diameter="16"></mat-spinner> } @else { Accept }
                   </button>
                 </mat-card-actions>
@@ -270,10 +266,15 @@ import { BloodRequestMatch } from '../../../core/models/match';
     .match-card.small { padding: 8px 16px; }
     .blood-badge { background: var(--bgn-primary); color: white; padding: 3px 10px; border-radius: 6px; font-weight: 600; font-size: 13px; white-space: nowrap; letter-spacing: 0.5px; flex-shrink: 0; }
     .blood-badge.small { font-size: 11px; padding: 2px 7px; border-radius: 4px; }
-    .title-row { display: flex; align-items: center; gap: 10px; }
-    .match-info { display: flex; gap: 16px; flex-wrap: wrap; }
-    .info-item { display: flex; align-items: center; gap: 4px; }
-    .info-item .label { color: var(--bgn-text-muted); font-size: 13px; }
+    .match-top-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+    .match-score-badge { font-size: 15px; font-weight: 600; color: var(--bgn-text, #1a1a1a); }
+    .match-hospital { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 500; color: var(--bgn-text, #333); margin-bottom: 8px; }
+    .match-icon { font-size: 18px; width: 18px; height: 18px; color: var(--bgn-primary, #c62828); }
+    .match-meta { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: var(--bgn-text-muted, #666); }
+    .meta-item { display: flex; align-items: center; gap: 4px; }
+    .meta-item mat-icon { font-size: 16px; width: 16px; height: 16px; }
+    .action-btn { min-width: 100px; height: 40px; }
+    mat-card-actions { padding: 8px 16px 12px !important; gap: 8px; }
     .match-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
     .match-row .score { font-weight: 500; }
     .match-row .date { color: var(--bgn-text-muted); font-size: 12px; }

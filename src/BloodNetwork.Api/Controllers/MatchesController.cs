@@ -116,6 +116,7 @@ public class MatchesController : ControllerBase
         if (matches.Count == 0) return new List<BloodRequestMatchDto>();
 
         var donorIds = matches.Select(m => m.DonorId).Distinct().ToList();
+        var requestIds = matches.Select(m => m.BloodRequestId).Distinct().ToList();
 
         var users = await _userRepository.Query()
             .Where(u => donorIds.Contains(u.Id))
@@ -127,13 +128,28 @@ public class MatchesController : ControllerBase
             .Select(p => new { p.UserId, p.BloodGroup })
             .ToListAsync();
 
+        var requests = await _bloodRequestRepository.Query()
+            .Where(r => requestIds.Contains(r.Id))
+            .Select(r => new { r.Id, r.HospitalName, r.RequesterId })
+            .ToListAsync();
+
+        var requesterIds = requests.Select(r => r.RequesterId).Distinct().ToList();
+        var requesters = await _userRepository.Query()
+            .Where(u => requesterIds.Contains(u.Id))
+            .Select(u => new { u.Id, u.FirstName, u.LastName, u.PhoneNumber })
+            .ToListAsync();
+
         var userLookup = users.ToDictionary(u => u.Id);
         var profileLookup = profiles.ToDictionary(p => p.UserId);
+        var requestLookup = requests.ToDictionary(r => r.Id);
+        var requesterLookup = requesters.ToDictionary(u => u.Id);
 
         return matches.Select(match =>
         {
             userLookup.TryGetValue(match.DonorId, out var user);
             profileLookup.TryGetValue(match.DonorId, out var profile);
+            requestLookup.TryGetValue(match.BloodRequestId, out var bloodReq);
+            var requester = bloodReq != null && requesterLookup.TryGetValue(bloodReq.RequesterId, out var r) ? r : null;
 
             return new BloodRequestMatchDto
             {
@@ -143,6 +159,9 @@ public class MatchesController : ControllerBase
                 DonorName = user != null ? $"{user.FirstName} {user.LastName}" : "Unknown",
                 DonorPhone = user?.PhoneNumber ?? string.Empty,
                 DonorBloodGroup = profile?.BloodGroup.ToString() ?? "Unknown",
+                HospitalName = bloodReq?.HospitalName ?? string.Empty,
+                RequesterName = requester != null ? $"{requester.FirstName} {requester.LastName}" : string.Empty,
+                RequesterPhone = requester?.PhoneNumber ?? string.Empty,
                 MatchScore = match.MatchScore,
                 DistanceKm = match.DistanceKm,
                 DonorResponse = match.DonorResponse,
