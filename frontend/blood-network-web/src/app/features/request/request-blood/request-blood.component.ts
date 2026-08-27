@@ -232,9 +232,9 @@ import { BloodGroup, BloodGroupLabels } from '../../../core/models/blood-group';
     .request-header { margin-bottom: 24px; }
     .request-header h1 { margin: 0 0 4px; font-size: 24px; color: var(--bgn-text); }
     .request-header p { margin: 0; color: var(--bgn-text-muted); }
-    .form-section { margin-bottom: 24px; }
-    .form-section h3 { margin: 0 0 12px; font-size: 16px; color: var(--bgn-text); border-bottom: 1px solid var(--bgn-border); padding-bottom: 8px; }
-    .form-row { display: flex; gap: 16px; flex-wrap: wrap; }
+    .form-section { margin-bottom: 28px; }
+    .form-section h3 { margin: 0 0 16px; font-size: 16px; color: var(--bgn-text); border-bottom: 1px solid var(--bgn-border); padding-bottom: 8px; }
+    .form-row { display: flex; gap: 16px; row-gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
     .form-row mat-form-field { flex: 1; min-width: 160px; }
     .full-width { width: 100%; }
     .form-actions { display: flex; gap: 12px; justify-content: flex-end; padding-top: 16px; border-top: 1px solid var(--bgn-border); flex-wrap: wrap; }
