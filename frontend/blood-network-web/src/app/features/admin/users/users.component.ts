@@ -56,6 +56,7 @@ import { PagedResult } from '../../../core/models/paged-result';
           </mat-select>
         </mat-form-field>
         <button mat-raised-button color="primary" (click)="loadUsers()">Search</button>
+        <button mat-stroked-button (click)="searchTerm=''; selectedRole=''; loadUsers()"><mat-icon>clear</mat-icon> Reset</button>
       </div>
 
       @if (isLoading) {

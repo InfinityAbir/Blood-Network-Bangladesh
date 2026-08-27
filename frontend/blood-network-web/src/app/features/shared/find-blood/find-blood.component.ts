@@ -97,6 +97,9 @@ import { PagedResult } from '../../../core/models/paged-result';
               </mat-select>
             </mat-form-field>
 
+            <button mat-stroked-button type="button" (click)="resetFilters()" aria-label="Reset filters">
+              <mat-icon>clear</mat-icon> Reset
+            </button>
             <button mat-raised-button color="primary" type="submit">
               <mat-icon>search</mat-icon> Search
             </button>
@@ -276,6 +279,13 @@ export class FindBloodComponent implements OnInit {
     } else {
       this.upazilas = [];
     }
+  }
+
+  resetFilters(): void {
+    this.searchForm.reset({ bloodGroup: '', divisionId: '', districtId: '', upazilaId: '', availabilityStatus: '' });
+    this.districts = [];
+    this.upazilas = [];
+    this.onSearch();
   }
 
   onSearch(): void {

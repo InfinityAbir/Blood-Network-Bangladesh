@@ -45,6 +45,7 @@ import { PagedResult } from '../../../core/models/paged-result';
           <input matInput [(ngModel)]="entityTypeFilter" placeholder="e.g. User, BloodRequest" (keyup.enter)="loadLogs()">
         </mat-form-field>
         <button mat-raised-button color="primary" (click)="loadLogs()">Filter</button>
+        <button mat-stroked-button (click)="entityTypeFilter=''; loadLogs()"><mat-icon>clear</mat-icon> Reset</button>
       </div>
 
       @if (isLoading) {

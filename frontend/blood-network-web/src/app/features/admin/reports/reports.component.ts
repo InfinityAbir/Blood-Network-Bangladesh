@@ -53,6 +53,7 @@ import { PagedResult } from '../../../core/models/paged-result';
           </mat-select>
         </mat-form-field>
         <button mat-raised-button color="primary" (click)="loadReports()">Filter</button>
+        <button mat-stroked-button (click)="selectedStatus=''; loadReports()"><mat-icon>clear</mat-icon> Reset</button>
       </div>
 
       @if (isLoading) {
