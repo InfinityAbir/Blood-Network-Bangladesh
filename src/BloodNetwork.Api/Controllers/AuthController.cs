@@ -85,6 +85,23 @@ public class AuthController : ControllerBase
         return BadRequest(new { success = false, message = result.Error });
     }
 
+    [HttpPut("profile")]
+    [Authorize]
+    [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request, CancellationToken cancellationToken)
+    {
+        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)
+            ?? User.FindFirst("sub");
+        if (userIdClaim is null || !Guid.TryParse(userIdClaim.Value, out var userId))
+            return Unauthorized(new { success = false, message = "Invalid token" });
+
+        var result = await _authService.UpdateProfileAsync(userId, request, cancellationToken);
+        if (result.IsSuccess)
+            return Ok(result.Value);
+        return BadRequest(new { success = false, message = result.Error });
+    }
+
     [HttpGet("me")]
     [Authorize]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]

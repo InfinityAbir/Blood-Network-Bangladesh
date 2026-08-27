@@ -75,6 +75,24 @@ export class AuthService {
       );
   }
 
+  updateProfile(currentPassword: string, newEmail: string | null, newPhoneNumber: string | null, newPassword: string | null): Observable<User> {
+    const body: Record<string, string> = { currentPassword };
+    if (newEmail) body['newEmail'] = newEmail;
+    if (newPhoneNumber) body['newPhoneNumber'] = newPhoneNumber;
+    if (newPassword) body['newPassword'] = newPassword;
+    return this.http.put<User>(`${this.apiUrl}/profile`, body)
+      .pipe(
+        tap(user => {
+          const stored = localStorage.getItem('user');
+          if (stored) {
+            const updated = { ...JSON.parse(stored), email: user.email, phoneNumber: user.phoneNumber, mustChangePassword: user.mustChangePassword };
+            localStorage.setItem('user', JSON.stringify(updated));
+            this.currentUserSignal.set(updated);
+          }
+        })
+      );
+  }
+
   logout(): void {
     this.signalR.stop();
     localStorage.removeItem('access_token');

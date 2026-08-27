@@ -67,6 +67,11 @@ export const routes: Routes = [
     canActivate: [firstLoginGuard]
   },
   {
+    path: 'admin/settings',
+    loadComponent: () => import('./features/admin/settings/settings.component').then(m => m.AdminSettingsComponent),
+    canActivate: [adminGuard]
+  },
+  {
     path: 'notifications',
     loadComponent: () => import('./features/notifications/notifications.component').then(m => m.NotificationsComponent),
     canActivate: [authGuard]

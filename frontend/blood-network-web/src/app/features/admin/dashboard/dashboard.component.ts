@@ -126,6 +126,9 @@ import { AdminDashboardStats } from '../../../core/models/admin';
           <a mat-raised-button routerLink="/admin/audit-logs" routerLinkActive="active-link">
             <mat-icon>history</mat-icon> Audit Logs
           </a>
+          <a mat-raised-button routerLink="/admin/settings" routerLinkActive="active-link">
+            <mat-icon>settings</mat-icon> Settings
+          </a>
         </div>
       }
     </main>

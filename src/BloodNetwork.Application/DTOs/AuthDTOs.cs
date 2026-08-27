@@ -43,3 +43,10 @@ public record FirstLoginChangeRequest(
     string NewPassword,
     string CurrentPassword
 );
+
+public record UpdateProfileRequest(
+    string CurrentPassword,
+    string? NewEmail = null,
+    string? NewPhoneNumber = null,
+    string? NewPassword = null
+);

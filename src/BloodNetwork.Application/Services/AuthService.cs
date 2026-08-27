@@ -232,6 +232,63 @@ public class AuthService
         return Result<UserDto>.Success(MapToDto(user));
     }
 
+    public async Task<Result<UserDto>> UpdateProfileAsync(Guid userId, UpdateProfileRequest request, CancellationToken cancellationToken = default)
+    {
+        var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
+        if (user is null)
+            return Result<UserDto>.Failure("User not found");
+
+        if (!_passwordHasher.VerifyPassword(request.CurrentPassword, user.PasswordHash))
+            return Result<UserDto>.Failure("Current password is incorrect");
+
+        bool hasChange = false;
+
+        if (!string.IsNullOrWhiteSpace(request.NewEmail) && request.NewEmail != user.Email)
+        {
+            if (!request.NewEmail.Contains('@'))
+                return Result<UserDto>.Failure("Valid email is required");
+            var emailExists = await _userRepository.AnyAsync(u => u.Email == request.NewEmail && u.Id != userId, cancellationToken);
+            if (emailExists)
+                return Result<UserDto>.Failure("Email already in use");
+            user.Email = request.NewEmail;
+            hasChange = true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.NewPhoneNumber) && request.NewPhoneNumber != user.PhoneNumber)
+        {
+            if (!System.Text.RegularExpressions.Regex.IsMatch(request.NewPhoneNumber, @"^01[3-9]\d{8}$"))
+                return Result<UserDto>.Failure("Invalid Bangladeshi phone number format (e.g., 01712345678)");
+            var phoneExists = await _userRepository.AnyAsync(u => u.PhoneNumber == request.NewPhoneNumber && u.Id != userId, cancellationToken);
+            if (phoneExists)
+                return Result<UserDto>.Failure("Phone number already in use");
+            user.PhoneNumber = request.NewPhoneNumber;
+            hasChange = true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.NewPassword))
+        {
+            if (request.NewPassword.Length < 8 || !System.Text.RegularExpressions.Regex.IsMatch(request.NewPassword, @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$"))
+                return Result<UserDto>.Failure("Password must be at least 8 characters and include uppercase, lowercase and a number");
+            user.PasswordHash = _passwordHasher.HashPassword(request.NewPassword);
+            user.MustChangePassword = false;
+            hasChange = true;
+
+            var existingTokens = (await _refreshTokenRepository.FindAsync(t => t.UserId == user.Id && !t.IsRevoked, cancellationToken)).ToList();
+            foreach (var token in existingTokens)
+            {
+                token.IsRevoked = true;
+                token.RevokedAt = DateTime.UtcNow;
+            }
+        }
+
+        if (!hasChange)
+            return Result<UserDto>.Failure("No changes provided");
+
+        user.UpdatedAt = DateTime.UtcNow;
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return Result<UserDto>.Success(MapToDto(user));
+    }
+
     private async Task<string> CreateRefreshTokenAsync(Guid userId, CancellationToken cancellationToken)
     {
         var tokenValue = _jwtTokenService.GenerateRefreshToken();
