@@ -80,14 +80,15 @@ import { PagedResult } from '../../../core/models/paged-result';
               @if (allRequests && allRequests.items.length > 0) {
                 @for (request of allRequests.items; track request.id) {
                    <mat-card class="request-card">
-                    <mat-card-header>
-                      <div class="title-row">
-                        <span class="blood-badge">{{ getBloodGroupLabel(request.bloodGroup) }}</span>
-                        <mat-card-title>{{ request.hospitalName }}</mat-card-title>
-                      </div>
-                      <mat-card-subtitle>{{ request.districtName }} - {{ request.area || request.upazilaName }}</mat-card-subtitle>
-                    </mat-card-header>
                     <mat-card-content>
+                      <div class="card-top-row">
+                        <span class="blood-badge">{{ getBloodGroupLabel(request.bloodGroup) }}</span>
+                        <span class="card-title">{{ request.hospitalName }}</span>
+                      </div>
+                      <div class="card-location">
+                        <mat-icon class="loc-icon">location_on</mat-icon>
+                        {{ request.districtName }} - {{ request.area || request.upazilaName }}
+                      </div>
                       <div class="request-info">
                         <div class="info-item">
                           <span class="label">Units:</span>
@@ -160,14 +161,15 @@ import { PagedResult } from '../../../core/models/paged-result';
               @if (activeRequests && activeRequests.items.length > 0) {
                 @for (request of activeRequests.items; track request.id) {
                   <mat-card class="request-card">
-                    <mat-card-header>
-                      <div class="title-row">
-                        <span class="blood-badge">{{ getBloodGroupLabel(request.bloodGroup) }}</span>
-                        <mat-card-title>{{ request.hospitalName }}</mat-card-title>
-                      </div>
-                      <mat-card-subtitle>{{ request.districtName }} - {{ request.area || request.upazilaName }}</mat-card-subtitle>
-                    </mat-card-header>
                     <mat-card-content>
+                      <div class="card-top-row">
+                        <span class="blood-badge">{{ getBloodGroupLabel(request.bloodGroup) }}</span>
+                        <span class="card-title">{{ request.hospitalName }}</span>
+                      </div>
+                      <div class="card-location">
+                        <mat-icon class="loc-icon">location_on</mat-icon>
+                        {{ request.districtName }} - {{ request.area || request.upazilaName }}
+                      </div>
                       <div class="request-info">
                         <div class="info-item">
                           <span class="label">Units:</span>
@@ -219,14 +221,15 @@ import { PagedResult } from '../../../core/models/paged-result';
               @if (fulfilledRequests && fulfilledRequests.items.length > 0) {
                 @for (request of fulfilledRequests.items; track request.id) {
                   <mat-card class="request-card fulfilled">
-                    <mat-card-header>
-                      <div class="title-row">
-                        <span class="blood-badge">{{ getBloodGroupLabel(request.bloodGroup) }}</span>
-                        <mat-card-title>{{ request.hospitalName }}</mat-card-title>
-                      </div>
-                      <mat-card-subtitle>{{ request.districtName }}</mat-card-subtitle>
-                    </mat-card-header>
                     <mat-card-content>
+                      <div class="card-top-row">
+                        <span class="blood-badge">{{ getBloodGroupLabel(request.bloodGroup) }}</span>
+                        <span class="card-title">{{ request.hospitalName }}</span>
+                      </div>
+                      <div class="card-location">
+                        <mat-icon class="loc-icon">location_on</mat-icon>
+                        {{ request.districtName }}
+                      </div>
                       <div class="request-info">
                         <div class="info-item">
                           <span class="label">Units:</span>
@@ -266,7 +269,10 @@ import { PagedResult } from '../../../core/models/paged-result';
     .request-card.fulfilled { border-left: 4px solid #2e7d32; }
     .blood-badge { background: var(--bgn-primary, #c62828); color: white; padding: 3px 10px; border-radius: 6px; font-weight: 600; font-size: 13px; white-space: nowrap; letter-spacing: 0.5px; flex-shrink: 0; }
     .blood-badge.small { font-size: 11px; padding: 2px 7px; border-radius: 4px; }
-    .title-row { display: flex; align-items: center; gap: 10px; }
+    .card-top-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+    .card-title { font-size: 16px; font-weight: 500; color: var(--bgn-text, #1a1a1a); }
+    .card-location { display: flex; align-items: center; gap: 4px; font-size: 13px; color: var(--bgn-text-muted, #666); margin-bottom: 12px; }
+    .loc-icon { font-size: 16px; width: 16px; height: 16px; color: var(--bgn-text-muted, #999); }
     .request-info { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 8px; }
     .info-item { display: flex; align-items: center; gap: 4px; }
     .info-item .label { color: #666; font-size: 13px; }
