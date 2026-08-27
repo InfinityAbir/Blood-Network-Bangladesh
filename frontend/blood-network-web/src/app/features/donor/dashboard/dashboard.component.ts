@@ -161,8 +161,10 @@ import { BloodRequestMatch } from '../../../core/models/match';
             @for (match of pendingMatches; track match.id) {
               <mat-card class="match-card">
                 <mat-card-header>
-                  <div class="blood-badge">{{ getBloodGroupLabel(match.donorBloodGroup) }}</div>
-                  <mat-card-title>{{ formatScore(match.matchScore) }}% Match</mat-card-title>
+                  <div class="title-row">
+                    <span class="blood-badge">{{ getBloodGroupLabel(match.donorBloodGroup) }}</span>
+                    <mat-card-title>{{ formatScore(match.matchScore) }}% Match</mat-card-title>
+                  </div>
                   <mat-card-subtitle>
                     @if (match.distanceKm != null) {
                       {{ match.distanceKm | number:'1.1-1' }} km away
@@ -266,8 +268,9 @@ import { BloodRequestMatch } from '../../../core/models/match';
     .matches-section h2 { margin: 0 0 16px; font-size: 20px; }
     .match-card { margin-bottom: 12px; }
     .match-card.small { padding: 8px 16px; }
-    .blood-badge { background: var(--bgn-primary); color: white; padding: 4px 12px; border-radius: 16px; font-weight: bold; font-size: 16px; margin-right: 12px; display: inline-block; }
-    .blood-badge.small { font-size: 13px; padding: 2px 8px; margin-right: 8px; }
+    .blood-badge { background: var(--bgn-primary); color: white; padding: 3px 10px; border-radius: 6px; font-weight: 600; font-size: 13px; white-space: nowrap; letter-spacing: 0.5px; flex-shrink: 0; }
+    .blood-badge.small { font-size: 11px; padding: 2px 7px; border-radius: 4px; }
+    .title-row { display: flex; align-items: center; gap: 10px; }
     .match-info { display: flex; gap: 16px; flex-wrap: wrap; }
     .info-item { display: flex; align-items: center; gap: 4px; }
     .info-item .label { color: var(--bgn-text-muted); font-size: 13px; }

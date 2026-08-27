@@ -79,10 +79,12 @@ import { PagedResult } from '../../../core/models/paged-result';
             <div class="tab-content">
               @if (allRequests && allRequests.items.length > 0) {
                 @for (request of allRequests.items; track request.id) {
-                  <mat-card class="request-card">
+                   <mat-card class="request-card">
                     <mat-card-header>
-                      <div class="blood-badge">{{ getBloodGroupLabel(request.bloodGroup) }}</div>
-                      <mat-card-title>{{ request.hospitalName }}</mat-card-title>
+                      <div class="title-row">
+                        <span class="blood-badge">{{ getBloodGroupLabel(request.bloodGroup) }}</span>
+                        <mat-card-title>{{ request.hospitalName }}</mat-card-title>
+                      </div>
                       <mat-card-subtitle>{{ request.districtName }} - {{ request.area || request.upazilaName }}</mat-card-subtitle>
                     </mat-card-header>
                     <mat-card-content>
@@ -159,8 +161,10 @@ import { PagedResult } from '../../../core/models/paged-result';
                 @for (request of activeRequests.items; track request.id) {
                   <mat-card class="request-card">
                     <mat-card-header>
-                      <div class="blood-badge">{{ getBloodGroupLabel(request.bloodGroup) }}</div>
-                      <mat-card-title>{{ request.hospitalName }}</mat-card-title>
+                      <div class="title-row">
+                        <span class="blood-badge">{{ getBloodGroupLabel(request.bloodGroup) }}</span>
+                        <mat-card-title>{{ request.hospitalName }}</mat-card-title>
+                      </div>
                       <mat-card-subtitle>{{ request.districtName }} - {{ request.area || request.upazilaName }}</mat-card-subtitle>
                     </mat-card-header>
                     <mat-card-content>
@@ -216,8 +220,10 @@ import { PagedResult } from '../../../core/models/paged-result';
                 @for (request of fulfilledRequests.items; track request.id) {
                   <mat-card class="request-card fulfilled">
                     <mat-card-header>
-                      <div class="blood-badge">{{ getBloodGroupLabel(request.bloodGroup) }}</div>
-                      <mat-card-title>{{ request.hospitalName }}</mat-card-title>
+                      <div class="title-row">
+                        <span class="blood-badge">{{ getBloodGroupLabel(request.bloodGroup) }}</span>
+                        <mat-card-title>{{ request.hospitalName }}</mat-card-title>
+                      </div>
                       <mat-card-subtitle>{{ request.districtName }}</mat-card-subtitle>
                     </mat-card-header>
                     <mat-card-content>
@@ -258,8 +264,9 @@ import { PagedResult } from '../../../core/models/paged-result';
     .tab-content { padding: 16px 0; }
     .request-card { margin-bottom: 12px; }
     .request-card.fulfilled { border-left: 4px solid #2e7d32; }
-    .blood-badge { background: #c62828; color: white; padding: 4px 12px; border-radius: 16px; font-weight: bold; font-size: 16px; margin-right: 12px; display: inline-block; }
-    .blood-badge.small { font-size: 13px; padding: 2px 8px; margin-right: 8px; }
+    .blood-badge { background: var(--bgn-primary, #c62828); color: white; padding: 3px 10px; border-radius: 6px; font-weight: 600; font-size: 13px; white-space: nowrap; letter-spacing: 0.5px; flex-shrink: 0; }
+    .blood-badge.small { font-size: 11px; padding: 2px 7px; border-radius: 4px; }
+    .title-row { display: flex; align-items: center; gap: 10px; }
     .request-info { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 8px; }
     .info-item { display: flex; align-items: center; gap: 4px; }
     .info-item .label { color: #666; font-size: 13px; }

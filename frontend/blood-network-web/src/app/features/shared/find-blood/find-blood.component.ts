@@ -213,7 +213,7 @@ import { PagedResult } from '../../../core/models/paged-result';
     .sk-donor-info { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
     .donor-card { cursor: default; }
     .donor-info { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
-    .blood-badge { background: #c62828; color: white; padding: 4px 12px; border-radius: 16px; font-weight: bold; font-size: 16px; }
+    .blood-badge { background: var(--bgn-primary, #c62828); color: white; padding: 3px 10px; border-radius: 6px; font-weight: 600; font-size: 13px; white-space: nowrap; letter-spacing: 0.5px; }
     .status-chip { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; }
     .status-available { background: #e8f5e9; color: #2e7d32; }
     .status-unavailable { background: #ffebee; color: #c62828; }
