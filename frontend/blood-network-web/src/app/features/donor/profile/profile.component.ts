@@ -111,6 +111,14 @@ import { BloodGroup, BloodGroupLabels } from '../../../core/models/blood-group';
               <input matInput formControlName="area" placeholder="e.g., Near Dhaka Medical College" />
             </mat-form-field>
 
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Last Donation Date (optional)</mat-label>
+              <input matInput [matDatepicker]="lastDonationPicker" formControlName="lastDonationDate" />
+              <mat-datepicker-toggle matSuffix [for]="lastDonationPicker"></mat-datepicker-toggle>
+              <mat-datepicker #lastDonationPicker></mat-datepicker>
+              <mat-hint>Leave empty if you have not donated yet</mat-hint>
+            </mat-form-field>
+
             <button mat-raised-button color="primary" type="submit" class="full-width submit-btn"
                     [disabled]="profileForm.invalid || isLoading">
               @if (isLoading) {
@@ -174,7 +182,8 @@ export class DonorProfileComponent implements OnInit {
       divisionId: ['', Validators.required],
       districtId: ['', Validators.required],
       upazilaId: ['', Validators.required],
-      area: ['']
+      area: [''],
+      lastDonationDate: [null]
     });
   }
 
@@ -200,7 +209,8 @@ export class DonorProfileComponent implements OnInit {
       bloodGroup: profile.bloodGroup,
       gender: profile.gender || '',
       dateOfBirth: profile.dateOfBirth ? new Date(profile.dateOfBirth) : null,
-      area: profile.area || ''
+      area: profile.area || '',
+      lastDonationDate: profile.lastDonationDate ? new Date(profile.lastDonationDate) : null
     });
 
     this.locationService.getDistricts().subscribe({
@@ -255,6 +265,7 @@ export class DonorProfileComponent implements OnInit {
 
     const { divisionId, ...data } = this.profileForm.value;
     data.dateOfBirth = data.dateOfBirth ? new Date(data.dateOfBirth).toISOString() : undefined;
+    data.lastDonationDate = data.lastDonationDate ? new Date(data.lastDonationDate).toISOString() : null;
 
     const request$ = this.isEditing
       ? this.donorService.updateProfile(data)

@@ -10,7 +10,8 @@ public record CreateDonorProfileRequest(
     Guid UpazilaId,
     string? Area,
     double? Latitude,
-    double? Longitude
+    double? Longitude,
+    DateTime? LastDonationDate = null
 );
 
 public record UpdateDonorProfileRequest(
@@ -21,7 +22,8 @@ public record UpdateDonorProfileRequest(
     Guid UpazilaId,
     string? Area,
     double? Latitude,
-    double? Longitude
+    double? Longitude,
+    DateTime? LastDonationDate = null
 );
 
 public record DonorProfileDto(

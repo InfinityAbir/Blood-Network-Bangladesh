@@ -83,6 +83,7 @@ public class DonorService
             Area = request.Area,
             Latitude = request.Latitude,
             Longitude = request.Longitude,
+            LastDonationDate = request.LastDonationDate,
             AvailabilityStatus = AvailabilityStatus.Available,
             VerificationStatus = VerificationStatus.Unverified
         };
@@ -124,6 +125,7 @@ public class DonorService
         profile.Area = request.Area;
         profile.Latitude = request.Latitude;
         profile.Longitude = request.Longitude;
+        profile.LastDonationDate = request.LastDonationDate;
         profile.UpdatedAt = DateTime.UtcNow;
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);

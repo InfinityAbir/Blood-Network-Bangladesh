@@ -5,6 +5,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { finalize } from 'rxjs';
 import { HeaderComponent } from '../../../layout/header/header.component';
@@ -26,6 +27,7 @@ import { BloodRequestMatch } from '../../../core/models/match';
     MatButtonModule,
     MatIconModule,
     MatChipsModule,
+    MatTooltipModule,
     MatSnackBarModule,
     HeaderComponent,
     FooterComponent,
@@ -111,14 +113,17 @@ import { BloodRequestMatch } from '../../../core/models/match';
             </mat-card-content>
           </mat-card>
 
-          <mat-card>
+          <mat-card matTooltip="From your donor profile. Eligibility check does not update this.">
             <mat-card-header>
               <mat-card-title>Last Donation</mat-card-title>
             </mat-card-header>
             <mat-card-content>
-              <div class="stat-value">
-                {{ profile.lastDonationDate ? (profile.lastDonationDate | date:'mediumDate') : 'Never' }}
-              </div>
+              @if (profile.lastDonationDate) {
+                <div class="stat-value">{{ profile.lastDonationDate | date:'mediumDate' }}</div>
+              } @else {
+                <div class="stat-value not-recorded">Not recorded</div>
+                <div class="hint">Add it in Edit Profile</div>
+              }
             </mat-card-content>
           </mat-card>
         </div>
@@ -223,6 +228,8 @@ import { BloodRequestMatch } from '../../../core/models/match';
     .verify-unverified { background: #fff3e0; color: #e65100; }
     .verify-pending { background: #e3f2fd; color: #1565c0; }
     .verify-rejected { background: #ffebee; color: #c62828; }
+    .not-recorded { color: #999; font-size: 20px; }
+    .hint { font-size: 12px; color: #999; margin-top: 4px; }
     .response-accepted { background: #e8f5e9; color: #2e7d32; }
     .response-declined { background: #ffebee; color: #c62828; }
     .response-pending { background: #fff3e0; color: #e65100; }
