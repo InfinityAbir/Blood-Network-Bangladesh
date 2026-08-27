@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -263,6 +263,7 @@ export class RequestBloodComponent implements OnInit {
     private requestService: RequestService,
     private locationService: LocationService,
     private router: Router,
+    private route: ActivatedRoute,
     private snackBar: MatSnackBar
   ) {
     this.requestForm = this.fb.group({
@@ -285,6 +286,9 @@ export class RequestBloodComponent implements OnInit {
 
   ngOnInit(): void {
     this.locationService.getDivisions().subscribe({ next: divs => this.divisions = divs, error: (e) => console.debug(e) });
+    this.route.queryParams.subscribe(params => {
+      if (params['bloodGroup']) this.requestForm.patchValue({ bloodGroup: params['bloodGroup'] });
+    });
   }
 
   onDivisionChange(): void {

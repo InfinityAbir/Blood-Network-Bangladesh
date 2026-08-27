@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -24,6 +25,7 @@ import { PagedResult } from '../../../core/models/paged-result';
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    RouterLink,
     MatCardModule,
     MatFormFieldModule,
     MatInputModule,
@@ -157,14 +159,25 @@ import { PagedResult } from '../../../core/models/paged-result';
                   </p>
                 }
               </mat-card-content>
+              <mat-card-actions align="end">
+                <a mat-raised-button color="primary" routerLink="/request-blood" [queryParams]="{bloodGroup: donor.bloodGroup}">
+                  <mat-icon>send</mat-icon> Request Blood
+                </a>
+              </mat-card-actions>
             </mat-card>
-          } @empty {
-            <div class="no-results">
-              <mat-icon>search_off</mat-icon>
-              <p>No donors found matching your criteria</p>
-            </div>
-          }
-        </div>
+           } @empty {
+             <div class="no-results">
+               <mat-icon>search_off</mat-icon>
+               <p>No donors found matching your criteria</p>
+               <p class="hint">Try adjusting filters or create a request to notify donors.</p>
+               <a mat-raised-button color="primary" routerLink="/request-blood"><mat-icon>volunteer_activism</mat-icon> Create Blood Request</a>
+             </div>
+           }
+         </div>
+         <div class="cta-banner">
+           <p>Can't find the right donor? Create a blood request and we'll match you automatically.</p>
+           <a mat-raised-button color="primary" routerLink="/request-blood"><mat-icon>send</mat-icon> Request Blood Now</a>
+         </div>
 
         @if (results.totalPages > 1) {
           <div class="pagination" role="navigation" aria-label="Search results pagination">
@@ -206,6 +219,9 @@ import { PagedResult } from '../../../core/models/paged-result';
     .error-banner { display:flex; align-items:center; gap:12px; padding:12px 16px; background: color-mix(in srgb, var(--bgn-danger) 10%, transparent); border:1px solid color-mix(in srgb, var(--bgn-danger) 30%, transparent); color: var(--bgn-danger); border-radius: var(--bgn-radius-md); margin-bottom:16px; }
     .no-results { grid-column: 1 / -1; text-align: center; padding: 40px 16px; color: var(--bgn-text-muted); border:1px dashed var(--bgn-border); border-radius: var(--bgn-radius-md); }
     .no-results mat-icon { font-size: 48px; width: 48px; height: 48px; color: var(--bgn-text-faint); }
+    .no-results .hint { font-size: 13px; margin: 4px 0 12px; }
+    .cta-banner { text-align: center; padding: 20px; background: var(--bgn-surface-2); border: 1px solid var(--bgn-border); border-radius: var(--bgn-radius-md); margin-bottom: 24px; }
+    .cta-banner p { margin: 0 0 12px; color: var(--bgn-text-muted); }
     .pagination { display: flex; justify-content: center; align-items: center; gap: 16px; flex-wrap: wrap; }
   `]
 })
