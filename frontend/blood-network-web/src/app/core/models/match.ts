@@ -6,6 +6,7 @@ export interface BloodRequestMatch {
   donorPhone: string;
   donorBloodGroup: string;
   hospitalName: string;
+  requesterId?: string;
   requesterName: string;
   requesterPhone: string;
   matchScore: number;

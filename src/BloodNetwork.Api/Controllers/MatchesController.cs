@@ -160,6 +160,7 @@ public class MatchesController : ControllerBase
                 DonorPhone = user?.PhoneNumber ?? string.Empty,
                 DonorBloodGroup = profile?.BloodGroup.ToString() ?? "Unknown",
                 HospitalName = bloodReq?.HospitalName ?? string.Empty,
+                RequesterId = bloodReq?.RequesterId,
                 RequesterName = requester != null ? $"{requester.FirstName} {requester.LastName}" : string.Empty,
                 RequesterPhone = requester?.PhoneNumber ?? string.Empty,
                 MatchScore = match.MatchScore,

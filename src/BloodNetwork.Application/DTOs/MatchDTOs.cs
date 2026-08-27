@@ -11,6 +11,7 @@ public class BloodRequestMatchDto
     public string DonorPhone { get; set; } = string.Empty;
     public string DonorBloodGroup { get; set; } = string.Empty;
     public string HospitalName { get; set; } = string.Empty;
+    public Guid? RequesterId { get; set; }
     public string RequesterName { get; set; } = string.Empty;
     public string RequesterPhone { get; set; } = string.Empty;
     public int MatchScore { get; set; }

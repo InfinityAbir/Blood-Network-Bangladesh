@@ -8,10 +8,12 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { finalize } from 'rxjs';
 import { HeaderComponent } from '../../../layout/header/header.component';
 import { FooterComponent } from '../../../layout/footer/footer.component';
 import { SkeletonComponent } from '../../../shared/components/skeleton/skeleton.component';
+import { ReportDialogComponent } from '../../../shared/components/report-dialog/report-dialog.component';
 import { DonorService } from '../../../core/services/donor.service';
 import { MatchService } from '../../../core/services/match.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -32,6 +34,7 @@ import { BloodRequestMatch } from '../../../core/models/match';
     MatTooltipModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
+    MatDialogModule,
     HeaderComponent,
     FooterComponent,
     SkeletonComponent
@@ -177,13 +180,18 @@ import { BloodRequestMatch } from '../../../core/models/match';
                     <span class="meta-item">Requested by {{ match.requesterName || 'Someone' }}</span>
                   </div>
                 </mat-card-content>
-                <mat-card-actions align="end">
-                  <button mat-stroked-button color="warn" (click)="declineMatch(match.id)" [disabled]="isResponding[match.id]" class="action-btn">
-                    @if (isResponding[match.id]) { <mat-spinner diameter="16"></mat-spinner> } @else { Decline }
+                <mat-card-actions>
+                  <button mat-icon-button matTooltip="Report this request" (click)="openReportDialog(match)" class="report-btn">
+                    <mat-icon>flag</mat-icon>
                   </button>
-                  <button mat-raised-button color="primary" (click)="acceptMatch(match.id)" [disabled]="isResponding[match.id]" class="action-btn">
-                    @if (isResponding[match.id]) { <mat-spinner diameter="16"></mat-spinner> } @else { Accept }
-                  </button>
+                  <div class="actions-right">
+                    <button mat-stroked-button color="warn" (click)="declineMatch(match.id)" [disabled]="isResponding[match.id]" class="action-btn">
+                      @if (isResponding[match.id]) { <mat-spinner diameter="16"></mat-spinner> } @else { Decline }
+                    </button>
+                    <button mat-raised-button color="primary" (click)="acceptMatch(match.id)" [disabled]="isResponding[match.id]" class="action-btn">
+                      @if (isResponding[match.id]) { <mat-spinner diameter="16"></mat-spinner> } @else { Accept }
+                    </button>
+                  </div>
                 </mat-card-actions>
               </mat-card>
             }
@@ -274,7 +282,9 @@ import { BloodRequestMatch } from '../../../core/models/match';
     .meta-item { display: flex; align-items: center; gap: 4px; }
     .meta-item mat-icon { font-size: 16px; width: 16px; height: 16px; }
     .action-btn { min-width: 100px; height: 40px; }
-    mat-card-actions { padding: 8px 16px 12px !important; gap: 8px; }
+    mat-card-actions { padding: 8px 16px 12px !important; display: flex; justify-content: space-between; align-items: center; }
+    .actions-right { display: flex; gap: 8px; }
+    .report-btn { color: var(--bgn-text-muted, #999); }
     .match-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
     .match-row .score { font-weight: 500; }
     .match-row .date { color: var(--bgn-text-muted); font-size: 12px; }
@@ -307,7 +317,8 @@ export class DonorDashboardComponent implements OnInit {
     private matchService: MatchService,
     private authService: AuthService,
     private snackBar: MatSnackBar,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private dialog: MatDialog
   ) {}
 
   get userName(): string {
@@ -364,6 +375,26 @@ export class DonorDashboardComponent implements OnInit {
       },
       error: (e) => {
         this.snackBar.open(e.error?.message || 'Failed to accept match.', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  openReportDialog(match: BloodRequestMatch): void {
+    if (!match.requesterId) {
+      this.snackBar.open('Cannot report - requester info not available.', 'Close', { duration: 3000 });
+      return;
+    }
+    const dialogRef = this.dialog.open(ReportDialogComponent, {
+      width: '480px',
+      data: {
+        reportedUserId: match.requesterId,
+        reportedUserName: match.requesterName || 'Requester',
+        bloodRequestId: match.bloodRequestId
+      }
+    });
+    dialogRef.afterClosed().subscribe(result => {
+      if (result?.error) {
+        this.snackBar.open(result.error, 'Close', { duration: 4000 });
       }
     });
   }
