@@ -97,12 +97,14 @@ import { PagedResult } from '../../../core/models/paged-result';
               </mat-select>
             </mat-form-field>
 
-            <button mat-stroked-button type="button" (click)="resetFilters()" aria-label="Reset filters">
-              <mat-icon>clear</mat-icon> Reset
-            </button>
-            <button mat-raised-button color="primary" type="submit">
-              <mat-icon>search</mat-icon> Search
-            </button>
+            <div class="filter-actions">
+              <button mat-stroked-button type="button" (click)="resetFilters()" aria-label="Reset filters">
+                <mat-icon>clear</mat-icon> Reset
+              </button>
+              <button mat-raised-button color="primary" type="submit">
+                <mat-icon>search</mat-icon> Search
+              </button>
+            </div>
           </div>
         </form>
       </mat-card>
@@ -201,9 +203,10 @@ import { PagedResult } from '../../../core/models/paged-result';
     .filter-card { margin-bottom: 24px; padding: 20px 20px 16px !important; border: 1px solid var(--bgn-border) !important; box-shadow: var(--bgn-shadow-sm) !important; }
     .filter-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)) auto; gap: 12px; align-items: end; }
     .filter-row mat-form-field { width: 100%; }
-    .filter-row button[mat-raised-button] { height: 56px; margin-bottom: 22px; white-space: nowrap; border-radius: var(--bgn-radius-pill) !important; }
-    @media (max-width: 1100px) { .filter-row { grid-template-columns: repeat(3, 1fr); } }
-    @media (max-width: 700px) { .filter-row { grid-template-columns: 1fr; } .filter-row button[mat-raised-button] { width: 100%; } }
+    .filter-actions { display: flex; gap: 8px; align-items: center; margin-bottom: 22px; }
+    .filter-actions button { height: 56px; white-space: nowrap; border-radius: var(--bgn-radius-pill) !important; min-width: 96px; }
+    @media (max-width: 1100px) { .filter-row { grid-template-columns: repeat(3, 1fr); } .filter-actions { grid-column: 1 / -1; justify-content: flex-end; margin-bottom: 0; } }
+    @media (max-width: 700px) { .filter-row { grid-template-columns: 1fr; } .filter-actions { justify-content: stretch; } .filter-actions button { flex: 1; } }
     .results-header { margin-bottom: 16px; color: #666; }
     .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px; }
     .sk-donor-card { min-height: 130px; }
