@@ -166,6 +166,7 @@ export class LoginComponent {
 
     this.authService.login(phoneNumber, password).subscribe({
       next: (res) => {
+        this.isLoading = false;
         this.snackBar.open('Welcome back!', 'Close', { duration: 3000, horizontalPosition: 'end', verticalPosition: 'top' });
         if ((res.user as any)?.mustChangePassword) {
           this.router.navigate(['/admin/first-login-change']);
@@ -175,7 +176,8 @@ export class LoginComponent {
       },
       error: (err) => {
         this.isLoading = false;
-        this.errorMessage = err.error?.message || 'Login failed. Please check your credentials.';
+        const msg = err.error?.message || err.error?.Message || err.statusText || 'Login failed. Please check your credentials.';
+        this.errorMessage = msg;
       }
     });
   }

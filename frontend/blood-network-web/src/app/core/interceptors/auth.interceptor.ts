@@ -10,6 +10,12 @@ let refresh$: Observable<AuthResponse> | null = null;
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const router = inject(Router);
+
+  // Never attach token or handle 401 refresh for auth endpoints
+  if (req.url.includes('/auth/')) {
+    return next(req);
+  }
+
   const token = authService.getToken();
 
   if (token) {
