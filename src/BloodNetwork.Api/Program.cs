@@ -227,13 +227,13 @@ if (!app.Environment.IsEnvironment("Testing"))
                 {
                     var hasher = new BloodNetwork.Infrastructure.Authentication.PasswordHasher();
                     bool needsUpdate = false;
-                    // Re-hash if current env password doesn't verify (handles iteration changes)
-                    if (!hasher.VerifyPassword(adminPassword, existing.PasswordHash))
+                    // Only re-hash before first login (prevents overwriting user-changed password)
+                    if (existing.MustChangePassword && existing.LastLoginAt == null && !hasher.VerifyPassword(adminPassword, existing.PasswordHash))
                     {
                         existing.PasswordHash = hasher.HashPassword(adminPassword);
                         existing.Email = adminEmail;
                         needsUpdate = true;
-                        Log.Information("Updated admin {Phone} password hash to match env", adminPhone);
+                        Log.Information("Updated admin {Phone} password hash to match env (pre-first-login)", adminPhone);
                     }
                     if (!existing.MustChangePassword && existing.LastLoginAt == null)
                     {
