@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject, tap, Subject } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Notification } from '../models/notification';
+import { Notification as AppNotification } from '../models/notification';
 import { SignalRService, RealtimeNotification } from './signalr.service';
 
 @Injectable({ providedIn: 'root' })
@@ -10,15 +10,15 @@ export class NotificationService {
   private readonly apiUrl = `${environment.apiUrl}/notifications`;
   private unreadCountSubject = new BehaviorSubject<number>(0);
   unreadCount$ = this.unreadCountSubject.asObservable();
-  private newNotificationSubject = new Subject<Notification>();
+  private newNotificationSubject = new Subject<AppNotification>();
   newNotification$ = this.newNotificationSubject.asObservable();
 
   constructor(
     private http: HttpClient,
     private signalR: SignalRService
   ) {
-    this.signalR.notifications$.subscribe(n => {
-      this.newNotificationSubject.next(n as any);
+    this.signalR.notifications$.subscribe((n: RealtimeNotification) => {
+      this.newNotificationSubject.next(n as unknown as AppNotification);
       this.unreadCountSubject.next(this.unreadCountSubject.value + 1);
     });
 
@@ -27,8 +27,8 @@ export class NotificationService {
     });
   }
 
-  getNotifications(page = 1, pageSize = 20): Observable<Notification[]> {
-    return this.http.get<Notification[]>(this.apiUrl, {
+  getNotifications(page = 1, pageSize = 20): Observable<AppNotification[]> {
+    return this.http.get<AppNotification[]>(this.apiUrl, {
       params: { page: page.toString(), pageSize: pageSize.toString() }
     });
   }
@@ -39,8 +39,8 @@ export class NotificationService {
     );
   }
 
-  markAsRead(notificationId: string): Observable<Notification> {
-    return this.http.post<Notification>(`${this.apiUrl}/${notificationId}/read`, {}).pipe(
+  markAsRead(notificationId: string): Observable<AppNotification> {
+    return this.http.post<AppNotification>(`${this.apiUrl}/${notificationId}/read`, {}).pipe(
       tap(() => {
         const current = this.unreadCountSubject.value;
         this.unreadCountSubject.next(Math.max(0, current - 1));

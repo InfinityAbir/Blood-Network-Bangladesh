@@ -24,6 +24,7 @@ public class LocationsController : ControllerBase
     }
 
     [HttpGet("divisions")]
+    [ResponseCache(Duration = 3600)]
     [ProducesResponseType(typeof(List<DivisionDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetDivisions(CancellationToken cancellationToken)
     {
@@ -33,6 +34,7 @@ public class LocationsController : ControllerBase
     }
 
     [HttpGet("districts")]
+    [ResponseCache(Duration = 3600)]
     [ProducesResponseType(typeof(List<DistrictDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetDistricts([FromQuery] Guid? divisionId, CancellationToken cancellationToken)
     {
@@ -47,6 +49,7 @@ public class LocationsController : ControllerBase
     }
 
     [HttpGet("upazilas")]
+    [ResponseCache(Duration = 3600)]
     [ProducesResponseType(typeof(List<UpazilaDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetUpazilas([FromQuery] Guid? districtId, CancellationToken cancellationToken)
     {

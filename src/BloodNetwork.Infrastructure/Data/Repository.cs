@@ -17,6 +17,18 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
         _dbSet = context.Set<T>();
     }
 
+    public IQueryable<T> Query() => _dbSet.AsNoTracking();
+
+    public virtual async Task<IReadOnlyList<T>> ToListAsync(IQueryable<T> query, CancellationToken cancellationToken = default)
+    {
+        return await query.ToListAsync(cancellationToken);
+    }
+
+    public virtual async Task<int> CountAsync(IQueryable<T> query, CancellationToken cancellationToken = default)
+    {
+        return await query.CountAsync(cancellationToken);
+    }
+
     public virtual async Task<T?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await _dbSet.FindAsync(new object[] { id }, cancellationToken);

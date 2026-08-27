@@ -87,10 +87,9 @@ public class MatchingService : IMatchingService
         var matches = new List<BloodRequestMatch>();
         foreach (var profile in filteredCandidates)
         {
-            var score = CalculateScore(profile, request);
-            if (score < 10) continue;
-
             var distance = CalculateDistance(profile, request);
+            var score = CalculateScore(profile, request, distance);
+            if (score < 10) continue;
 
             var match = new BloodRequestMatch
             {
@@ -194,7 +193,7 @@ public class MatchingService : IMatchingService
         return compatibleGroups.Contains(donorGroup);
     }
 
-    private int CalculateScore(DonorProfile profile, BloodRequest request)
+    private int CalculateScore(DonorProfile profile, BloodRequest request, double? preCalculatedDistance = null)
     {
         int score = 0;
 
@@ -230,7 +229,7 @@ public class MatchingService : IMatchingService
             score += _weights.ProfileFreshness;
         }
 
-        var distance = CalculateDistance(profile, request);
+        var distance = preCalculatedDistance ?? CalculateDistance(profile, request);
         if (distance.HasValue)
         {
             score += distance.Value switch

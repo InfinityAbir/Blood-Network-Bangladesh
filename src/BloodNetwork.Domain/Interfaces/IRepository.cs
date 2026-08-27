@@ -1,10 +1,14 @@
 using System.Linq.Expressions;
+using System.Linq;
 using BloodNetwork.Domain.Common;
 
 namespace BloodNetwork.Domain.Interfaces;
 
 public interface IRepository<T> where T : BaseEntity
 {
+    IQueryable<T> Query();
+    Task<IReadOnlyList<T>> ToListAsync(IQueryable<T> query, CancellationToken cancellationToken = default);
+    Task<int> CountAsync(IQueryable<T> query, CancellationToken cancellationToken = default);
     Task<T?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<T>> GetAllAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<T>> FindAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default);

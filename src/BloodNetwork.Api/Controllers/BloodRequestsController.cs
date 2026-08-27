@@ -61,14 +61,9 @@ public class BloodRequestsController : ControllerBase
         if (!result.IsSuccess)
             return NotFound(new { success = false, message = result.Error });
 
-        // Non-owners see public dto (no PII), owners and admins see full details
         if (!isAdmin && result.Value!.RequesterId != userId)
         {
-            var districtResult = await _requestService.GetRequestByIdAsync(id, cancellationToken);
-            if (!districtResult.IsSuccess)
-                return NotFound(new { success = false, message = districtResult.Error });
-
-            var fullDto = districtResult.Value!;
+            var fullDto = result.Value!;
             var publicDto = new PublicBloodRequestDto(
                 fullDto.Id,
                 fullDto.BloodGroup,

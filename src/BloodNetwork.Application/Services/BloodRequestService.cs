@@ -129,28 +129,37 @@ public class BloodRequestService
 
     public async Task<Result<PagedResult<BloodRequestDto>>> GetMyRequestsAsync(Guid requesterId, RequestStatus? status, int page, int pageSize, CancellationToken cancellationToken = default)
     {
-        var allRequests = await _requestRepository.FindAsync(r => r.RequesterId == requesterId, cancellationToken);
-        var query = allRequests.AsEnumerable();
+        var query = _requestRepository.Query()
+            .Where(r => r.RequesterId == requesterId);
 
         if (status.HasValue)
             query = query.Where(r => r.Status == status.Value);
 
-        var sorted = query.OrderByDescending(r => r.CreatedAt).ToList();
-        var totalCount = sorted.Count;
+        var totalCount = await _requestRepository.CountAsync(query);
 
-        var items = sorted
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToList();
+        var items = await _requestRepository.ToListAsync(
+            query.OrderByDescending(r => r.CreatedAt).Skip((page - 1) * pageSize).Take(pageSize));
 
-        var dtos = new List<BloodRequestDto>();
-        foreach (var item in items)
+        var requesterIds = items.Select(r => r.RequesterId).Distinct().ToList();
+        var districtIds = items.Select(r => r.DistrictId).Distinct().ToList();
+        var upazilaIds = items.Select(r => r.UpazilaId).Distinct().ToList();
+
+        var users = await _userRepository.ToListAsync(_userRepository.Query().Where(u => requesterIds.Contains(u.Id)));
+        var userLookup = users.ToDictionary(u => u.Id);
+
+        var districts = await _districtRepository.ToListAsync(_districtRepository.Query().Where(d => districtIds.Contains(d.Id)));
+        var districtLookup = districts.ToDictionary(d => d.Id);
+
+        var upazilas = await _upazilaRepository.ToListAsync(_upazilaRepository.Query().Where(u => upazilaIds.Contains(u.Id)));
+        var upazilaLookup = upazilas.ToDictionary(u => u.Id);
+
+        var dtos = items.Select(item =>
         {
-            var user = await _userRepository.GetByIdAsync(item.RequesterId, cancellationToken);
-            var district = await _districtRepository.GetByIdAsync(item.DistrictId, cancellationToken);
-            var upazila = await _upazilaRepository.GetByIdAsync(item.UpazilaId, cancellationToken);
-            dtos.Add(MapToDto(item, user, district, upazila));
-        }
+            userLookup.TryGetValue(item.RequesterId, out var user);
+            districtLookup.TryGetValue(item.DistrictId, out var district);
+            upazilaLookup.TryGetValue(item.UpazilaId, out var upazila);
+            return MapToDto(item, user, district, upazila);
+        }).ToList();
 
         return Result<PagedResult<BloodRequestDto>>.Success(new PagedResult<BloodRequestDto>
         {
@@ -264,8 +273,8 @@ public class BloodRequestService
 
     public async Task<Result<PagedResult<PublicBloodRequestDto>>> SearchOpenRequestsAsync(BloodRequestSearchRequest request, CancellationToken cancellationToken = default)
     {
-        var allRequests = await _requestRepository.GetAllAsync(cancellationToken);
-        var query = allRequests.Where(r => r.Status == RequestStatus.Open || r.Status == RequestStatus.PartiallyFulfilled);
+        var query = _requestRepository.Query()
+            .Where(r => r.Status == RequestStatus.Open || r.Status == RequestStatus.PartiallyFulfilled);
 
         if (request.BloodGroup.HasValue)
             query = query.Where(r => r.BloodGroup == request.BloodGroup.Value);
@@ -276,21 +285,26 @@ public class BloodRequestService
         if (request.Urgency.HasValue)
             query = query.Where(r => r.Urgency == request.Urgency.Value);
 
-        var totalCount = query.Count();
-        var sorted = query.OrderByDescending(r => r.CreatedAt).ToList();
+        var totalCount = await _requestRepository.CountAsync(query);
 
-        var items = sorted
-            .Skip((request.Page - 1) * request.PageSize)
-            .Take(request.PageSize)
-            .ToList();
+        var items = await _requestRepository.ToListAsync(
+            query.OrderByDescending(r => r.CreatedAt).Skip((request.Page - 1) * request.PageSize).Take(request.PageSize));
 
-        var dtos = new List<PublicBloodRequestDto>();
-        foreach (var item in items)
+        var districtIds = items.Select(r => r.DistrictId).Distinct().ToList();
+        var upazilaIds = items.Select(r => r.UpazilaId).Distinct().ToList();
+
+        var districts = await _districtRepository.ToListAsync(_districtRepository.Query().Where(d => districtIds.Contains(d.Id)));
+        var districtLookup = districts.ToDictionary(d => d.Id);
+
+        var upazilas = await _upazilaRepository.ToListAsync(_upazilaRepository.Query().Where(u => upazilaIds.Contains(u.Id)));
+        var upazilaLookup = upazilas.ToDictionary(u => u.Id);
+
+        var dtos = items.Select(item =>
         {
-            var district = await _districtRepository.GetByIdAsync(item.DistrictId, cancellationToken);
-            var upazila = await _upazilaRepository.GetByIdAsync(item.UpazilaId, cancellationToken);
-            dtos.Add(MapToPublicDto(item, district, upazila));
-        }
+            districtLookup.TryGetValue(item.DistrictId, out var district);
+            upazilaLookup.TryGetValue(item.UpazilaId, out var upazila);
+            return MapToPublicDto(item, district, upazila);
+        }).ToList();
 
         return Result<PagedResult<PublicBloodRequestDto>>.Success(new PagedResult<PublicBloodRequestDto>
         {

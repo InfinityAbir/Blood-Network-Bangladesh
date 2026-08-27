@@ -1,17 +1,17 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
-import { finalize } from 'rxjs';
+import { finalize, Subject, takeUntil } from 'rxjs';
 import { HeaderComponent } from '../../layout/header/header.component';
 import { FooterComponent } from '../../layout/footer/footer.component';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { NotificationService } from '../../core/services/notification.service';
 import { AuthService } from '../../core/services/auth.service';
-import { Notification } from '../../core/models/notification';
+import { Notification as AppNotification } from '../../core/models/notification';
 
 @Component({
   selector: 'app-notifications',
@@ -166,14 +166,16 @@ import { Notification } from '../../core/models/notification';
     }
   `]
 })
-export class NotificationsComponent implements OnInit {
-  notifications: Notification[] = [];
+export class NotificationsComponent implements OnInit, OnDestroy {
+  notifications: AppNotification[] = [];
   unreadCount = 0;
   isLoading = true;
   isLoadingMore = false;
   currentPage = 1;
   pageSize = 20;
   hasMore = true;
+
+  private destroy$ = new Subject<void>();
 
   constructor(
     private notificationService: NotificationService,
@@ -183,15 +185,20 @@ export class NotificationsComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.notificationService.unreadCount$.subscribe(count => {
+    this.notificationService.unreadCount$.pipe(takeUntil(this.destroy$)).subscribe(count => {
       this.unreadCount = count;
     });
 
-    this.notificationService.newNotification$.subscribe(notif => {
+    this.notificationService.newNotification$.pipe(takeUntil(this.destroy$)).subscribe(notif => {
       this.notifications.unshift(notif);
     });
 
     this.loadNotifications();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   loadNotifications(): void {
@@ -222,7 +229,7 @@ export class NotificationsComponent implements OnInit {
     });
   }
 
-  onNotifClick(notif: Notification): void {
+  onNotifClick(notif: AppNotification): void {
     if (!notif.isRead) {
       this.notificationService.markAsRead(notif.id).subscribe({ error: (e) => console.debug(e) });
       notif.isRead = true;

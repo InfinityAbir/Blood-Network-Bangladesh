@@ -53,6 +53,8 @@ else
         options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 }
 
+builder.Services.AddMemoryCache();
+builder.Services.AddResponseCaching();
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
@@ -283,6 +285,7 @@ app.UseForwardedHeaders(forwardedHeadersOptions);
 app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 app.UseHttpsRedirection();
 app.UseCors("AllowAngularApp");
+app.UseResponseCaching();
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
