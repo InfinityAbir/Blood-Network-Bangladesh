@@ -216,13 +216,26 @@ if (!app.Environment.IsEnvironment("Testing"))
             }
             else
             {
-                // Ensure existing default admin is forced to change password on first login
                 var existing = await db.Users.FirstOrDefaultAsync(u => u.PhoneNumber == adminPhone);
-                if (existing != null && !existing.MustChangePassword && existing.LastLoginAt == null)
+                if (existing != null)
                 {
-                    existing.MustChangePassword = true;
-                    await db.SaveChangesAsync();
-                    Log.Information("Updated existing admin {Phone} to require password change", adminPhone);
+                    var hasher = new BloodNetwork.Infrastructure.Authentication.PasswordHasher();
+                    bool needsUpdate = false;
+                    // Re-hash if current env password doesn't verify (handles iteration changes)
+                    if (!hasher.VerifyPassword(adminPassword, existing.PasswordHash))
+                    {
+                        existing.PasswordHash = hasher.HashPassword(adminPassword);
+                        existing.Email = adminEmail;
+                        needsUpdate = true;
+                        Log.Information("Updated admin {Phone} password hash to match env", adminPhone);
+                    }
+                    if (!existing.MustChangePassword && existing.LastLoginAt == null)
+                    {
+                        existing.MustChangePassword = true;
+                        needsUpdate = true;
+                        Log.Information("Updated existing admin {Phone} to require password change", adminPhone);
+                    }
+                    if (needsUpdate) await db.SaveChangesAsync();
                 }
             }
         }
