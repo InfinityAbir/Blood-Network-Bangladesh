@@ -11,6 +11,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { finalize } from 'rxjs';
 import { HeaderComponent } from '../../../layout/header/header.component';
 import { FooterComponent } from '../../../layout/footer/footer.component';
 import { AuthService } from '../../../core/services/auth.service';
@@ -284,18 +285,15 @@ export class RegisterComponent {
 
     const { confirmPassword, ...registerData } = this.registerForm.value;
 
-    this.authService.register(registerData).subscribe({
+    this.authService.register(registerData).pipe(
+      finalize(() => this.isLoading = false)
+    ).subscribe({
       next: () => {
-        this.isLoading = false;
         this.snackBar.open('Account created successfully!', 'Close', { duration: 3000, horizontalPosition: 'end', verticalPosition: 'top' });
         this.successMessage = 'Account created successfully! Redirecting...';
-        setTimeout(() => {
-          this.isLoading = false;
-          this.router.navigate([this.authService.getDashboardRoute()]);
-        }, 1500);
+        setTimeout(() => this.router.navigate([this.authService.getDashboardRoute()]), 1500);
       },
       error: (err) => {
-        this.isLoading = false;
         this.errorMessage = err.error?.message || 'Registration failed. Please try again.';
       }
     });

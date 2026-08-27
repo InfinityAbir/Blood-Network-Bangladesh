@@ -9,6 +9,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { finalize } from 'rxjs';
 import { HeaderComponent } from '../../../layout/header/header.component';
 import { FooterComponent } from '../../../layout/footer/footer.component';
 import { AuthService } from '../../../core/services/auth.service';
@@ -164,9 +165,10 @@ export class LoginComponent {
 
     const { phoneNumber, password } = this.loginForm.value;
 
-    this.authService.login(phoneNumber, password).subscribe({
+    this.authService.login(phoneNumber, password).pipe(
+      finalize(() => this.isLoading = false)
+    ).subscribe({
       next: (res) => {
-        this.isLoading = false;
         this.snackBar.open('Welcome back!', 'Close', { duration: 3000, horizontalPosition: 'end', verticalPosition: 'top' });
         if ((res.user as any)?.mustChangePassword) {
           this.router.navigate(['/admin/first-login-change']);
@@ -175,8 +177,7 @@ export class LoginComponent {
         this.router.navigate([this.authService.getDashboardRoute()]);
       },
       error: (err) => {
-        this.isLoading = false;
-        const msg = err.error?.message || err.error?.Message || err.statusText || 'Login failed. Please check your credentials.';
+        const msg = err.error?.message || err.error?.Message || 'Invalid phone number or password. Please try again.';
         this.errorMessage = msg;
       }
     });
