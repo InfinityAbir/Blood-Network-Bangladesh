@@ -200,7 +200,7 @@ if (!app.Environment.IsEnvironment("Testing"))
 
         if (!string.IsNullOrWhiteSpace(adminPhone) && !string.IsNullOrWhiteSpace(adminPassword))
         {
-            var adminExists = await db.Users.AnyAsync(u => u.PhoneNumber == adminPhone);
+            var adminExists = await db.Users.AnyAsync(u => u.Role == BloodNetwork.Domain.Enums.UserRole.Admin);
             if (!adminExists)
             {
                 var hasher = new BloodNetwork.Infrastructure.Authentication.PasswordHasher();
