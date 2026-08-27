@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -14,11 +15,13 @@ import { AuthService } from '../../../core/services/auth.service';
 @Component({
   selector: 'app-admin-settings',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatCardModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule, HeaderComponent, FooterComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, MatCardModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule, HeaderComponent, FooterComponent],
   template: `
     <app-header />
     <main class="settings-wrap">
-      <mat-card class="settings-card">
+      <div class="settings-container">
+        <a mat-button routerLink="/admin" class="back-link"><mat-icon>arrow_back</mat-icon> Back to Dashboard</a>
+        <mat-card class="settings-card">
         <mat-card-header>
           <mat-card-title>Admin Settings</mat-card-title>
           <mat-card-subtitle>Update your email, phone number or password. Current password is required for any change.</mat-card-subtitle>
@@ -71,20 +74,27 @@ import { AuthService } from '../../../core/services/auth.service';
               </mat-form-field>
             }
 
-            <button mat-raised-button color="primary" type="submit" class="full submit" [disabled]="form.invalid || isLoading || !hasAnyChange()">
-              @if (isLoading) { <mat-spinner diameter="20"></mat-spinner> } @else { Save Changes }
-            </button>
+            <div class="form-actions">
+              <a mat-stroked-button routerLink="/admin" class="cancel-btn">Cancel</a>
+              <button mat-raised-button color="primary" type="submit" class="submit" [disabled]="form.invalid || isLoading || !hasAnyChange()">
+                @if (isLoading) { <mat-spinner diameter="20"></mat-spinner> } @else { Save Changes }
+              </button>
+            </div>
           </form>
         </mat-card-content>
       </mat-card>
+      </div>
     </main>
     <app-footer />
   `,
   styles: [`
-    .settings-wrap { flex: 1; display:flex; justify-content:center; align-items:flex-start; padding:48px 16px; background: var(--bgn-bg); min-height: calc(100vh - 64px); }
-    .settings-card { width:100%; max-width:520px; padding:16px 18px; border-radius: var(--bgn-radius-lg) !important; border:1px solid var(--bgn-border) !important; box-shadow: var(--bgn-shadow-lg) !important; }
+    .settings-wrap { flex: 1; display:flex; justify-content:center; align-items:flex-start; padding:32px 16px; background: var(--bgn-bg); min-height: calc(100vh - 64px); }
+    .settings-container { width:100%; max-width:520px; display:flex; flex-direction:column; gap:12px; }
+    .back-link { align-self: flex-start; }
+    .settings-card { width:100%; padding:16px 18px; border-radius: var(--bgn-radius-lg) !important; border:1px solid var(--bgn-border) !important; box-shadow: var(--bgn-shadow-lg) !important; }
     .full { width:100%; }
-    .submit { height:48px; border-radius: var(--bgn-radius-pill) !important; margin-top:12px; }
+    .form-actions { display:flex; gap:12px; margin-top:12px; }
+    .form-actions .cancel-btn, .form-actions .submit { flex:1; height:48px; border-radius: var(--bgn-radius-pill) !important; }
     .banner { padding:12px 16px; border-radius: var(--bgn-radius-sm); margin-bottom:16px; font-size:14px; border:1px solid; }
     .banner.error { background: color-mix(in srgb, var(--bgn-danger) 12%, transparent); color: var(--bgn-danger); border-color: color-mix(in srgb, var(--bgn-danger) 30%, transparent); }
     .banner.success { background: color-mix(in srgb, var(--bgn-success) 14%, transparent); color: var(--bgn-success); border-color: color-mix(in srgb, var(--bgn-success) 30%, transparent); }

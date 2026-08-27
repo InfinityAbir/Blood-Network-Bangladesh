@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -21,6 +22,7 @@ import { PagedResult } from '../../../core/models/paged-result';
   imports: [
     CommonModule,
     FormsModule,
+    RouterLink,
     MatCardModule,
     MatButtonModule,
     MatIconModule,
@@ -34,6 +36,7 @@ import { PagedResult } from '../../../core/models/paged-result';
   template: `
     <app-header />
     <main class="container">
+      <a mat-button routerLink="/admin" class="back-link"><mat-icon>arrow_back</mat-icon> Back to Dashboard</a>
       <h1>Audit Logs</h1>
 
       <div class="filters">
@@ -114,6 +117,7 @@ import { PagedResult } from '../../../core/models/paged-result';
   `,
   styles: [`
     .container { flex: 1; padding: 24px; max-width: 1200px; margin: 0 auto; width: 100%; }
+    .back-link { margin-bottom: 12px; }
     .filters { display: flex; gap: 12px; align-items: center; margin-bottom: 24px; }
     .filters mat-form-field { flex: 1; min-width: 200px; }
     .sk-table { padding: 0; }
