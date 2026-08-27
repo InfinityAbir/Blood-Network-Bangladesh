@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -8,9 +8,10 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatChipsModule } from '@angular/material/chips';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { finalize } from 'rxjs';
 import { HeaderComponent } from '../../../layout/header/header.component';
 import { FooterComponent } from '../../../layout/footer/footer.component';
+import { SkeletonComponent } from '../../../shared/components/skeleton/skeleton.component';
 import { AdminService } from '../../../core/services/admin.service';
 import { AdminUser } from '../../../core/models/admin';
 import { PagedResult } from '../../../core/models/paged-result';
@@ -28,9 +29,9 @@ import { PagedResult } from '../../../core/models/paged-result';
     MatSelectModule,
     MatFormFieldModule,
     MatChipsModule,
-    MatProgressSpinnerModule,
     HeaderComponent,
-    FooterComponent
+    FooterComponent,
+    SkeletonComponent
   ],
   template: `
     <app-header />
@@ -55,7 +56,23 @@ import { PagedResult } from '../../../core/models/paged-result';
       </div>
 
       @if (isLoading) {
-        <div class="loading"><mat-spinner diameter="40"></mat-spinner></div>
+        <div class="sk-list">
+          @for (i of [1,2,3,4,5]; track i) {
+            <mat-card class="sk-user-card">
+              <mat-card-header>
+                <mat-card-title><app-skeleton type="line" width="160px" height="16px" /></mat-card-title>
+                <mat-card-subtitle><app-skeleton type="line" width="200px" height="12px" /></mat-card-subtitle>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="sk-chips">
+                  <app-skeleton type="rect" width="70px" height="22px" />
+                  <app-skeleton type="rect" width="60px" height="22px" />
+                  <app-skeleton type="line" width="100px" height="12px" />
+                </div>
+              </mat-card-content>
+            </mat-card>
+          }
+        </div>
       } @else if (result && result.items.length > 0) {
         <div class="result-info">Showing {{ result.items.length }} of {{ result.totalCount }} users</div>
         @for (user of result.items; track user.id) {
@@ -105,7 +122,9 @@ import { PagedResult } from '../../../core/models/paged-result';
     .container { flex: 1; padding: 24px; max-width: 1200px; margin: 0 auto; width: 100%; }
     .filters { display: flex; gap: 12px; align-items: center; margin-bottom: 24px; flex-wrap: wrap; }
     .filters mat-form-field { flex: 1; min-width: 200px; }
-    .loading { display: flex; justify-content: center; padding: 60px; }
+    .sk-list { display: flex; flex-direction: column; gap: 8px; }
+    .sk-user-card { min-height: 100px; }
+    .sk-chips { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
     .result-info { font-size: 13px; color: #666; margin-bottom: 12px; }
     .user-card { margin-bottom: 8px; }
     .user-info { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
@@ -129,7 +148,10 @@ export class UserManagementComponent implements OnInit {
   selectedRole = '';
   currentPage = 1;
 
-  constructor(private adminService: AdminService) {}
+  constructor(
+    private adminService: AdminService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
     this.loadUsers();
@@ -142,15 +164,11 @@ export class UserManagementComponent implements OnInit {
       search: this.searchTerm || undefined,
       role: this.selectedRole || undefined,
       page: this.currentPage
-    }).subscribe({
-      next: (result) => {
-        this.result = result;
-        this.isLoading = false;
-      },
-      error: (e) => {
-        console.debug(e);
-        this.isLoading = false;
-      }
+    }).pipe(
+      finalize(() => { this.isLoading = false; this.cdr.detectChanges(); })
+    ).subscribe({
+      next: (result) => { this.result = result; },
+      error: (e) => { console.debug(e); }
     });
   }
 

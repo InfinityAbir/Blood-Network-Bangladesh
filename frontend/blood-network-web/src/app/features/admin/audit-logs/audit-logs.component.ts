@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -7,9 +7,10 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { finalize } from 'rxjs';
 import { HeaderComponent } from '../../../layout/header/header.component';
 import { FooterComponent } from '../../../layout/footer/footer.component';
+import { SkeletonComponent } from '../../../shared/components/skeleton/skeleton.component';
 import { AdminService } from '../../../core/services/admin.service';
 import { AdminAuditLog } from '../../../core/models/admin';
 import { PagedResult } from '../../../core/models/paged-result';
@@ -26,9 +27,9 @@ import { PagedResult } from '../../../core/models/paged-result';
     MatSelectModule,
     MatFormFieldModule,
     MatInputModule,
-    MatProgressSpinnerModule,
     HeaderComponent,
-    FooterComponent
+    FooterComponent,
+    SkeletonComponent
   ],
   template: `
     <app-header />
@@ -44,7 +45,30 @@ import { PagedResult } from '../../../core/models/paged-result';
       </div>
 
       @if (isLoading) {
-        <div class="loading"><mat-spinner diameter="40"></mat-spinner></div>
+        <mat-card>
+          <div class="sk-table">
+            <div class="sk-table-header">
+              <app-skeleton type="line" width="60px" height="12px" />
+              <app-skeleton type="line" width="80px" height="12px" />
+              <app-skeleton type="line" width="60px" height="12px" />
+              <app-skeleton type="line" width="60px" height="12px" />
+              <app-skeleton type="line" width="80px" height="12px" />
+              <app-skeleton type="line" width="60px" height="12px" />
+              <app-skeleton type="line" width="120px" height="12px" />
+            </div>
+            @for (i of [1,2,3,4,5,6,7,8]; track i) {
+              <div class="sk-table-row">
+                <app-skeleton type="line" width="70px" height="12px" />
+                <app-skeleton type="line" width="90px" height="12px" />
+                <app-skeleton type="rect" width="70px" height="20px" />
+                <app-skeleton type="line" width="60px" height="12px" />
+                <app-skeleton type="line" width="80px" height="12px" />
+                <app-skeleton type="line" width="60px" height="12px" />
+                <app-skeleton type="line" width="120px" height="12px" />
+              </div>
+            }
+          </div>
+        </mat-card>
       } @else if (result && result.items.length > 0) {
         <div class="result-info">Showing {{ result.items.length }} of {{ result.totalCount }} logs</div>
         <mat-card>
@@ -92,7 +116,9 @@ import { PagedResult } from '../../../core/models/paged-result';
     .container { flex: 1; padding: 24px; max-width: 1200px; margin: 0 auto; width: 100%; }
     .filters { display: flex; gap: 12px; align-items: center; margin-bottom: 24px; }
     .filters mat-form-field { flex: 1; min-width: 200px; }
-    .loading { display: flex; justify-content: center; padding: 60px; }
+    .sk-table { padding: 0; }
+    .sk-table-header { display: grid; grid-template-columns: 70px 90px 70px 60px 80px 60px 1fr; gap: 8px; padding: 10px 8px; border-bottom: 2px solid #ddd; }
+    .sk-table-row { display: grid; grid-template-columns: 70px 90px 70px 60px 80px 60px 1fr; gap: 8px; padding: 8px; border-bottom: 1px solid #eee; align-items: center; }
     .result-info { font-size: 13px; color: #666; margin-bottom: 12px; }
     .audit-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .audit-table th { text-align: left; padding: 10px 8px; border-bottom: 2px solid #ddd; font-weight: 500; color: #666; }
@@ -111,7 +137,10 @@ export class AuditLogViewerComponent implements OnInit {
   entityTypeFilter = '';
   currentPage = 1;
 
-  constructor(private adminService: AdminService) {}
+  constructor(
+    private adminService: AdminService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
     this.loadLogs();
@@ -123,15 +152,11 @@ export class AuditLogViewerComponent implements OnInit {
     this.adminService.getAuditLogs({
       entityType: this.entityTypeFilter || undefined,
       page: this.currentPage
-    }).subscribe({
-      next: (result) => {
-        this.result = result;
-        this.isLoading = false;
-      },
-      error: (e) => {
-        console.debug(e);
-        this.isLoading = false;
-      }
+    }).pipe(
+      finalize(() => { this.isLoading = false; this.cdr.detectChanges(); })
+    ).subscribe({
+      next: (result) => { this.result = result; },
+      error: (e) => { console.debug(e); }
     });
   }
 

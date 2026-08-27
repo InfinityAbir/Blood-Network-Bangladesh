@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -8,9 +8,10 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatChipsModule } from '@angular/material/chips';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { finalize } from 'rxjs';
 import { HeaderComponent } from '../../../layout/header/header.component';
 import { FooterComponent } from '../../../layout/footer/footer.component';
+import { SkeletonComponent } from '../../../shared/components/skeleton/skeleton.component';
 import { AdminService } from '../../../core/services/admin.service';
 import { AdminReport } from '../../../core/models/admin';
 import { PagedResult } from '../../../core/models/paged-result';
@@ -28,9 +29,9 @@ import { PagedResult } from '../../../core/models/paged-result';
     MatFormFieldModule,
     MatInputModule,
     MatChipsModule,
-    MatProgressSpinnerModule,
     HeaderComponent,
-    FooterComponent
+    FooterComponent,
+    SkeletonComponent
   ],
   template: `
     <app-header />
@@ -52,7 +53,22 @@ import { PagedResult } from '../../../core/models/paged-result';
       </div>
 
       @if (isLoading) {
-        <div class="loading"><mat-spinner diameter="40"></mat-spinner></div>
+        <div class="sk-list">
+          @for (i of [1,2,3]; track i) {
+            <mat-card class="sk-report-card">
+              <mat-card-header>
+                <mat-card-title><app-skeleton type="line" width="220px" height="16px" /></mat-card-title>
+                <mat-card-subtitle><app-skeleton type="line" width="300px" height="12px" /></mat-card-subtitle>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="sk-report-info">
+                  <app-skeleton type="rect" width="80px" height="22px" />
+                  <app-skeleton type="line" width="140px" height="12px" />
+                </div>
+              </mat-card-content>
+            </mat-card>
+          }
+        </div>
       } @else if (result && result.items.length > 0) {
         <div class="result-info">Showing {{ result.items.length }} of {{ result.totalCount }} reports</div>
         @for (report of result.items; track report.id) {
@@ -100,7 +116,9 @@ import { PagedResult } from '../../../core/models/paged-result';
   styles: [`
     .container { flex: 1; padding: 24px; max-width: 1200px; margin: 0 auto; width: 100%; }
     .filters { display: flex; gap: 12px; align-items: center; margin-bottom: 24px; }
-    .loading { display: flex; justify-content: center; padding: 60px; }
+    .sk-list { display: flex; flex-direction: column; gap: 8px; }
+    .sk-report-card { min-height: 110px; }
+    .sk-report-info { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
     .result-info { font-size: 13px; color: #666; margin-bottom: 12px; }
     .report-card { margin-bottom: 8px; }
     .description { color: #333; margin: 8px 0; }
@@ -122,7 +140,10 @@ export class ReportManagementComponent implements OnInit {
   selectedStatus = '';
   currentPage = 1;
 
-  constructor(private adminService: AdminService) {}
+  constructor(
+    private adminService: AdminService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
     this.loadReports();
@@ -134,15 +155,11 @@ export class ReportManagementComponent implements OnInit {
     this.adminService.getReports({
       status: this.selectedStatus || undefined,
       page: this.currentPage
-    }).subscribe({
-      next: (result) => {
-        this.result = result;
-        this.isLoading = false;
-      },
-      error: (e) => {
-        console.debug(e);
-        this.isLoading = false;
-      }
+    }).pipe(
+      finalize(() => { this.isLoading = false; this.cdr.detectChanges(); })
+    ).subscribe({
+      next: (result) => { this.result = result; },
+      error: (e) => { console.debug(e); }
     });
   }
 

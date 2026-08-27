@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -8,9 +8,10 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { finalize } from 'rxjs';
 import { HeaderComponent } from '../../../layout/header/header.component';
 import { FooterComponent } from '../../../layout/footer/footer.component';
+import { SkeletonComponent } from '../../../shared/components/skeleton/skeleton.component';
 import { DonorService, DonorSearchFilters } from '../../../core/services/donor.service';
 import { LocationService, Division, District, Upazila } from '../../../core/services/location.service';
 import { PublicDonor, AvailabilityStatus, VerificationStatus } from '../../../core/models/donor';
@@ -30,9 +31,9 @@ import { PagedResult } from '../../../core/models/paged-result';
     MatSelectModule,
     MatIconModule,
     MatChipsModule,
-    MatProgressSpinnerModule,
     HeaderComponent,
-    FooterComponent
+    FooterComponent,
+    SkeletonComponent
   ],
   template: `
     <app-header />
@@ -102,8 +103,22 @@ import { PagedResult } from '../../../core/models/paged-result';
       </mat-card>
 
       @if (isLoading) {
-        <div class="loading">
-          <mat-spinner diameter="40"></mat-spinner>
+        <div class="results-grid">
+          @for (i of [1,2,3,4,5,6]; track i) {
+            <mat-card class="sk-donor-card">
+              <mat-card-header>
+                <mat-card-title><app-skeleton type="line" width="120px" height="16px" /></mat-card-title>
+                <mat-card-subtitle><app-skeleton type="line" width="160px" height="12px" /></mat-card-subtitle>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="sk-donor-info">
+                  <app-skeleton type="rect" width="50px" height="28px" />
+                  <app-skeleton type="rect" width="80px" height="22px" />
+                </div>
+                <div style="margin-top:8px"><app-skeleton type="line" width="100px" height="12px" /></div>
+              </mat-card-content>
+            </mat-card>
+          }
         </div>
       } @else if (results) {
         <div class="results-header">
@@ -165,9 +180,10 @@ import { PagedResult } from '../../../core/models/paged-result';
     .filter-row button[mat-raised-button] { height: 56px; margin-bottom: 22px; white-space: nowrap; border-radius: var(--bgn-radius-pill) !important; }
     @media (max-width: 1100px) { .filter-row { grid-template-columns: repeat(3, 1fr); } }
     @media (max-width: 700px) { .filter-row { grid-template-columns: 1fr; } .filter-row button[mat-raised-button] { width: 100%; } }
-    .loading { display: flex; justify-content: center; padding: 60px; }
     .results-header { margin-bottom: 16px; color: #666; }
     .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .sk-donor-card { min-height: 130px; }
+    .sk-donor-info { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
     .donor-card { cursor: default; }
     .donor-info { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
     .blood-badge { background: #c62828; color: white; padding: 4px 12px; border-radius: 16px; font-weight: bold; font-size: 16px; }
@@ -198,7 +214,8 @@ export class FindBloodComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private donorService: DonorService,
-    private locationService: LocationService
+    private locationService: LocationService,
+    private cdr: ChangeDetectorRef
   ) {
     this.searchForm = this.fb.group({
       bloodGroup: [''],
@@ -248,15 +265,11 @@ export class FindBloodComponent implements OnInit {
       pageSize: 20
     };
 
-    this.donorService.searchDonors(filters).subscribe({
-      next: (results) => {
-        this.results = results;
-        this.isLoading = false;
-      },
-      error: (e) => {
-        console.debug(e);
-        this.isLoading = false;
-      }
+    this.donorService.searchDonors(filters).pipe(
+      finalize(() => { this.isLoading = false; this.cdr.detectChanges(); })
+    ).subscribe({
+      next: (results) => { this.results = results; },
+      error: (e) => { console.debug(e); }
     });
   }
 

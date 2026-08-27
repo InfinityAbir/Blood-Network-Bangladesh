@@ -1,14 +1,14 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDividerModule } from '@angular/material/divider';
-import { Subscription } from 'rxjs';
+import { finalize } from 'rxjs';
 import { HeaderComponent } from '../../layout/header/header.component';
 import { FooterComponent } from '../../layout/footer/footer.component';
+import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { NotificationService } from '../../core/services/notification.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Notification } from '../../core/models/notification';
@@ -21,10 +21,10 @@ import { Notification } from '../../core/models/notification';
     MatCardModule,
     MatButtonModule,
     MatIconModule,
-    MatProgressSpinnerModule,
     MatDividerModule,
     HeaderComponent,
-    FooterComponent
+    FooterComponent,
+    SkeletonComponent
   ],
   template: `
     <app-header />
@@ -40,8 +40,17 @@ import { Notification } from '../../core/models/notification';
       </div>
 
       @if (isLoading) {
-        <div class="loading">
-          <mat-spinner diameter="40"></mat-spinner>
+        <div class="sk-notif-list">
+          @for (i of [1,2,3,4,5,6]; track i) {
+            <div class="sk-notif-row">
+              <app-skeleton type="circle" width="24px" />
+              <div class="sk-notif-body">
+                <app-skeleton type="line" width="180px" height="14px" />
+                <div style="margin-top:6px"><app-skeleton type="line" width="280px" height="12px" /></div>
+                <div style="margin-top:6px"><app-skeleton type="line" width="100px" height="10px" /></div>
+              </div>
+            </div>
+          }
         </div>
       } @else if (notifications.length === 0) {
         <mat-card class="empty-card">
@@ -79,7 +88,7 @@ import { Notification } from '../../core/models/notification';
           <div class="load-more">
             <button mat-stroked-button color="primary" (click)="loadMore()" [disabled]="isLoadingMore">
               @if (isLoadingMore) {
-                <mat-spinner diameter="18" class="inline-spinner"></mat-spinner>
+                <mat-icon class="spin">sync</mat-icon>
               } @else {
                 Load More
               }
@@ -98,7 +107,15 @@ import { Notification } from '../../core/models/notification';
     }
     .page-header h1 { margin: 0; font-size: 24px; }
 
-    .loading { display: flex; justify-content: center; padding: 60px; }
+    .sk-notif-list { display: flex; flex-direction: column; gap: 4px; }
+    .sk-notif-row {
+      display: flex; align-items: flex-start; gap: 14px;
+      padding: 14px 16px;
+      background: var(--bgn-surface);
+      border: 1px solid var(--bgn-border);
+      border-radius: var(--bgn-radius-sm);
+    }
+    .sk-notif-body { flex: 1; }
 
     .empty-card { text-align: center; padding: 48px 24px; }
     .empty-icon { font-size: 48px; height: 48px; width: 48px; color: var(--bgn-text-faint); margin-bottom: 12px; }
@@ -140,14 +157,16 @@ import { Notification } from '../../core/models/notification';
     }
 
     .load-more { display: flex; justify-content: center; padding: 24px; }
-    .inline-spinner { display: inline-block; }
+
+    .spin { animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
     @media (max-width: 600px) {
       .page-header { flex-direction: column; align-items: flex-start; gap: 12px; }
     }
   `]
 })
-export class NotificationsComponent implements OnInit, OnDestroy {
+export class NotificationsComponent implements OnInit {
   notifications: Notification[] = [];
   unreadCount = 0;
   isLoading = true;
@@ -155,45 +174,35 @@ export class NotificationsComponent implements OnInit, OnDestroy {
   currentPage = 1;
   pageSize = 20;
   hasMore = true;
-  private subscriptions: Subscription[] = [];
 
   constructor(
     private notificationService: NotificationService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
-    this.subscriptions.push(
-      this.notificationService.unreadCount$.subscribe(count => {
-        this.unreadCount = count;
-      })
-    );
+    this.notificationService.unreadCount$.subscribe(count => {
+      this.unreadCount = count;
+    });
 
-    this.subscriptions.push(
-      this.notificationService.newNotification$.subscribe(notif => {
-        this.notifications.unshift(notif);
-      })
-    );
+    this.notificationService.newNotification$.subscribe(notif => {
+      this.notifications.unshift(notif);
+    });
 
     this.loadNotifications();
   }
 
-  ngOnDestroy(): void {
-    this.subscriptions.forEach(s => s.unsubscribe());
-  }
-
   loadNotifications(): void {
-    this.notificationService.getNotifications(1, this.pageSize).subscribe({
+    this.notificationService.getNotifications(1, this.pageSize).pipe(
+      finalize(() => { this.isLoading = false; this.cdr.detectChanges(); })
+    ).subscribe({
       next: (notifications) => {
         this.notifications = notifications;
         this.hasMore = notifications.length >= this.pageSize;
-        this.isLoading = false;
       },
-      error: (e) => {
-        console.debug(e);
-        this.isLoading = false;
-      }
+      error: (e) => { console.debug(e); }
     });
   }
 

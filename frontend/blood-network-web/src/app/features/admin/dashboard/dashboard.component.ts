@@ -1,13 +1,14 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTabsModule } from '@angular/material/tabs';
+import { finalize } from 'rxjs';
 import { HeaderComponent } from '../../../layout/header/header.component';
 import { FooterComponent } from '../../../layout/footer/footer.component';
+import { SkeletonComponent } from '../../../shared/components/skeleton/skeleton.component';
 import { AdminService } from '../../../core/services/admin.service';
 import { AdminDashboardStats } from '../../../core/models/admin';
 
@@ -21,10 +22,10 @@ import { AdminDashboardStats } from '../../../core/models/admin';
     MatCardModule,
     MatButtonModule,
     MatIconModule,
-    MatProgressSpinnerModule,
     MatTabsModule,
     HeaderComponent,
-    FooterComponent
+    FooterComponent,
+    SkeletonComponent
   ],
   template: `
     <app-header />
@@ -34,8 +35,23 @@ import { AdminDashboardStats } from '../../../core/models/admin';
       </div>
 
       @if (isLoading) {
-        <div class="loading">
-          <mat-spinner diameter="40"></mat-spinner>
+        <div class="cards-grid">
+          @for (i of [1,2,3,4,5]; track i) {
+            <mat-card class="sk-card">
+              <mat-card-header>
+                <mat-card-title><app-skeleton type="line" width="120px" height="14px" /></mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <app-skeleton type="line" width="60px" height="36px" />
+                <div style="margin-top:8px"><app-skeleton type="line" width="140px" height="12px" /></div>
+              </mat-card-content>
+            </mat-card>
+          }
+        </div>
+        <div class="nav-cards">
+          @for (i of [1,2,3]; track i) {
+            <app-skeleton type="rect" width="180px" height="40px" />
+          }
         </div>
       } @else if (errorMessage) {
         <div class="error-banner">
@@ -119,8 +135,8 @@ import { AdminDashboardStats } from '../../../core/models/admin';
     .dashboard-container { flex: 1; padding: 24px; max-width: 1200px; margin: 0 auto; width: 100%; }
     .dashboard-header { margin-bottom: 24px; }
     .dashboard-header h1 { margin: 0; font-size: 24px; }
-    .loading { display: flex; justify-content: center; padding: 60px; }
     .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-bottom: 32px; }
+    .sk-card { min-height: 120px; }
     .card-icon { font-size: 32px; width: 32px; height: 32px; }
     .card-icon.users { color: #1565c0; }
     .card-icon.requests { color: #c62828; }
@@ -138,7 +154,10 @@ export class AdminDashboardComponent implements OnInit {
   isLoading = true;
   errorMessage = '';
 
-  constructor(private adminService: AdminService) {}
+  constructor(
+    private adminService: AdminService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
     this.load();
@@ -147,15 +166,13 @@ export class AdminDashboardComponent implements OnInit {
   load(): void {
     this.isLoading = true;
     this.errorMessage = '';
-    this.adminService.getDashboardStats().subscribe({
-      next: (stats) => {
-        this.stats = stats;
-        this.isLoading = false;
-      },
+    this.adminService.getDashboardStats().pipe(
+      finalize(() => { this.isLoading = false; this.cdr.detectChanges(); })
+    ).subscribe({
+      next: (stats) => { this.stats = stats; },
       error: (e) => {
         console.debug(e);
         this.errorMessage = e.error?.message || e.message || 'Failed to load dashboard. Please retry.';
-        this.isLoading = false;
       }
     });
   }

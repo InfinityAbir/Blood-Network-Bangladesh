@@ -1,15 +1,15 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { finalize } from 'rxjs';
 import { HeaderComponent } from '../../../layout/header/header.component';
 import { FooterComponent } from '../../../layout/footer/footer.component';
+import { SkeletonComponent } from '../../../shared/components/skeleton/skeleton.component';
 import { DonorService } from '../../../core/services/donor.service';
 import { MatchService } from '../../../core/services/match.service';
 import { DonorProfile, AvailabilityStatus, VerificationStatus } from '../../../core/models/donor';
@@ -26,17 +26,34 @@ import { BloodRequestMatch } from '../../../core/models/match';
     MatButtonModule,
     MatIconModule,
     MatChipsModule,
-    MatProgressSpinnerModule,
     MatSnackBarModule,
     HeaderComponent,
-    FooterComponent
+    FooterComponent,
+    SkeletonComponent
   ],
   template: `
     <app-header />
     <main class="dashboard-container">
       @if (isLoading) {
-        <div class="loading">
-          <mat-spinner diameter="40"></mat-spinner>
+        <div class="dashboard-header">
+          <app-skeleton type="line" width="200px" height="28px" />
+          <div style="margin-top:8px"><app-skeleton type="line" width="300px" height="14px" /></div>
+        </div>
+        <div class="cards-grid">
+          @for (i of [1,2,3,4,5,6]; track i) {
+            <mat-card class="sk-card">
+              <mat-card-header>
+                <mat-card-title><app-skeleton type="line" width="100px" height="14px" /></mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <app-skeleton type="line" width="80px" height="32px" />
+              </mat-card-content>
+            </mat-card>
+          }
+        </div>
+        <div class="actions">
+          <app-skeleton type="rect" width="180px" height="40px" />
+          <app-skeleton type="rect" width="140px" height="40px" />
         </div>
       } @else if (profile) {
         <div class="dashboard-header">
@@ -189,11 +206,11 @@ import { BloodRequestMatch } from '../../../core/models/match';
   `,
   styles: [`
     .dashboard-container { flex: 1; padding: 24px; max-width: 1200px; margin: 0 auto; width: 100%; }
-    .loading { display: flex; justify-content: center; padding: 60px; }
     .dashboard-header { margin-bottom: 24px; }
     .dashboard-header h1 { margin: 0 0 4px; font-size: 24px; }
     .dashboard-header p { margin: 0; color: #666; }
     .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .sk-card { min-height: 100px; }
     .stat-value { font-size: 28px; font-weight: 500; }
     .stat-value.blood-group { color: #c62828; }
     .stat-value.location { font-size: 18px; }
@@ -235,7 +252,8 @@ export class DonorDashboardComponent implements OnInit {
   constructor(
     private donorService: DonorService,
     private matchService: MatchService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -243,14 +261,15 @@ export class DonorDashboardComponent implements OnInit {
   }
 
   loadProfile(): void {
-    this.donorService.getMyProfile().subscribe({
+    this.donorService.getMyProfile().pipe(
+      finalize(() => { this.isLoading = false; this.cdr.detectChanges(); })
+    ).subscribe({
       next: (profile) => {
         this.profile = profile;
         this.loadMatches();
       },
       error: (e) => {
         console.debug(e);
-        this.isLoading = false;
         this.snackBar.open(e.error?.message || 'Failed to load profile.', 'Close', { duration: 3000 });
       }
     });
@@ -261,12 +280,8 @@ export class DonorDashboardComponent implements OnInit {
       next: (matches) => {
         this.pendingMatches = matches.filter(m => m.donorResponse === 'Pending');
         this.otherMatches = matches.filter(m => m.donorResponse !== 'Pending');
-        this.isLoading = false;
       },
-      error: (e) => {
-        console.debug(e);
-        this.isLoading = false;
-      }
+      error: (e) => { console.debug(e); }
     });
   }
 

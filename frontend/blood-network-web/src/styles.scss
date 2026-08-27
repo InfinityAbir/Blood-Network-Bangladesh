@@ -62,6 +62,9 @@ html.dark {
 
   --bgn-gradient: linear-gradient(135deg, #ef5350 0%, #b71c1c 100%);
   --bgn-header-bg: linear-gradient(135deg, #e53935 0%, #b71c1c 100%);
+
+  --bgn-skeleton-from: #e0e0e0;
+  --bgn-skeleton-mid: #f0f0f0;
 }
 
 // ============================================================
@@ -94,6 +97,9 @@ html.dark {
 
   --bgn-gradient: linear-gradient(135deg, #ff5b5b 0%, #c62828 100%);
   --bgn-header-bg: linear-gradient(135deg, #c62828 0%, #7f0000 100%);
+
+  --bgn-skeleton-from: #2a313c;
+  --bgn-skeleton-mid: #353d48;
 }
 
 // ============================================================

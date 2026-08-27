@@ -1,16 +1,16 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { finalize } from 'rxjs';
 import { HeaderComponent } from '../../../layout/header/header.component';
 import { FooterComponent } from '../../../layout/footer/footer.component';
+import { SkeletonComponent } from '../../../shared/components/skeleton/skeleton.component';
 import { RequestService } from '../../../core/services/request.service';
 import { MatchService } from '../../../core/services/match.service';
 import { BloodRequest, RequestStatus } from '../../../core/models/blood-request';
@@ -28,11 +28,11 @@ import { PagedResult } from '../../../core/models/paged-result';
     MatButtonModule,
     MatIconModule,
     MatChipsModule,
-    MatProgressSpinnerModule,
     MatTabsModule,
     MatSnackBarModule,
     HeaderComponent,
-    FooterComponent
+    FooterComponent,
+    SkeletonComponent
   ],
   template: `
     <app-header />
@@ -45,8 +45,33 @@ import { PagedResult } from '../../../core/models/paged-result';
       </div>
 
       @if (isLoading) {
-        <div class="loading">
-          <mat-spinner diameter="40"></mat-spinner>
+        <div class="sk-tabs">
+          <div class="sk-tab-bar">
+            <app-skeleton type="rect" width="60px" height="32px" />
+            <app-skeleton type="rect" width="60px" height="32px" />
+            <app-skeleton type="rect" width="80px" height="32px" />
+          </div>
+          <div class="sk-requests">
+            @for (i of [1,2,3]; track i) {
+              <mat-card class="sk-request-card">
+                <mat-card-header>
+                  <app-skeleton type="rect" width="44px" height="28px" />
+                  <div>
+                    <mat-card-title><app-skeleton type="line" width="180px" height="16px" /></mat-card-title>
+                    <mat-card-subtitle><app-skeleton type="line" width="140px" height="12px" /></mat-card-subtitle>
+                  </div>
+                </mat-card-header>
+                <mat-card-content>
+                  <div class="sk-request-info">
+                    <app-skeleton type="line" width="80px" height="12px" />
+                    <app-skeleton type="rect" width="50px" height="20px" />
+                    <app-skeleton type="rect" width="60px" height="20px" />
+                    <app-skeleton type="line" width="100px" height="12px" />
+                  </div>
+                </mat-card-content>
+              </mat-card>
+            }
+          </div>
         </div>
       } @else {
         <mat-tab-group (selectedIndexChange)="onTabChange($event)">
@@ -225,7 +250,11 @@ import { PagedResult } from '../../../core/models/paged-result';
     .dashboard-container { flex: 1; padding: 24px; max-width: 1200px; margin: 0 auto; width: 100%; }
     .dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
     .dashboard-header h1 { margin: 0; font-size: 24px; }
-    .loading { display: flex; justify-content: center; padding: 60px; }
+    .sk-tabs { margin-top: 16px; }
+    .sk-tab-bar { display: flex; gap: 16px; margin-bottom: 24px; }
+    .sk-requests { display: flex; flex-direction: column; gap: 12px; }
+    .sk-request-card { min-height: 130px; }
+    .sk-request-info { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 12px; }
     .tab-content { padding: 16px 0; }
     .request-card { margin-bottom: 12px; }
     .request-card.fulfilled { border-left: 4px solid #2e7d32; }
@@ -248,7 +277,6 @@ import { PagedResult } from '../../../core/models/paged-result';
     .response-pending { background: #fff3e0; color: #e65100; }
     .no-results { text-align: center; padding: 60px; color: #999; }
     .no-results mat-icon { font-size: 48px; width: 48px; height: 48px; }
-    .pagination { display: flex; justify-content: center; align-items: center; gap: 16px; margin-top: 16px; }
     .matches-inline { margin-top: 16px; padding: 12px; background: #f9f9f9; border-radius: 8px; }
     .matches-inline h4 { margin: 0 0 8px; font-size: 14px; color: #666; }
     .match-row { display: flex; align-items: center; gap: 12px; padding: 6px 0; border-bottom: 1px solid #eee; }
@@ -269,7 +297,8 @@ export class RequesterDashboardComponent implements OnInit {
   constructor(
     private requestService: RequestService,
     private matchService: MatchService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -278,14 +307,12 @@ export class RequesterDashboardComponent implements OnInit {
 
   loadAll(page: number): void {
     this.isLoading = true;
-    this.requestService.getMyRequests(undefined, page).subscribe({
-      next: (result) => {
-        this.allRequests = result;
-        this.isLoading = false;
-      },
+    this.requestService.getMyRequests(undefined, page).pipe(
+      finalize(() => { this.isLoading = false; this.cdr.detectChanges(); })
+    ).subscribe({
+      next: (result) => { this.allRequests = result; },
       error: (e) => {
         console.debug(e);
-        this.isLoading = false;
         this.snackBar.open(e.error?.message || 'Failed to load requests.', 'Close', { duration: 3000 });
       }
     });
@@ -311,9 +338,7 @@ export class RequesterDashboardComponent implements OnInit {
       return;
     }
     this.matchService.getMatchesForRequest(requestId).subscribe({
-      next: (matches) => {
-        this.matchesMap[requestId] = matches;
-      },
+      next: (matches) => { this.matchesMap[requestId] = matches; },
       error: (e) => console.debug(e)
     });
   }
