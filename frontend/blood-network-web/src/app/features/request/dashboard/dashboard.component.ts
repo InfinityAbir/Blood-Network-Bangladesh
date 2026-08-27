@@ -117,25 +117,33 @@ import { PagedResult } from '../../../core/models/paged-result';
                           <span>{{ request.createdAt | date:'medium' }}</span>
                         </div>
                       </div>
-                      @if (matchesMap[request.id]) {
+                      @if (loadingMatches[request.id]) {
+                        <div class="matches-inline"><p class="match-status">Loading matches...</p></div>
+                      } @else if (matchesError[request.id]) {
+                        <div class="matches-inline"><p class="match-status error">{{ matchesError[request.id] }}</p></div>
+                      } @else if (matchesMap[request.id]) {
                         <div class="matches-inline">
-                          <h4>Matched Donors ({{ matchesMap[request.id].length }})</h4>
-                          @for (match of matchesMap[request.id]; track match.id) {
-                            <div class="match-row">
-                              <span class="blood-badge small">{{ getBloodGroupLabel(match.donorBloodGroup) }}</span>
-                              <span class="match-name">{{ match.donorName }}</span>
-                              <span class="match-score">{{ match.matchScore }}/100</span>
-                              <span class="status-chip" [class]="'response-' + match.donorResponse.toLowerCase()">{{ match.donorResponse }}</span>
-                              @if (match.distanceKm != null) {
-                                <span class="match-distance">{{ match.distanceKm | number:'1.1-1' }}km</span>
-                              }
-                            </div>
+                          @if (matchesMap[request.id].length === 0) {
+                            <p class="match-status">No matching donors found yet. The system searches for compatible donors automatically.</p>
+                          } @else {
+                            <h4>Matched Donors ({{ matchesMap[request.id].length }})</h4>
+                            @for (match of matchesMap[request.id]; track match.id) {
+                              <div class="match-row">
+                                <span class="blood-badge small">{{ getBloodGroupLabel(match.donorBloodGroup) }}</span>
+                                <span class="match-name">{{ match.donorName }}</span>
+                                <span class="match-score">{{ match.matchScore }}/100</span>
+                                <span class="status-chip" [class]="'response-' + match.donorResponse.toLowerCase()">{{ match.donorResponse }}</span>
+                                @if (match.distanceKm != null) {
+                                  <span class="match-distance">{{ match.distanceKm | number:'1.1-1' }}km</span>
+                                }
+                              </div>
+                            }
                           }
                         </div>
                       }
                     </mat-card-content>
                     <mat-card-actions align="end">
-                      <button mat-button (click)="loadMatches(request.id)">
+                      <button mat-button (click)="loadMatches(request.id)" [disabled]="loadingMatches[request.id]">
                         <mat-icon>people</mat-icon> {{ matchesMap[request.id] ? 'Hide' : 'View' }} Matches
                       </button>
                       @if (request.status === 'Open' || request.status === 'PartiallyFulfilled') {
@@ -184,22 +192,30 @@ import { PagedResult } from '../../../core/models/paged-result';
                           <span>{{ request.contactPhone }}</span>
                         </div>
                       </div>
-                      @if (matchesMap[request.id]) {
+                      @if (loadingMatches[request.id]) {
+                        <div class="matches-inline"><p class="match-status">Loading matches...</p></div>
+                      } @else if (matchesError[request.id]) {
+                        <div class="matches-inline"><p class="match-status error">{{ matchesError[request.id] }}</p></div>
+                      } @else if (matchesMap[request.id]) {
                         <div class="matches-inline">
-                          <h4>Matched Donors ({{ matchesMap[request.id].length }})</h4>
-                          @for (match of matchesMap[request.id]; track match.id) {
-                            <div class="match-row">
-                              <span class="blood-badge small">{{ getBloodGroupLabel(match.donorBloodGroup) }}</span>
-                              <span class="match-name">{{ match.donorName }}</span>
-                              <span class="match-score">{{ match.matchScore }}/100</span>
-                              <span class="status-chip" [class]="'response-' + match.donorResponse.toLowerCase()">{{ match.donorResponse }}</span>
-                            </div>
+                          @if (matchesMap[request.id].length === 0) {
+                            <p class="match-status">No matching donors found yet.</p>
+                          } @else {
+                            <h4>Matched Donors ({{ matchesMap[request.id].length }})</h4>
+                            @for (match of matchesMap[request.id]; track match.id) {
+                              <div class="match-row">
+                                <span class="blood-badge small">{{ getBloodGroupLabel(match.donorBloodGroup) }}</span>
+                                <span class="match-name">{{ match.donorName }}</span>
+                                <span class="match-score">{{ match.matchScore }}/100</span>
+                                <span class="status-chip" [class]="'response-' + match.donorResponse.toLowerCase()">{{ match.donorResponse }}</span>
+                              </div>
+                            }
                           }
                         </div>
                       }
                     </mat-card-content>
                     <mat-card-actions align="end">
-                      <button mat-button (click)="loadMatches(request.id)">
+                      <button mat-button (click)="loadMatches(request.id)" [disabled]="loadingMatches[request.id]">
                         <mat-icon>people</mat-icon> {{ matchesMap[request.id] ? 'Hide' : 'View' }} Matches
                       </button>
                       <button mat-button color="warn" (click)="cancelRequest(request.id)" [disabled]="isResponding[request.id]">
@@ -292,6 +308,8 @@ import { PagedResult } from '../../../core/models/paged-result';
     .no-results mat-icon { font-size: 48px; width: 48px; height: 48px; }
     .matches-inline { margin-top: 16px; padding: 12px; background: #f9f9f9; border-radius: 8px; }
     .matches-inline h4 { margin: 0 0 8px; font-size: 14px; color: #666; }
+    .match-status { margin: 0; font-size: 13px; color: #999; padding: 8px 0; }
+    .match-status.error { color: var(--bgn-danger, #c62828); }
     .match-row { display: flex; align-items: center; gap: 12px; padding: 6px 0; border-bottom: 1px solid #eee; }
     .match-row:last-child { border-bottom: none; }
     .match-name { font-weight: 500; }
@@ -308,6 +326,8 @@ export class RequesterDashboardComponent implements OnInit {
   activeRequests: PagedResult<BloodRequest> | null = null;
   fulfilledRequests: PagedResult<BloodRequest> | null = null;
   matchesMap: Record<string, BloodRequestMatch[]> = {};
+  loadingMatches: Record<string, boolean> = {};
+  matchesError: Record<string, string> = {};
   isLoading = true;
   isResponding: Record<string, boolean> = {};
 
@@ -352,11 +372,19 @@ export class RequesterDashboardComponent implements OnInit {
   loadMatches(requestId: string): void {
     if (this.matchesMap[requestId]) {
       delete this.matchesMap[requestId];
+      delete this.matchesError[requestId];
       return;
     }
-    this.matchService.getMatchesForRequest(requestId).subscribe({
+    this.loadingMatches[requestId] = true;
+    delete this.matchesError[requestId];
+    this.matchService.getMatchesForRequest(requestId).pipe(
+      finalize(() => this.loadingMatches[requestId] = false)
+    ).subscribe({
       next: (matches) => { this.matchesMap[requestId] = matches; },
-      error: (e) => console.debug(e)
+      error: (e) => {
+        console.debug(e);
+        this.matchesError[requestId] = e.error?.message || 'Failed to load matches.';
+      }
     });
   }
 
