@@ -11,8 +11,9 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  // Never attach token or handle 401 refresh for auth endpoints
-  if (req.url.includes('/auth/')) {
+  // Skip token & refresh handling only for public auth endpoints; first-login-change & protected endpoints need the token
+  const isPublicAuth = req.url.includes('/auth/login') || req.url.includes('/auth/register') || req.url.includes('/auth/refresh');
+  if (isPublicAuth) {
     return next(req);
   }
 

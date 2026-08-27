@@ -131,7 +131,7 @@ export class AdminFirstLoginComponent {
       },
       error: (err) => {
         this.isLoading = false;
-        this.errorMessage = err.error?.message || 'Update failed. Check current password and try again.';
+        this.errorMessage = err.error?.message || err.error?.Message || 'Update failed. Check current password and try again.';
       }
     });
   }
