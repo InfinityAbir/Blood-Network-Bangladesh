@@ -475,10 +475,8 @@ export class EligibilityCheckComponent {
     const ans = this.answers();
     const answerPayload = this.questions().map(q => ({
       questionId: q.id,
-      answer: ans[String(q.id)] ?? ''
+      answer: String(ans[String(q.id)] ?? '')
     }));
-
-    console.log('[eligibility] payload:', JSON.stringify(answerPayload));
 
     this.http.post<EligibilityResult>(`${this.apiUrl}/check`, answerPayload).pipe(
       retry({
@@ -496,9 +494,8 @@ export class EligibilityCheckComponent {
         this.result.set(res);
         this.submitting.set(false);
       },
-      error: (e) => {
-        console.error('[eligibility] error:', e?.status, e?.error);
-        this.error.set(`Failed (HTTP ${e?.status ?? '?'}). Please try again later.`);
+      error: () => {
+        this.error.set('Failed to submit. Please try again later. / জমা দিতে ব্যর্থ। কিছুক্ষণ পর আবার চেষ্টা করুন।');
         this.submitting.set(false);
       },
     });
