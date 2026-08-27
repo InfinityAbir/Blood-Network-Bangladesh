@@ -196,7 +196,8 @@ public class DonorService
     public async Task<Result<PagedResult<PublicDonorDto>>> SearchDonorsAsync(DonorSearchRequest request, CancellationToken cancellationToken = default)
     {
         var query = _donorProfileRepository.Query()
-            .Where(p => p.VerificationStatus == VerificationStatus.Verified);
+            .Where(p => p.VerificationStatus == VerificationStatus.Verified)
+            .Where(p => _userRepository.Query().Any(u => u.Id == p.UserId && u.IsActive));
 
         if (request.BloodGroup.HasValue)
             query = query.Where(p => p.BloodGroup == request.BloodGroup.Value);

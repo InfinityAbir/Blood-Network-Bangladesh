@@ -45,17 +45,31 @@ public class AdminService : IAdminService
         var reportsQ = _reportRepo.Query();
         var donorProfilesQ = _donorProfileRepo.Query();
 
-        var totalUsers = await _userRepo.CountAsync(usersQ);
-        var totalDonors = await _userRepo.CountAsync(usersQ.Where(u => u.Role == UserRole.Donor));
-        var totalRequesters = await _userRepo.CountAsync(usersQ.Where(u => u.Role == UserRole.Requester));
-        var totalBloodRequests = await _requestRepo.CountAsync(requestsQ);
-        var openBloodRequests = await _requestRepo.CountAsync(requestsQ.Where(r => r.Status == RequestStatus.Open || r.Status == RequestStatus.PartiallyFulfilled));
-        var fulfilledBloodRequests = await _requestRepo.CountAsync(requestsQ.Where(r => r.Status == RequestStatus.Fulfilled));
-        var totalMatches = await _matchRepo.CountAsync(matchesQ);
-        var acceptedMatches = await _matchRepo.CountAsync(matchesQ.Where(m => m.DonorResponse == DonorResponse.Accepted));
-        var totalReports = await _reportRepo.CountAsync(reportsQ);
-        var openReports = await _reportRepo.CountAsync(reportsQ.Where(r => r.Status == ReportStatus.Open || r.Status == ReportStatus.UnderReview));
-        var pendingVerifications = await _donorProfileRepo.CountAsync(donorProfilesQ.Where(d => d.VerificationStatus == VerificationStatus.Pending));
+        var totalUsersTask = _userRepo.CountAsync(usersQ);
+        var totalDonorsTask = _userRepo.CountAsync(usersQ.Where(u => u.Role == UserRole.Donor));
+        var totalRequestersTask = _userRepo.CountAsync(usersQ.Where(u => u.Role == UserRole.Requester));
+        var totalBloodRequestsTask = _requestRepo.CountAsync(requestsQ);
+        var openBloodRequestsTask = _requestRepo.CountAsync(requestsQ.Where(r => r.Status == RequestStatus.Open || r.Status == RequestStatus.PartiallyFulfilled));
+        var fulfilledBloodRequestsTask = _requestRepo.CountAsync(requestsQ.Where(r => r.Status == RequestStatus.Fulfilled));
+        var totalMatchesTask = _matchRepo.CountAsync(matchesQ);
+        var acceptedMatchesTask = _matchRepo.CountAsync(matchesQ.Where(m => m.DonorResponse == DonorResponse.Accepted));
+        var totalReportsTask = _reportRepo.CountAsync(reportsQ);
+        var openReportsTask = _reportRepo.CountAsync(reportsQ.Where(r => r.Status == ReportStatus.Open || r.Status == ReportStatus.UnderReview));
+        var pendingVerificationsTask = _donorProfileRepo.CountAsync(donorProfilesQ.Where(d => d.VerificationStatus == VerificationStatus.Pending));
+
+        await Task.WhenAll(totalUsersTask, totalDonorsTask, totalRequestersTask, totalBloodRequestsTask, openBloodRequestsTask, fulfilledBloodRequestsTask, totalMatchesTask, acceptedMatchesTask, totalReportsTask, openReportsTask, pendingVerificationsTask);
+
+        var totalUsers = await totalUsersTask;
+        var totalDonors = await totalDonorsTask;
+        var totalRequesters = await totalRequestersTask;
+        var totalBloodRequests = await totalBloodRequestsTask;
+        var openBloodRequests = await openBloodRequestsTask;
+        var fulfilledBloodRequests = await fulfilledBloodRequestsTask;
+        var totalMatches = await totalMatchesTask;
+        var acceptedMatches = await acceptedMatchesTask;
+        var totalReports = await totalReportsTask;
+        var openReports = await openReportsTask;
+        var pendingVerifications = await pendingVerificationsTask;
 
         return new AdminDashboardStatsDto
         {

@@ -82,10 +82,17 @@ public class MatchingService : IMatchingService
             .Where(p => activeUserLookup.ContainsKey(p.UserId))
             .ToList();
 
-        _logger.LogInformation("Found {Count} candidate donors for request {RequestId}", filteredCandidates.Count, requestId);
+        // Prioritize same district + verified donors, limit to avoid OOM at scale
+        var prioritized = filteredCandidates
+            .OrderByDescending(p => p.DistrictId == request.DistrictId ? 1 : 0)
+            .ThenByDescending(p => p.VerificationStatus == VerificationStatus.Verified ? 1 : 0)
+            .Take(100)
+            .ToList();
+
+        _logger.LogInformation("Found {Count} candidate donors for request {RequestId} (evaluating top {Eval})", filteredCandidates.Count, requestId, prioritized.Count);
 
         var matches = new List<BloodRequestMatch>();
-        foreach (var profile in filteredCandidates)
+        foreach (var profile in prioritized)
         {
             var distance = CalculateDistance(profile, request);
             var score = CalculateScore(profile, request, distance);
