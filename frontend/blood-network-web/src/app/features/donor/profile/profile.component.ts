@@ -1,6 +1,6 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -24,6 +24,7 @@ import { BloodGroup, BloodGroupLabels } from '../../../core/models/blood-group';
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    RouterLink,
     MatCardModule,
     MatFormFieldModule,
     MatInputModule,
@@ -86,6 +87,9 @@ import { BloodGroup, BloodGroupLabels } from '../../../core/models/blood-group';
                   <mat-option [value]="division.id">{{ division.name }}</mat-option>
                 }
               </mat-select>
+              @if (profileForm.get('divisionId')?.hasError('required') && profileForm.get('divisionId')?.touched) {
+                <mat-error>Division is required</mat-error>
+              }
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="full-width">
@@ -95,6 +99,12 @@ import { BloodGroup, BloodGroupLabels } from '../../../core/models/blood-group';
                   <mat-option [value]="district.id">{{ district.name }}</mat-option>
                 }
               </mat-select>
+              @if (profileForm.get('districtId')?.hasError('required') && profileForm.get('districtId')?.touched) {
+                <mat-error>District is required</mat-error>
+              }
+              @if (!profileForm.get('divisionId')?.value) {
+                <mat-hint>Select Division first</mat-hint>
+              }
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="full-width">
@@ -104,6 +114,12 @@ import { BloodGroup, BloodGroupLabels } from '../../../core/models/blood-group';
                   <mat-option [value]="upazila.id">{{ upazila.name }}</mat-option>
                 }
               </mat-select>
+              @if (profileForm.get('upazilaId')?.hasError('required') && profileForm.get('upazilaId')?.touched) {
+                <mat-error>Upazila/Thana is required</mat-error>
+              }
+              @if (!profileForm.get('districtId')?.value) {
+                <mat-hint>Select District first</mat-hint>
+              }
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="full-width">
@@ -119,14 +135,17 @@ import { BloodGroup, BloodGroupLabels } from '../../../core/models/blood-group';
               <mat-hint>Leave empty if you have not donated yet</mat-hint>
             </mat-form-field>
 
-            <button mat-raised-button color="primary" type="submit" class="full-width submit-btn"
-                    [disabled]="profileForm.invalid || isLoading">
-              @if (isLoading) {
-                <mat-spinner diameter="20"></mat-spinner>
-              } @else {
-                Save Profile
-              }
-            </button>
+            <div class="form-actions">
+              <a mat-stroked-button routerLink="/donor/dashboard" class="action-btn">Cancel</a>
+              <button mat-raised-button color="primary" type="submit" class="action-btn submit-btn"
+                      [disabled]="isLoading">
+                @if (isLoading) {
+                  <mat-spinner diameter="20"></mat-spinner>
+                } @else {
+                  Save Profile
+                }
+              </button>
+            </div>
           </form>
         </mat-card-content>
       </mat-card>
@@ -146,10 +165,11 @@ import { BloodGroup, BloodGroupLabels } from '../../../core/models/blood-group';
       max-width: 600px;
     }
     .full-width { width: 100%; }
-    .submit-btn { margin-top: 16px; height: 48px; }
+    .form-actions { display: flex; gap: 12px; margin-top: 16px; }
+    .action-btn { flex: 1; height: 48px; }
     .error-banner {
-      background: #ffebee; color: #c62828;
-      padding: 12px 16px; border-radius: 4px;
+      background: color-mix(in srgb, var(--bgn-danger) 12%, transparent); color: var(--bgn-danger);
+      padding: 12px 16px; border-radius: var(--bgn-radius-md); border: 1px solid color-mix(in srgb, var(--bgn-danger) 30%, transparent);
       margin-bottom: 16px; font-size: 14px;
     }
   `]
@@ -258,7 +278,11 @@ export class DonorProfileComponent implements OnInit {
   }
 
   onSubmit(): void {
-    if (this.profileForm.invalid) return;
+    if (this.profileForm.invalid) {
+      this.profileForm.markAllAsTouched();
+      this.errorMessage = 'Please fill all required fields correctly.';
+      return;
+    }
 
     this.isLoading = true;
     this.errorMessage = '';

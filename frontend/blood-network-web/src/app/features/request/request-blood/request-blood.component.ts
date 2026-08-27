@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -26,6 +26,7 @@ import { BloodGroup, BloodGroupLabels } from '../../../core/models/blood-group';
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    RouterLink,
     MatCardModule,
     MatFormFieldModule,
     MatInputModule,
@@ -50,11 +51,11 @@ import { BloodGroup, BloodGroupLabels } from '../../../core/models/blood-group';
       </div>
 
       @if (errorMessage) {
-        <div class="error-banner">{{ errorMessage }}</div>
+        <div class="error-banner" role="alert" aria-live="polite">{{ errorMessage }}</div>
       }
 
       @if (successMessage) {
-        <div class="success-banner">{{ successMessage }}</div>
+        <div class="success-banner" role="status" aria-live="polite">{{ successMessage }}</div>
       }
 
       <mat-card>
@@ -83,6 +84,9 @@ import { BloodGroup, BloodGroupLabels } from '../../../core/models/blood-group';
                   }
                   @if (requestForm.get('unitsRequired')?.hasError('min') && requestForm.get('unitsRequired')?.touched) {
                     <mat-error>Minimum 1 unit</mat-error>
+                  }
+                  @if (requestForm.get('unitsRequired')?.hasError('max') && requestForm.get('unitsRequired')?.touched) {
+                    <mat-error>Maximum 10 units</mat-error>
                   }
                 </mat-form-field>
 
@@ -173,11 +177,12 @@ import { BloodGroup, BloodGroupLabels } from '../../../core/models/blood-group';
                 <mat-form-field appearance="outline">
                   <mat-label>Contact Phone</mat-label>
                   <input matInput formControlName="contactPhone" placeholder="01712345678" maxlength="11" />
+                  <mat-hint>Format: 01XXXXXXXXX</mat-hint>
                   @if (requestForm.get('contactPhone')?.hasError('required') && requestForm.get('contactPhone')?.touched) {
                     <mat-error>Phone is required</mat-error>
                   }
                   @if (requestForm.get('contactPhone')?.hasError('pattern') && requestForm.get('contactPhone')?.touched) {
-                    <mat-error>Invalid BD phone number</mat-error>
+                    <mat-error>Invalid BD phone (e.g., 01712345678)</mat-error>
                   }
                 </mat-form-field>
               </div>
@@ -185,9 +190,10 @@ import { BloodGroup, BloodGroupLabels } from '../../../core/models/blood-group';
               <div class="form-row">
                 <mat-form-field appearance="outline" class="full-width">
                   <mat-label>Required By</mat-label>
-                  <input matInput [matDatepicker]="picker" formControlName="requiredBy" />
+                  <input matInput [matDatepicker]="picker" formControlName="requiredBy" [min]="minDate" />
                   <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
                   <mat-datepicker #picker></mat-datepicker>
+                  <mat-hint>Must be today or later</mat-hint>
                   @if (requestForm.get('requiredBy')?.hasError('required') && requestForm.get('requiredBy')?.touched) {
                     <mat-error>Required by date is needed</mat-error>
                   }
@@ -203,8 +209,9 @@ import { BloodGroup, BloodGroupLabels } from '../../../core/models/blood-group';
             </div>
 
             <div class="form-actions">
+              <a mat-stroked-button routerLink="/" class="cancel-btn">Cancel</a>
               <button mat-raised-button color="primary" type="submit" class="submit-btn"
-                      [disabled]="requestForm.invalid || isLoading">
+                      [disabled]="isLoading">
                 @if (isLoading) {
                   <mat-spinner diameter="20"></mat-spinner>
                 } @else {
@@ -221,19 +228,21 @@ import { BloodGroup, BloodGroupLabels } from '../../../core/models/blood-group';
     <app-footer />
   `,
   styles: [`
-    .request-container { flex: 1; padding: 24px; max-width: 800px; margin: 0 auto; width: 100%; }
+    .request-container { flex: 1; padding: 24px; max-width: 800px; margin: 0 auto; width: 100%; box-sizing: border-box; }
     .request-header { margin-bottom: 24px; }
-    .request-header h1 { margin: 0 0 4px; font-size: 24px; }
-    .request-header p { margin: 0; color: #666; }
+    .request-header h1 { margin: 0 0 4px; font-size: 24px; color: var(--bgn-text); }
+    .request-header p { margin: 0; color: var(--bgn-text-muted); }
     .form-section { margin-bottom: 24px; }
-    .form-section h3 { margin: 0 0 12px; font-size: 16px; color: #333; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+    .form-section h3 { margin: 0 0 12px; font-size: 16px; color: var(--bgn-text); border-bottom: 1px solid var(--bgn-border); padding-bottom: 8px; }
     .form-row { display: flex; gap: 16px; flex-wrap: wrap; }
-    .form-row mat-form-field { flex: 1; min-width: 180px; }
+    .form-row mat-form-field { flex: 1; min-width: 160px; }
     .full-width { width: 100%; }
-    .form-actions { display: flex; justify-content: flex-end; padding-top: 16px; border-top: 1px solid #eee; }
-    .submit-btn { height: 48px; font-size: 16px; }
-    .error-banner { background: #ffebee; color: #c62828; padding: 12px 16px; border-radius: 4px; margin-bottom: 16px; }
-    .success-banner { background: #e8f5e9; color: #2e7d32; padding: 12px 16px; border-radius: 4px; margin-bottom: 16px; }
+    .form-actions { display: flex; gap: 12px; justify-content: flex-end; padding-top: 16px; border-top: 1px solid var(--bgn-border); flex-wrap: wrap; }
+    .form-actions .cancel-btn, .form-actions .submit-btn { height: 48px; font-size: 15px; flex: 1; min-width: 120px; }
+    .form-actions .cancel-btn { max-width: 140px; }
+    .error-banner { background: color-mix(in srgb, var(--bgn-danger) 12%, transparent); color: var(--bgn-danger); border: 1px solid color-mix(in srgb, var(--bgn-danger) 30%, transparent); padding: 12px 16px; border-radius: var(--bgn-radius-md); margin-bottom: 16px; }
+    .success-banner { background: color-mix(in srgb, var(--bgn-success) 14%, transparent); color: var(--bgn-success); border: 1px solid color-mix(in srgb, var(--bgn-success) 30%, transparent); padding: 12px 16px; border-radius: var(--bgn-radius-md); margin-bottom: 16px; }
+    @media (max-width: 600px) { .form-row { flex-direction: column; } .form-row mat-form-field { min-width: 0; } .form-actions { flex-direction: column-reverse; } .form-actions .cancel-btn { max-width: none; } }
   `]
 })
 export class RequestBloodComponent implements OnInit {
@@ -241,6 +250,7 @@ export class RequestBloodComponent implements OnInit {
   isLoading = false;
   errorMessage = '';
   successMessage = '';
+  minDate = new Date();
 
   divisions: Division[] = [];
   districts: District[] = [];
@@ -299,7 +309,14 @@ export class RequestBloodComponent implements OnInit {
   }
 
   onSubmit(): void {
-    if (this.requestForm.invalid) return;
+    if (this.requestForm.invalid) {
+      this.requestForm.markAllAsTouched();
+      this.errorMessage = 'Please fill all required fields correctly.';
+      return;
+    }
+    const units = this.requestForm.get('unitsRequired')?.value;
+    const bg = this.requestForm.get('bloodGroup')?.value;
+    if (!confirm(`Confirm blood request for ${bg || 'selected group'} — ${units} unit(s)? This will notify matching donors.`)) return;
 
     this.isLoading = true;
     this.errorMessage = '';

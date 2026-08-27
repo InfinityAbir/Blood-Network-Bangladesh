@@ -54,15 +54,18 @@ import { Notification } from '../../core/models/notification';
         }
       </button>
 
+      @if (authService.isAuthenticated()) {
+        <button mat-icon-button [matMenuTriggerFor]="notifMenu" class="notif-btn" aria-label="Notifications">
+          <mat-icon [matBadge]="unreadCount > 0 ? unreadCount : null"
+                    matBadgeColor="warn" matBadgeSize="small">notifications</mat-icon>
+        </button>
+      }
+
       <nav class="desktop-nav">
         <a mat-button routerLink="/find-blood" class="nav-link">Find Blood</a>
         <a mat-button routerLink="/request-blood" class="nav-link">Need Blood</a>
         @if (authService.isAuthenticated()) {
           <a mat-button [routerLink]="authService.getDashboardRoute()" class="nav-link">Dashboard</a>
-          <button mat-icon-button [matMenuTriggerFor]="notifMenu" class="notif-btn">
-            <mat-icon [matBadge]="unreadCount > 0 ? unreadCount : null"
-                      matBadgeColor="warn" matBadgeSize="small">notifications</mat-icon>
-          </button>
           <button mat-button class="logout-btn" (click)="authService.logout()">Logout</button>
         } @else {
           <a mat-button routerLink="/login" class="nav-link">Login</a>
