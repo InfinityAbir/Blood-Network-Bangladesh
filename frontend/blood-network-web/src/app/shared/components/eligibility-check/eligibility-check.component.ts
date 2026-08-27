@@ -190,7 +190,7 @@ interface EligibilityResult {
               @for (r of result()!.checks; track r.questionId) {
                 <div class="result-item" [class.pass]="r.passed" [class.fail]="!r.passed">
                   <mat-icon>{{ r.passed ? 'check_circle' : 'cancel' }}</mat-icon>
-                  <span>{{ r.messageBn }}</span>
+                  <span>{{ r.message }} <span class="bangla">/ {{ r.messageBn }}</span></span>
                 </div>
               }
             </div>
