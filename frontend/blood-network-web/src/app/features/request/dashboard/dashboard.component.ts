@@ -373,17 +373,20 @@ export class RequesterDashboardComponent implements OnInit {
     if (this.matchesMap[requestId]) {
       delete this.matchesMap[requestId];
       delete this.matchesError[requestId];
+      this.cdr.detectChanges();
       return;
     }
     this.loadingMatches[requestId] = true;
     delete this.matchesError[requestId];
+    this.cdr.detectChanges();
     this.matchService.getMatchesForRequest(requestId).pipe(
-      finalize(() => this.loadingMatches[requestId] = false)
+      finalize(() => { this.loadingMatches[requestId] = false; this.cdr.detectChanges(); })
     ).subscribe({
-      next: (matches) => { this.matchesMap[requestId] = matches; },
+      next: (matches) => { this.matchesMap[requestId] = matches; this.cdr.detectChanges(); },
       error: (e) => {
         console.debug(e);
         this.matchesError[requestId] = e.error?.message || 'Failed to load matches.';
+        this.cdr.detectChanges();
       }
     });
   }
