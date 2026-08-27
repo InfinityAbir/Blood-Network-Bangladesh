@@ -9,7 +9,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { retry, timer } from 'rxjs';
+import { retry, timer, throwError } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 
 interface EligibilityQuestion {
@@ -478,17 +478,17 @@ export class EligibilityCheckComponent {
       answer: ans[String(q.id)] ?? ''
     }));
 
+    console.log('[eligibility] payload:', JSON.stringify(answerPayload));
+
     this.http.post<EligibilityResult>(`${this.apiUrl}/check`, answerPayload).pipe(
       retry({
         count: 3,
         delay: (error, retryCount) => {
           const status = (error as HttpErrorResponse)?.status ?? 0;
-          // Retry transient failures only (network/unknown or server 5xx),
-          // e.g. Render cold starts; never retry client 4xx errors.
           if (status === 0 || status >= 500) {
             return timer(retryCount * 1500);
           }
-          throw error;
+          return throwError(() => error);
         }
       }),
     ).subscribe({
@@ -496,8 +496,9 @@ export class EligibilityCheckComponent {
         this.result.set(res);
         this.submitting.set(false);
       },
-      error: () => {
-        this.error.set('Failed to submit. Please try again later. / জমা দিতে ব্যর্থ। কিছুক্ষণ পর আবার চেষ্টা করুন।');
+      error: (e) => {
+        console.error('[eligibility] error:', e?.status, e?.error);
+        this.error.set(`Failed (HTTP ${e?.status ?? '?'}). Please try again later.`);
         this.submitting.set(false);
       },
     });
