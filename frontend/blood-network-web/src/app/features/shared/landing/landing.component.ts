@@ -114,7 +114,7 @@ import { FooterComponent } from '../../../layout/footer/footer.component';
         <div class="feature">
           <svg class="feat-icon" viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-4.5-7-10a7 7 0 0 1 14 0c0 5.5-7 10-7 10z"/><circle cx="12" cy="11" r="2.5"/></svg>
           <h3>Location aware</h3>
-          <p>Division, district and upazila based search across Bangladesh.</p>
+          <p>Division, district, and upazila/thana based search across Bangladesh.</p>
         </div>
         <a class="feature feature-link" routerLink="/eligibility">
           <svg class="feat-icon" viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>

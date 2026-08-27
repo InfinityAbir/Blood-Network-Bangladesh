@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -14,6 +14,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { HeaderComponent } from '../../../layout/header/header.component';
 import { FooterComponent } from '../../../layout/footer/footer.component';
 import { DonorService } from '../../../core/services/donor.service';
+import { DonorProfile } from '../../../core/models/donor';
 import { LocationService, Division, District, Upazila } from '../../../core/services/location.service';
 import { BloodGroup, BloodGroupLabels } from '../../../core/models/blood-group';
 
@@ -40,8 +41,8 @@ import { BloodGroup, BloodGroupLabels } from '../../../core/models/blood-group';
     <main class="profile-container">
       <mat-card class="profile-card">
         <mat-card-header>
-          <mat-card-title>Donor Profile Setup</mat-card-title>
-          <mat-card-subtitle>Complete your profile to start receiving match requests</mat-card-subtitle>
+          <mat-card-title>{{ isEditing ? 'Edit Donor Profile' : 'Donor Profile Setup' }}</mat-card-title>
+          <mat-card-subtitle>{{ isEditing ? 'Update your details to keep receiving match requests' : 'Complete your profile to start receiving match requests' }}</mat-card-subtitle>
         </mat-card-header>
 
         <mat-card-content>
@@ -97,7 +98,7 @@ import { BloodGroup, BloodGroupLabels } from '../../../core/models/blood-group';
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Upazila</mat-label>
+              <mat-label>Upazila / Thana</mat-label>
               <mat-select formControlName="upazilaId" [disabled]="!profileForm.get('districtId')?.value">
                 @for (upazila of upazilas; track upazila.id) {
                   <mat-option [value]="upazila.id">{{ upazila.name }}</mat-option>
@@ -150,6 +151,7 @@ export class DonorProfileComponent implements OnInit {
   isLoading = false;
   hidePassword = true;
   errorMessage = '';
+  isEditing = false;
 
   divisions: Division[] = [];
   districts: District[] = [];
@@ -162,7 +164,8 @@ export class DonorProfileComponent implements OnInit {
     private donorService: DonorService,
     private locationService: LocationService,
     private router: Router,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private cdr: ChangeDetectorRef
   ) {
     this.profileForm = this.fb.group({
       bloodGroup: ['', Validators.required],
@@ -176,11 +179,48 @@ export class DonorProfileComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.locationService.getDivisions().subscribe({ next: divs => this.divisions = divs, error: (e) => console.debug(e) });
+    this.locationService.getDivisions().subscribe({
+      next: divs => this.divisions = divs,
+      error: (e) => console.debug(e)
+    });
 
     this.donorService.getMyProfile().subscribe({
       next: (profile) => {
-        this.router.navigate(['/donor/dashboard']);
+        this.isEditing = true;
+        this.prefillProfile(profile);
+      },
+      error: () => {
+        this.isEditing = false;
+      }
+    });
+  }
+
+  private prefillProfile(profile: DonorProfile): void {
+    this.profileForm.patchValue({
+      bloodGroup: profile.bloodGroup,
+      gender: profile.gender || '',
+      dateOfBirth: profile.dateOfBirth ? new Date(profile.dateOfBirth) : null,
+      area: profile.area || ''
+    });
+
+    this.locationService.getDistricts().subscribe({
+      next: (allDistricts) => {
+        const district = allDistricts.find(d => d.id === profile.districtId);
+        const divisionId = district?.divisionId || '';
+        this.profileForm.patchValue({ divisionId, districtId: profile.districtId });
+
+        this.locationService.getDistricts(divisionId).subscribe({
+          next: d => this.districts = d,
+          error: (e) => console.debug(e)
+        });
+
+        this.locationService.getUpazilas(profile.districtId).subscribe({
+          next: u => this.upazilas = u,
+          error: (e) => console.debug(e)
+        });
+
+        this.profileForm.patchValue({ upazilaId: profile.upazilaId });
+        this.cdr.detectChanges();
       },
       error: (e) => console.debug(e)
     });
@@ -214,8 +254,13 @@ export class DonorProfileComponent implements OnInit {
     this.errorMessage = '';
 
     const { divisionId, ...data } = this.profileForm.value;
+    data.dateOfBirth = data.dateOfBirth ? new Date(data.dateOfBirth).toISOString() : undefined;
 
-    this.donorService.createProfile(data).subscribe({
+    const request$ = this.isEditing
+      ? this.donorService.updateProfile(data)
+      : this.donorService.createProfile(data);
+
+    request$.subscribe({
       next: () => {
         this.isLoading = false;
         this.snackBar.open('Profile saved successfully!', 'Close', { duration: 3000, horizontalPosition: 'end', verticalPosition: 'top' });
@@ -223,7 +268,7 @@ export class DonorProfileComponent implements OnInit {
       },
       error: (err) => {
         this.isLoading = false;
-        this.errorMessage = err.error?.message || 'Failed to create profile. Please try again.';
+        this.errorMessage = err.error?.message || 'Failed to save profile. Please try again.';
       }
     });
   }

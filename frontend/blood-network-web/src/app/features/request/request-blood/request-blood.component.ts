@@ -141,7 +141,7 @@ import { BloodGroup, BloodGroupLabels } from '../../../core/models/blood-group';
                 </mat-form-field>
 
                 <mat-form-field appearance="outline">
-                  <mat-label>Upazila</mat-label>
+                  <mat-label>Upazila / Thana</mat-label>
                   <mat-select formControlName="upazilaId" [disabled]="!requestForm.get('districtId')?.value">
                     @for (upazila of upazilas; track upazila.id) {
                       <mat-option [value]="upazila.id">{{ upazila.name }}</mat-option>

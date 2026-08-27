@@ -4,9 +4,14 @@ namespace BloodNetwork.Infrastructure.Data.Seeds;
 
 public static class BangladeshLocationSeed
 {
+    // Fixed, deterministic timestamp so EF Core HasData snapshots stay stable
+    // across consecutive 'dotnet ef migrations add' runs (avoids regenerating
+    // UpdateData for every seeded row just because DateTime.UtcNow changed).
+    private static readonly DateTime SeedTimestamp = new(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc);
+
     public static List<Division> GetDivisions()
     {
-        return new List<Division>
+        var list = new List<Division>
         {
             new() { Id = new Guid("a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"), Name = "Dhaka", NameBn = "ঢাকা" },
             new() { Id = new Guid("b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e"), Name = "Chattogram", NameBn = "চট্টগ্রাম" },
@@ -17,6 +22,8 @@ public static class BangladeshLocationSeed
             new() { Id = new Guid("a7b8c9d0-e1f2-4a3b-4c5d-6e7f8a9b0c1d"), Name = "Rangpur", NameBn = "রংপুর" },
             new() { Id = new Guid("b8c9d0e1-f2a3-4b4c-5d6e-7f8a9b0c1d2e"), Name = "Mymensingh", NameBn = "ময়মনসিংহ" },
         };
+        foreach (var d in list) { d.CreatedAt = SeedTimestamp; d.UpdatedAt = null; }
+        return list;
     }
 
     public static List<District> GetDistricts()
@@ -31,7 +38,7 @@ public static class BangladeshLocationSeed
         var rangpurId = divisions.First(d => d.Name == "Rangpur").Id;
         var mymensinghId = divisions.First(d => d.Name == "Mymensingh").Id;
 
-        return new List<District>
+        var list = new List<District>
         {
             // Dhaka Division
             new() { Id = new Guid("11111111-1111-4111-8111-111111111101"), DivisionId = dhakaId, Name = "Dhaka", NameBn = "ঢাকা" },
@@ -106,13 +113,15 @@ public static class BangladeshLocationSeed
             new() { Id = new Guid("88888888-8888-4888-8888-888888888803"), DivisionId = mymensinghId, Name = "Sherpur", NameBn = "শেরপুর" },
             new() { Id = new Guid("88888888-8888-4888-8888-888888888804"), DivisionId = mymensinghId, Name = "Netrokona", NameBn = "নেত্রকোণা" },
         };
+        foreach (var d in list) { d.CreatedAt = SeedTimestamp; d.UpdatedAt = null; }
+        return list;
     }
 
     public static List<Upazila> GetUpazilas()
     {
         var districts = GetDistricts();
 
-        return new List<Upazila>
+        var list = new List<Upazila>
         {
             // Dhaka District
             new() { Id = new Guid("aa000001-0000-4000-8000-000000000006"), DistrictId = districts.First(d => d.Name == "Dhaka").Id, Name = "Savar", NameBn = "সাভার" },
@@ -120,6 +129,33 @@ public static class BangladeshLocationSeed
             new() { Id = new Guid("aa000001-0000-4000-8000-000000000008"), DistrictId = districts.First(d => d.Name == "Dhaka").Id, Name = "Dohar", NameBn = "দোহার" },
             new() { Id = new Guid("aa000001-0000-4000-8000-000000000009"), DistrictId = districts.First(d => d.Name == "Dhaka").Id, Name = "Keraniganj", NameBn = "কেরাণীগঞ্জ" },
             new() { Id = new Guid("aa000001-0000-4000-8000-000000000010"), DistrictId = districts.First(d => d.Name == "Dhaka").Id, Name = "Nawabganj", NameBn = "নবাবগঞ্জ" },
+
+            // Dhaka Metropolitan (North/South City) thanas
+            new() { Id = new Guid("aa000001-0000-4000-8000-000000000011"), DistrictId = districts.First(d => d.Name == "Dhaka").Id, Name = "Uttara", NameBn = "উত্তরা" },
+            new() { Id = new Guid("aa000001-0000-4000-8000-000000000012"), DistrictId = districts.First(d => d.Name == "Dhaka").Id, Name = "Gulshan", NameBn = "গুলশান" },
+            new() { Id = new Guid("aa000001-0000-4000-8000-000000000013"), DistrictId = districts.First(d => d.Name == "Dhaka").Id, Name = "Banani", NameBn = "বনানী" },
+            new() { Id = new Guid("aa000001-0000-4000-8000-000000000014"), DistrictId = districts.First(d => d.Name == "Dhaka").Id, Name = "Badda", NameBn = "বাড্ডা" },
+            new() { Id = new Guid("aa000001-0000-4000-8000-000000000015"), DistrictId = districts.First(d => d.Name == "Dhaka").Id, Name = "Khilgaon", NameBn = "খিলগাঁও" },
+            new() { Id = new Guid("aa000001-0000-4000-8000-000000000016"), DistrictId = districts.First(d => d.Name == "Dhaka").Id, Name = "Rampura", NameBn = "রামপুরা" },
+            new() { Id = new Guid("aa000001-0000-4000-8000-000000000017"), DistrictId = districts.First(d => d.Name == "Dhaka").Id, Name = "Mirpur", NameBn = "মিরপুর" },
+            new() { Id = new Guid("aa000001-0000-4000-8000-000000000018"), DistrictId = districts.First(d => d.Name == "Dhaka").Id, Name = "Pallabi", NameBn = "পল্লবী" },
+            new() { Id = new Guid("aa000001-0000-4000-8000-000000000019"), DistrictId = districts.First(d => d.Name == "Dhaka").Id, Name = "Kafrul", NameBn = "কাফরুল" },
+            new() { Id = new Guid("aa000001-0000-4000-8000-000000000020"), DistrictId = districts.First(d => d.Name == "Dhaka").Id, Name = "Cantonment", NameBn = "ক্যান্টনমেন্ট" },
+            new() { Id = new Guid("aa000001-0000-4000-8000-000000000021"), DistrictId = districts.First(d => d.Name == "Dhaka").Id, Name = "Tejgaon", NameBn = "তেজগাঁও" },
+            new() { Id = new Guid("aa000001-0000-4000-8000-000000000022"), DistrictId = districts.First(d => d.Name == "Dhaka").Id, Name = "Mohammadpur", NameBn = "মোহাম্মদপুর" },
+            new() { Id = new Guid("aa000001-0000-4000-8000-000000000023"), DistrictId = districts.First(d => d.Name == "Dhaka").Id, Name = "Dhanmondi", NameBn = "ধানমন্ডি" },
+            new() { Id = new Guid("aa000001-0000-4000-8000-000000000024"), DistrictId = districts.First(d => d.Name == "Dhaka").Id, Name = "Shahbagh", NameBn = "শাহবাগ" },
+            new() { Id = new Guid("aa000001-0000-4000-8000-000000000025"), DistrictId = districts.First(d => d.Name == "Dhaka").Id, Name = "Ramna", NameBn = "রমনা" },
+            new() { Id = new Guid("aa000001-0000-4000-8000-000000000026"), DistrictId = districts.First(d => d.Name == "Dhaka").Id, Name = "Motijheel", NameBn = "মতিঝিল" },
+            new() { Id = new Guid("aa000001-0000-4000-8000-000000000027"), DistrictId = districts.First(d => d.Name == "Dhaka").Id, Name = "Paltan", NameBn = "পল্টন" },
+            new() { Id = new Guid("aa000001-0000-4000-8000-000000000028"), DistrictId = districts.First(d => d.Name == "Dhaka").Id, Name = "Sabujbagh", NameBn = "সবুজবাগ" },
+            new() { Id = new Guid("aa000001-0000-4000-8000-000000000029"), DistrictId = districts.First(d => d.Name == "Dhaka").Id, Name = "Lalbagh", NameBn = "লালবাগ" },
+            new() { Id = new Guid("aa000001-0000-4000-8000-000000000030"), DistrictId = districts.First(d => d.Name == "Dhaka").Id, Name = "Kotwali", NameBn = "কোতয়ালী" },
+            new() { Id = new Guid("aa000001-0000-4000-8000-000000000031"), DistrictId = districts.First(d => d.Name == "Dhaka").Id, Name = "Sutrapur", NameBn = "সূত্রাপুর" },
+            new() { Id = new Guid("aa000001-0000-4000-8000-000000000032"), DistrictId = districts.First(d => d.Name == "Dhaka").Id, Name = "Hazaribagh", NameBn = "হাজারীবাগ" },
+            new() { Id = new Guid("aa000001-0000-4000-8000-000000000033"), DistrictId = districts.First(d => d.Name == "Dhaka").Id, Name = "Demra", NameBn = "ডেমরা" },
+            new() { Id = new Guid("aa000001-0000-4000-8000-000000000034"), DistrictId = districts.First(d => d.Name == "Dhaka").Id, Name = "Jatrabari", NameBn = "যাত্রাবাড়ী" },
+            new() { Id = new Guid("aa000001-0000-4000-8000-000000000035"), DistrictId = districts.First(d => d.Name == "Dhaka").Id, Name = "Kamrangirchar", NameBn = "কামরাঙ্গীরচর" },
 
             // Gazipur District
             new() { Id = new Guid("aa000002-0000-4000-8000-000000000001"), DistrictId = districts.First(d => d.Name == "Gazipur").Id, Name = "Gazipur Sadar", NameBn = "গাজীপুর সদর" },
@@ -747,7 +783,8 @@ public static class BangladeshLocationSeed
             new() { Id = new Guid("aa000063-0000-4000-8000-000000000009"), DistrictId = districts.First(d => d.Name == "Netrokona").Id, Name = "Mohanganj", NameBn = "মোহনগঞ্জ" },
             new() { Id = new Guid("aa000063-0000-4000-8000-000000000010"), DistrictId = districts.First(d => d.Name == "Netrokona").Id, Name = "Netrakona Sadar", NameBn = "নেত্রকোণা সদর" },
             new() { Id = new Guid("aa000063-0000-4000-8000-000000000011"), DistrictId = districts.First(d => d.Name == "Netrokona").Id, Name = "Purbadhala", NameBn = "পূর্বধলা" },
-
         };
+        foreach (var u in list) { u.CreatedAt = SeedTimestamp; u.UpdatedAt = null; }
+        return list;
     }
 }

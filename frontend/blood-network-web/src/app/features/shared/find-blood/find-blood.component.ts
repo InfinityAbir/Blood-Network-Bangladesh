@@ -77,9 +77,9 @@ import { PagedResult } from '../../../core/models/paged-result';
             </mat-form-field>
 
             <mat-form-field appearance="outline">
-              <mat-label>Upazila</mat-label>
+              <mat-label>Upazila / Thana</mat-label>
               <mat-select formControlName="upazilaId" [disabled]="!searchForm.get('districtId')?.value">
-                <mat-option value="">All Upazilas</mat-option>
+                <mat-option value="">All Upazilas / Thanas</mat-option>
                 @for (upazila of upazilas; track upazila.id) {
                   <mat-option [value]="upazila.id">{{ upazila.name }}</mat-option>
                 }
