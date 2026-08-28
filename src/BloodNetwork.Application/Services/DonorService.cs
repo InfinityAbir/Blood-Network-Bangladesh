@@ -149,48 +149,63 @@ public class DonorService
 
     public async Task<Result<DonorProfileDto>> ToggleAvailabilityAsync(Guid userId, ToggleAvailabilityRequest request, CancellationToken cancellationToken = default)
     {
-        var profile = await _donorProfileRepository.FirstOrDefaultAsync(
-            p => p.UserId == userId, cancellationToken);
-
-        if (profile is null)
-            return Result<DonorProfileDto>.Failure("Donor profile not found");
-
-        profile.AvailabilityStatus = request.AvailabilityStatus;
-        profile.UpdatedAt = DateTime.UtcNow;
-
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        if (request.AvailabilityStatus == AvailabilityStatus.Available)
+        try
         {
-            var openRequests = await _bloodRequestRepository.FindAsync(
-                r => (r.Status == RequestStatus.Open || r.Status == RequestStatus.PartiallyFulfilled) &&
-                     r.BloodGroup == profile.BloodGroup,
-                cancellationToken);
+            var profile = await _donorProfileRepository.FirstOrDefaultAsync(
+                p => p.UserId == userId, cancellationToken);
 
-            foreach (var openRequest in openRequests)
+            if (profile is null)
+                return Result<DonorProfileDto>.Failure("Donor profile not found");
+
+            profile.AvailabilityStatus = request.AvailabilityStatus;
+            profile.UpdatedAt = DateTime.UtcNow;
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            if (request.AvailabilityStatus == AvailabilityStatus.Available)
             {
-                var capturedRequestId = openRequest.Id;
-                _ = Task.Run(async () =>
+                try
                 {
-                    using var scope = _scopeFactory.CreateScope();
-                    var matching = scope.ServiceProvider.GetRequiredService<IMatchingService>();
-                    var logger = scope.ServiceProvider.GetRequiredService<ILogger<DonorService>>();
-                    try
+                    var openRequests = await _bloodRequestRepository.FindAsync(
+                        r => (r.Status == RequestStatus.Open || r.Status == RequestStatus.PartiallyFulfilled) &&
+                             r.BloodGroup == profile.BloodGroup,
+                        cancellationToken);
+
+                    foreach (var openRequest in openRequests)
                     {
-                        await matching.MatchRequestAsync(capturedRequestId);
+                        var capturedRequestId = openRequest.Id;
+                        _ = Task.Run(async () =>
+                        {
+                            using var scope = _scopeFactory.CreateScope();
+                            var matching = scope.ServiceProvider.GetRequiredService<IMatchingService>();
+                            var logger = scope.ServiceProvider.GetRequiredService<ILogger<DonorService>>();
+                            try
+                            {
+                                await matching.MatchRequestAsync(capturedRequestId);
+                            }
+                            catch (Exception ex)
+                            {
+                                logger.LogError(ex, "Background matching failed for request {RequestId}", capturedRequestId);
+                            }
+                        });
                     }
-                    catch (Exception ex)
-                    {
-                        logger.LogError(ex, "Background matching failed for request {RequestId}", capturedRequestId);
-                    }
-                });
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Matching trigger failed for user {UserId} but availability was updated", userId);
+                }
             }
+
+            var district = await _districtRepository.GetByIdAsync(profile.DistrictId, cancellationToken);
+            var upazila = await _upazilaRepository.GetByIdAsync(profile.UpazilaId, cancellationToken);
+
+            return Result<DonorProfileDto>.Success(MapToDto(profile, district?.Name, upazila?.Name));
         }
-
-        var district = await _districtRepository.GetByIdAsync(profile.DistrictId, cancellationToken);
-        var upazila = await _upazilaRepository.GetByIdAsync(profile.UpazilaId, cancellationToken);
-
-        return Result<DonorProfileDto>.Success(MapToDto(profile, district?.Name, upazila?.Name));
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "ToggleAvailability failed for user {UserId}", userId);
+            return Result<DonorProfileDto>.Failure($"Toggle failed: {ex.Message}");
+        }
     }
 
     public async Task<Result<PagedResult<PublicDonorDto>>> SearchDonorsAsync(DonorSearchRequest request, CancellationToken cancellationToken = default)
