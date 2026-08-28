@@ -51,86 +51,102 @@ public class DonorService
 
     public async Task<Result<DonorProfileDto>> CreateProfileAsync(Guid userId, CreateDonorProfileRequest request, CancellationToken cancellationToken = default)
     {
-        var existingProfile = await _donorProfileRepository.FirstOrDefaultAsync(
-            p => p.UserId == userId, cancellationToken);
-
-        if (existingProfile is not null)
-            return Result<DonorProfileDto>.Failure("Donor profile already exists");
-
-        var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
-        if (user is null)
-            return Result<DonorProfileDto>.Failure("User not found");
-
-        var district = await _districtRepository.GetByIdAsync(request.DistrictId, cancellationToken);
-        if (district is null)
-            return Result<DonorProfileDto>.Failure("Invalid district");
-
-        var upazila = await _upazilaRepository.GetByIdAsync(request.UpazilaId, cancellationToken);
-        if (upazila is null)
-            return Result<DonorProfileDto>.Failure("Invalid upazila");
-
-        if (upazila.DistrictId != request.DistrictId)
-            return Result<DonorProfileDto>.Failure("Upazila does not belong to district");
-
-        var profile = new DonorProfile
+        try
         {
-            UserId = userId,
-            BloodGroup = request.BloodGroup,
-            Gender = request.Gender,
-            DateOfBirth = request.DateOfBirth,
-            DistrictId = request.DistrictId,
-            UpazilaId = request.UpazilaId,
-            Area = request.Area,
-            Latitude = request.Latitude,
-            Longitude = request.Longitude,
-            LastDonationDate = request.LastDonationDate,
-            AvailabilityStatus = AvailabilityStatus.Available,
-            VerificationStatus = VerificationStatus.Unverified
-        };
+            var existingProfile = await _donorProfileRepository.FirstOrDefaultAsync(
+                p => p.UserId == userId, cancellationToken);
 
-        await _donorProfileRepository.AddAsync(profile, cancellationToken);
+            if (existingProfile is not null)
+                return Result<DonorProfileDto>.Failure("Donor profile already exists");
 
-        if (user.Role == UserRole.Requester)
-            user.Role = UserRole.Donor;
+            var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
+            if (user is null)
+                return Result<DonorProfileDto>.Failure("User not found");
 
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+            var district = await _districtRepository.GetByIdAsync(request.DistrictId, cancellationToken);
+            if (district is null)
+                return Result<DonorProfileDto>.Failure("Invalid district");
 
-        return Result<DonorProfileDto>.Success(MapToDto(profile, district.Name, upazila.Name));
+            var upazila = await _upazilaRepository.GetByIdAsync(request.UpazilaId, cancellationToken);
+            if (upazila is null)
+                return Result<DonorProfileDto>.Failure("Invalid upazila");
+
+            if (upazila.DistrictId != request.DistrictId)
+                return Result<DonorProfileDto>.Failure("Upazila does not belong to district");
+
+            var profile = new DonorProfile
+            {
+                UserId = userId,
+                BloodGroup = request.BloodGroup,
+                Gender = request.Gender,
+                DateOfBirth = request.DateOfBirth,
+                DistrictId = request.DistrictId,
+                UpazilaId = request.UpazilaId,
+                Area = request.Area,
+                Latitude = request.Latitude,
+                Longitude = request.Longitude,
+                LastDonationDate = request.LastDonationDate,
+                AvailabilityStatus = AvailabilityStatus.Available,
+                VerificationStatus = VerificationStatus.Unverified
+            };
+
+            await _donorProfileRepository.AddAsync(profile, cancellationToken);
+
+            if (user.Role == UserRole.Requester)
+                user.Role = UserRole.Donor;
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            return Result<DonorProfileDto>.Success(MapToDto(profile, district.Name, upazila.Name));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "CreateProfile failed for user {UserId}", userId);
+            return Result<DonorProfileDto>.Failure($"Profile create failed: {ex.Message}");
+        }
     }
 
     public async Task<Result<DonorProfileDto>> UpdateProfileAsync(Guid userId, UpdateDonorProfileRequest request, CancellationToken cancellationToken = default)
     {
-        var profile = await _donorProfileRepository.FirstOrDefaultAsync(
-            p => p.UserId == userId, cancellationToken);
+        try
+        {
+            var profile = await _donorProfileRepository.FirstOrDefaultAsync(
+                p => p.UserId == userId, cancellationToken);
 
-        if (profile is null)
-            return Result<DonorProfileDto>.Failure("Donor profile not found");
+            if (profile is null)
+                return Result<DonorProfileDto>.Failure("Donor profile not found");
 
-        var district = await _districtRepository.GetByIdAsync(request.DistrictId, cancellationToken);
-        if (district is null)
-            return Result<DonorProfileDto>.Failure("Invalid district");
+            var district = await _districtRepository.GetByIdAsync(request.DistrictId, cancellationToken);
+            if (district is null)
+                return Result<DonorProfileDto>.Failure("Invalid district");
 
-        var upazila = await _upazilaRepository.GetByIdAsync(request.UpazilaId, cancellationToken);
-        if (upazila is null)
-            return Result<DonorProfileDto>.Failure("Invalid upazila");
+            var upazila = await _upazilaRepository.GetByIdAsync(request.UpazilaId, cancellationToken);
+            if (upazila is null)
+                return Result<DonorProfileDto>.Failure("Invalid upazila");
 
-        if (upazila.DistrictId != request.DistrictId)
-            return Result<DonorProfileDto>.Failure("Upazila does not belong to district");
+            if (upazila.DistrictId != request.DistrictId)
+                return Result<DonorProfileDto>.Failure("Upazila does not belong to district");
 
-        profile.BloodGroup = request.BloodGroup;
-        profile.Gender = request.Gender;
-        profile.DateOfBirth = request.DateOfBirth;
-        profile.DistrictId = request.DistrictId;
-        profile.UpazilaId = request.UpazilaId;
-        profile.Area = request.Area;
-        profile.Latitude = request.Latitude;
-        profile.Longitude = request.Longitude;
-        profile.LastDonationDate = request.LastDonationDate;
-        profile.UpdatedAt = DateTime.UtcNow;
+            profile.BloodGroup = request.BloodGroup;
+            profile.Gender = request.Gender;
+            profile.DateOfBirth = request.DateOfBirth;
+            profile.DistrictId = request.DistrictId;
+            profile.UpazilaId = request.UpazilaId;
+            profile.Area = request.Area;
+            profile.Latitude = request.Latitude;
+            profile.Longitude = request.Longitude;
+            profile.LastDonationDate = request.LastDonationDate;
+            profile.UpdatedAt = DateTime.UtcNow;
 
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return Result<DonorProfileDto>.Success(MapToDto(profile, district.Name, upazila.Name));
+            return Result<DonorProfileDto>.Success(MapToDto(profile, district.Name, upazila.Name));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "UpdateProfile failed for user {UserId}", userId);
+            return Result<DonorProfileDto>.Failure($"Profile update failed: {ex.Message}");
+        }
     }
 
     public async Task<Result<DonorProfileDto>> GetMyProfileAsync(Guid userId, CancellationToken cancellationToken = default)
