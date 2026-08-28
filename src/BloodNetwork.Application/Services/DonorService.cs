@@ -79,13 +79,13 @@ public class DonorService
                 UserId = userId,
                 BloodGroup = request.BloodGroup,
                 Gender = request.Gender,
-                DateOfBirth = request.DateOfBirth,
+                DateOfBirth = ToUtc(request.DateOfBirth),
                 DistrictId = request.DistrictId,
                 UpazilaId = request.UpazilaId,
                 Area = request.Area,
                 Latitude = request.Latitude,
                 Longitude = request.Longitude,
-                LastDonationDate = request.LastDonationDate,
+                LastDonationDate = ToUtc(request.LastDonationDate),
                 AvailabilityStatus = AvailabilityStatus.Available,
                 VerificationStatus = VerificationStatus.Unverified
             };
@@ -129,13 +129,13 @@ public class DonorService
 
             profile.BloodGroup = request.BloodGroup;
             profile.Gender = request.Gender;
-            profile.DateOfBirth = request.DateOfBirth;
+            profile.DateOfBirth = ToUtc(request.DateOfBirth);
             profile.DistrictId = request.DistrictId;
             profile.UpazilaId = request.UpazilaId;
             profile.Area = request.Area;
             profile.Latitude = request.Latitude;
             profile.Longitude = request.Longitude;
-            profile.LastDonationDate = request.LastDonationDate;
+            profile.LastDonationDate = ToUtc(request.LastDonationDate);
             profile.UpdatedAt = DateTime.UtcNow;
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -323,5 +323,16 @@ public class DonorService
             profile.Longitude,
             profile.CreatedAt
         );
+    }
+
+    private static DateTime? ToUtc(DateTime? value)
+    {
+        if (value is null)
+            return null;
+
+        if (value.Value.Kind == DateTimeKind.Unspecified)
+            return DateTime.SpecifyKind(value.Value, DateTimeKind.Utc);
+
+        return value.Value.ToUniversalTime();
     }
 }
