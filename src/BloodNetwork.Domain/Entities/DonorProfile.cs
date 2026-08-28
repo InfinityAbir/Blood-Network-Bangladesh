@@ -12,6 +12,7 @@ public class DonorProfile : BaseEntity
     public Guid DistrictId { get; set; }
     public Guid UpazilaId { get; set; }
     public string? Area { get; set; }
+    public string? CustomAddress { get; set; }
     public DateTime? LastDonationDate { get; set; }
     public AvailabilityStatus AvailabilityStatus { get; set; } = AvailabilityStatus.Unknown;
     public VerificationStatus VerificationStatus { get; set; } = VerificationStatus.Unverified;

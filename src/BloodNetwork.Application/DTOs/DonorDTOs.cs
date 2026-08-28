@@ -9,6 +9,7 @@ public record CreateDonorProfileRequest(
     Guid DistrictId,
     Guid UpazilaId,
     string? Area,
+    string? CustomAddress,
     double? Latitude,
     double? Longitude,
     DateTime? LastDonationDate = null
@@ -21,6 +22,7 @@ public record UpdateDonorProfileRequest(
     Guid DistrictId,
     Guid UpazilaId,
     string? Area,
+    string? CustomAddress,
     double? Latitude,
     double? Longitude,
     DateTime? LastDonationDate = null
@@ -37,6 +39,7 @@ public record DonorProfileDto(
     Guid UpazilaId,
     string? UpazilaName,
     string? Area,
+    string? CustomAddress,
     DateTime? LastDonationDate,
     AvailabilityStatus AvailabilityStatus,
     VerificationStatus VerificationStatus,

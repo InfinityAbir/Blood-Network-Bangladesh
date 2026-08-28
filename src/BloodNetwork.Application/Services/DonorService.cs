@@ -83,6 +83,7 @@ public class DonorService
                 DistrictId = request.DistrictId,
                 UpazilaId = request.UpazilaId,
                 Area = request.Area,
+                CustomAddress = request.CustomAddress,
                 Latitude = request.Latitude,
                 Longitude = request.Longitude,
                 LastDonationDate = ToUtc(request.LastDonationDate),
@@ -133,6 +134,7 @@ public class DonorService
             profile.DistrictId = request.DistrictId;
             profile.UpazilaId = request.UpazilaId;
             profile.Area = request.Area;
+            profile.CustomAddress = request.CustomAddress;
             profile.Latitude = request.Latitude;
             profile.Longitude = request.Longitude;
             profile.LastDonationDate = ToUtc(request.LastDonationDate);
@@ -315,6 +317,7 @@ public class DonorService
             profile.UpazilaId,
             upazilaName,
             profile.Area,
+            profile.CustomAddress,
             profile.LastDonationDate,
             profile.AvailabilityStatus,
             profile.VerificationStatus,
