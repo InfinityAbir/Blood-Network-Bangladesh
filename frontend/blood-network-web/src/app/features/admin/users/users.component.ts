@@ -16,6 +16,7 @@ import { SkeletonComponent } from '../../../shared/components/skeleton/skeleton.
 import { AdminService } from '../../../core/services/admin.service';
 import { AdminUser } from '../../../core/models/admin';
 import { PagedResult } from '../../../core/models/paged-result';
+import { RevealDirective } from '../../../shared/directives/reveal.directive';
 
 @Component({
   selector: 'app-user-management',
@@ -33,7 +34,8 @@ import { PagedResult } from '../../../core/models/paged-result';
     MatChipsModule,
     HeaderComponent,
     FooterComponent,
-    SkeletonComponent
+    SkeletonComponent,
+    RevealDirective
   ],
   template: `
     <app-header />
@@ -41,7 +43,7 @@ import { PagedResult } from '../../../core/models/paged-result';
       <a mat-button routerLink="/admin" class="back-link"><mat-icon>arrow_back</mat-icon> Back to Dashboard</a>
       <h1>User Management</h1>
 
-      <div class="filters">
+      <div class="filters bgn-fade-up">
         <mat-form-field appearance="outline">
           <mat-label>Search</mat-label>
           <input matInput [(ngModel)]="searchTerm" placeholder="Name, phone, email" (keyup.enter)="loadUsers()">
@@ -55,8 +57,8 @@ import { PagedResult } from '../../../core/models/paged-result';
             <mat-option value="Admin">Admin</mat-option>
           </mat-select>
         </mat-form-field>
-        <button mat-raised-button color="primary" (click)="loadUsers()">Search</button>
-        <button mat-stroked-button (click)="searchTerm=''; selectedRole=''; loadUsers()"><mat-icon>clear</mat-icon> Reset</button>
+        <button mat-raised-button color="primary" (click)="loadUsers()" class="bgn-press">Search</button>
+        <button mat-stroked-button (click)="searchTerm=''; selectedRole=''; loadUsers()" class="bgn-press"><mat-icon>clear</mat-icon> Reset</button>
       </div>
 
       @if (isLoading) {
@@ -78,9 +80,10 @@ import { PagedResult } from '../../../core/models/paged-result';
           }
         </div>
       } @else if (result && result.items.length > 0) {
+        <div class="results-panel" appReveal>
         <div class="result-info">Showing {{ result.items.length }} of {{ result.totalCount }} users</div>
         @for (user of result.items; track user.id) {
-          <mat-card class="user-card">
+          <mat-card class="user-card bgn-hover-lift">
             <mat-card-header>
               <mat-card-title>{{ user.firstName }} {{ user.lastName }}</mat-card-title>
               <mat-card-subtitle>{{ user.phoneNumber }} {{ user.email ? '• ' + user.email : '' }}</mat-card-subtitle>
@@ -100,13 +103,13 @@ import { PagedResult } from '../../../core/models/paged-result';
             </mat-card-content>
             <mat-card-actions align="end">
               @if (user.role === 'Donor' && (user.donorVerificationStatus === 'Pending' || user.donorVerificationStatus === 'Unverified')) {
-                <button mat-button color="primary" (click)="verifyDonor(user.id, 'Verified')">Verify</button>
-                <button mat-button color="warn" (click)="verifyDonor(user.id, 'Rejected')">Reject</button>
+                <button mat-button color="primary" (click)="verifyDonor(user.id, 'Verified')" class="bgn-press">Verify</button>
+                <button mat-button color="warn" (click)="verifyDonor(user.id, 'Rejected')" class="bgn-press">Reject</button>
               }
               @if (user.role === 'Donor' && user.donorVerificationStatus === 'Verified') {
-                <button mat-button color="warn" (click)="verifyDonor(user.id, 'Rejected')">Unverify</button>
+                <button mat-button color="warn" (click)="verifyDonor(user.id, 'Rejected')" class="bgn-press">Unverify</button>
               }
-              <button mat-button [color]="user.isActive ? 'warn' : 'primary'" (click)="toggleActive(user.id, !user.isActive)">
+              <button mat-button [color]="user.isActive ? 'warn' : 'primary'" (click)="toggleActive(user.id, !user.isActive)" class="bgn-press">
                 {{ user.isActive ? 'Deactivate' : 'Activate' }}
               </button>
             </mat-card-actions>
@@ -114,11 +117,12 @@ import { PagedResult } from '../../../core/models/paged-result';
         }
         @if (result.totalPages > 1) {
           <div class="pagination">
-            <button mat-button [disabled]="!result.hasPrevious" (click)="goPage(result.page - 1)">Previous</button>
+            <button mat-button [disabled]="!result.hasPrevious" (click)="goPage(result.page - 1)" class="bgn-press">Previous</button>
             <span>Page {{ result.page }} of {{ result.totalPages }}</span>
-            <button mat-button [disabled]="!result.hasNext" (click)="goPage(result.page + 1)">Next</button>
+            <button mat-button [disabled]="!result.hasNext" (click)="goPage(result.page + 1)" class="bgn-press">Next</button>
           </div>
         }
+        </div>
       } @else {
         <div class="no-results">No users found</div>
       }
@@ -133,6 +137,7 @@ import { PagedResult } from '../../../core/models/paged-result';
     .sk-list { display: flex; flex-direction: column; gap: 8px; }
     .sk-user-card { min-height: 100px; }
     .sk-chips { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+    .results-panel { display: flex; flex-direction: column; }
     .result-info { font-size: 13px; color: #666; margin-bottom: 12px; }
     .user-card { margin-bottom: 8px; }
     .user-info { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }

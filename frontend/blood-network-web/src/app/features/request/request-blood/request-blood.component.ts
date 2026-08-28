@@ -46,7 +46,7 @@ import { BloodGroup, BloodGroupLabels } from '../../../core/models/blood-group';
   template: `
     <app-header />
     <main class="request-container">
-      <div class="request-header">
+      <div class="request-header bgn-fade-up" style="--i:0">
         <h1>Request Blood</h1>
         <p>Fill in the details to find blood donors quickly</p>
       </div>
@@ -59,7 +59,7 @@ import { BloodGroup, BloodGroupLabels } from '../../../core/models/blood-group';
         <div class="success-banner" role="status" aria-live="polite">{{ successMessage }}</div>
       }
 
-      <mat-card>
+      <mat-card class="bgn-fade-up" style="--i:1">
         <mat-card-content>
           <form [formGroup]="requestForm" (ngSubmit)="onSubmit()">
             <div class="form-section">
@@ -210,8 +210,8 @@ import { BloodGroup, BloodGroupLabels } from '../../../core/models/blood-group';
             </div>
 
             <div class="form-actions">
-              <a mat-stroked-button routerLink="/" class="cancel-btn">Cancel</a>
-              <button mat-raised-button color="primary" type="submit" class="submit-btn"
+              <a mat-stroked-button routerLink="/" class="cancel-btn bgn-press">Cancel</a>
+              <button mat-raised-button color="primary" type="submit" class="submit-btn bgn-press"
                       [disabled]="isLoading">
                 @if (isLoading) {
                   <mat-spinner diameter="20"></mat-spinner>
@@ -241,8 +241,12 @@ import { BloodGroup, BloodGroupLabels } from '../../../core/models/blood-group';
     .form-actions { display: flex; gap: 12px; justify-content: flex-end; padding-top: 16px; border-top: 1px solid var(--bgn-border); flex-wrap: wrap; }
     .form-actions .cancel-btn, .form-actions .submit-btn { height: 48px; font-size: 15px; flex: 1; min-width: 120px; }
     .form-actions .cancel-btn { max-width: 140px; }
-    .error-banner { background: color-mix(in srgb, var(--bgn-danger) 12%, transparent); color: var(--bgn-danger); border: 1px solid color-mix(in srgb, var(--bgn-danger) 30%, transparent); padding: 12px 16px; border-radius: var(--bgn-radius-md); margin-bottom: 16px; }
-    .success-banner { background: color-mix(in srgb, var(--bgn-success) 14%, transparent); color: var(--bgn-success); border: 1px solid color-mix(in srgb, var(--bgn-success) 30%, transparent); padding: 12px 16px; border-radius: var(--bgn-radius-md); margin-bottom: 16px; }
+    .error-banner { background: color-mix(in srgb, var(--bgn-danger) 12%, transparent); color: var(--bgn-danger); border: 1px solid color-mix(in srgb, var(--bgn-danger) 30%, transparent); padding: 12px 16px; border-radius: var(--bgn-radius-md); margin-bottom: 16px; animation: bgn-fade-up 0.35s ease-out; }
+    .success-banner { background: color-mix(in srgb, var(--bgn-success) 14%, transparent); color: var(--bgn-success); border: 1px solid color-mix(in srgb, var(--bgn-success) 30%, transparent); padding: 12px 16px; border-radius: var(--bgn-radius-md); margin-bottom: 16px; animation: bgn-fade-up 0.35s ease-out; }
+    .form-section { transition: opacity 0.2s ease; }
+    .submit-btn { transition: transform 0.15s ease-out, box-shadow 0.2s ease-out; }
+    .submit-btn:not([disabled]):hover { box-shadow: var(--bgn-shadow-md); }
+    mat-card { transition: box-shadow 0.2s ease-out; }
     @media (max-width: 600px) {
       .form-row { flex-direction: column; }
       .form-row mat-form-field { min-width: 0; }

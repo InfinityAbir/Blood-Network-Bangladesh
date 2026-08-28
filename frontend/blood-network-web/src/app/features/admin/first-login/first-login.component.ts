@@ -9,14 +9,18 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../../../core/services/auth.service';
+import { RevealDirective } from '../../../shared/directives/reveal.directive';
 
 @Component({
   selector: 'app-admin-first-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatCardModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule],
+  imports: [CommonModule, ReactiveFormsModule, MatCardModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule, RevealDirective],
   template: `
     <main class="first-login-wrap">
-      <mat-card class="first-login-card">
+      <mat-card class="first-login-card" appReveal>
+        <div class="auth-icon-badge bgn-float">
+          <mat-icon>admin_panel_settings</mat-icon>
+        </div>
         <mat-card-header>
           <mat-card-title>Change Admin Credentials</mat-card-title>
           <mat-card-subtitle>For security, you must change the default email and password on first login.</mat-card-subtitle>
@@ -63,7 +67,7 @@ import { AuthService } from '../../../core/services/auth.service';
               @if (form.get('confirmPassword')?.hasError('mismatch') && form.get('confirmPassword')?.touched) { <mat-error>Passwords do not match</mat-error> }
             </mat-form-field>
 
-            <button mat-raised-button color="primary" type="submit" class="full submit" [disabled]="form.invalid || isLoading">
+            <button mat-raised-button color="primary" type="submit" class="full submit bgn-press" [disabled]="form.invalid || isLoading">
               @if (isLoading) { <mat-spinner diameter="20"></mat-spinner> } @else { Update and Continue }
             </button>
           </form>
@@ -73,9 +77,13 @@ import { AuthService } from '../../../core/services/auth.service';
   `,
   styles: [`
     .first-login-wrap { flex: 1; display:flex; justify-content:center; align-items:center; padding:48px 16px; background: var(--bgn-bg); min-height: calc(100vh - 64px); }
-    .first-login-card { width:100%; max-width:500px; padding:16px 18px; border-radius: var(--bgn-radius-lg) !important; border:1px solid var(--bgn-border) !important; box-shadow: var(--bgn-shadow-lg) !important; }
+    .first-login-card { position: relative; overflow: hidden; width:100%; max-width:500px; padding:16px 18px; border-radius: var(--bgn-radius-lg) !important; border:1px solid var(--bgn-border) !important; box-shadow: var(--bgn-shadow-lg) !important; }
+    .first-login-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 5px; background: var(--bgn-gradient); background-size: 200% 200%; animation: bgn-gradient-shift 8s ease infinite; }
+    .auth-icon-badge { width: 56px; height: 56px; margin: 10px auto 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--bgn-gradient); box-shadow: var(--bgn-shadow-md); }
+    .auth-icon-badge mat-icon { color: #fff; font-size: 28px; width: 28px; height: 28px; }
     .full { width:100%; }
-    .submit { height:48px; border-radius: var(--bgn-radius-pill) !important; margin-top:12px; }
+    .submit { height:48px; border-radius: var(--bgn-radius-pill) !important; margin-top:12px; transition: transform 0.2s ease-out, box-shadow 0.2s ease-out; }
+    .submit:hover:not(:disabled) { transform: translateY(-2px); box-shadow: var(--bgn-shadow-md); }
     .banner { padding:12px 16px; border-radius: var(--bgn-radius-sm); margin-bottom:16px; font-size:14px; border:1px solid; }
     .banner.error { background: color-mix(in srgb, var(--bgn-danger) 12%, transparent); color: var(--bgn-danger); border-color: color-mix(in srgb, var(--bgn-danger) 30%, transparent); }
     .banner.success { background: color-mix(in srgb, var(--bgn-success) 14%, transparent); color: var(--bgn-success); border-color: color-mix(in srgb, var(--bgn-success) 30%, transparent); }

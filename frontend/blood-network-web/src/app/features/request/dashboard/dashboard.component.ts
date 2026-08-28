@@ -11,6 +11,7 @@ import { finalize } from 'rxjs';
 import { HeaderComponent } from '../../../layout/header/header.component';
 import { FooterComponent } from '../../../layout/footer/footer.component';
 import { SkeletonComponent } from '../../../shared/components/skeleton/skeleton.component';
+import { RevealDirective } from '../../../shared/directives/reveal.directive';
 import { RequestService } from '../../../core/services/request.service';
 import { MatchService } from '../../../core/services/match.service';
 import { BloodRequest, RequestStatus } from '../../../core/models/blood-request';
@@ -32,18 +33,19 @@ import { PagedResult } from '../../../core/models/paged-result';
     MatSnackBarModule,
     HeaderComponent,
     FooterComponent,
-    SkeletonComponent
+    SkeletonComponent,
+    RevealDirective
   ],
   template: `
     <app-header />
     <main class="dashboard-container">
-      <div class="dashboard-header">
+      <div class="dashboard-header bgn-fade-up" style="--i:0">
         <h1>My Blood Requests</h1>
         <div class="header-actions">
-          <a mat-stroked-button routerLink="/settings">
+          <a mat-stroked-button routerLink="/settings" class="bgn-press">
             <mat-icon>settings</mat-icon> Settings
           </a>
-          <a mat-raised-button color="primary" routerLink="/request-blood">
+          <a mat-raised-button color="primary" routerLink="/request-blood" class="bgn-press">
             <mat-icon>add</mat-icon> New Request
           </a>
         </div>
@@ -83,8 +85,8 @@ import { PagedResult } from '../../../core/models/paged-result';
           <mat-tab label="All">
             <div class="tab-content">
               @if (allRequests && allRequests.items.length > 0) {
-                @for (request of allRequests.items; track request.id) {
-                   <mat-card class="request-card">
+                @for (request of allRequests.items; track request.id; let i = $index) {
+                   <mat-card class="request-card bgn-hover-lift" appReveal [appRevealDelay]="i">
                     <mat-card-content>
                       <div class="card-top-row">
                         <span class="blood-badge">{{ getBloodGroupLabel(request.bloodGroup) }}</span>
@@ -148,11 +150,11 @@ import { PagedResult } from '../../../core/models/paged-result';
                       }
                     </mat-card-content>
                     <mat-card-actions align="end">
-                      <button mat-button (click)="loadMatches(request.id)" [disabled]="loadingMatches[request.id]">
+                      <button mat-button class="bgn-press" (click)="loadMatches(request.id)" [disabled]="loadingMatches[request.id]">
                         <mat-icon>people</mat-icon> {{ matchesMap[request.id] ? 'Hide' : 'View' }} Matches
                       </button>
                       @if (request.status === 'Open' || request.status === 'PartiallyFulfilled') {
-                        <button mat-button color="warn" (click)="cancelRequest(request.id)" [disabled]="isResponding[request.id]">
+                        <button mat-button color="warn" class="bgn-press" (click)="cancelRequest(request.id)" [disabled]="isResponding[request.id]">
                           <mat-icon>cancel</mat-icon> Cancel
                         </button>
                       }
@@ -160,10 +162,10 @@ import { PagedResult } from '../../../core/models/paged-result';
                   </mat-card>
                 }
               } @else {
-                <div class="no-results">
+                <div class="no-results bgn-fade-up" style="--i:0">
                   <mat-icon>bloodtype</mat-icon>
                   <p>No blood requests yet</p>
-                  <a mat-raised-button color="primary" routerLink="/request-blood">Create Your First Request</a>
+                  <a mat-raised-button color="primary" class="bgn-press" routerLink="/request-blood">Create Your First Request</a>
                 </div>
               }
             </div>
@@ -172,8 +174,8 @@ import { PagedResult } from '../../../core/models/paged-result';
           <mat-tab label="Active">
             <div class="tab-content">
               @if (activeRequests && activeRequests.items.length > 0) {
-                @for (request of activeRequests.items; track request.id) {
-                  <mat-card class="request-card">
+                @for (request of activeRequests.items; track request.id; let i = $index) {
+                  <mat-card class="request-card bgn-hover-lift" appReveal [appRevealDelay]="i">
                     <mat-card-content>
                       <div class="card-top-row">
                         <span class="blood-badge">{{ getBloodGroupLabel(request.bloodGroup) }}</span>
@@ -220,17 +222,17 @@ import { PagedResult } from '../../../core/models/paged-result';
                       }
                     </mat-card-content>
                     <mat-card-actions align="end">
-                      <button mat-button (click)="loadMatches(request.id)" [disabled]="loadingMatches[request.id]">
+                      <button mat-button class="bgn-press" (click)="loadMatches(request.id)" [disabled]="loadingMatches[request.id]">
                         <mat-icon>people</mat-icon> {{ matchesMap[request.id] ? 'Hide' : 'View' }} Matches
                       </button>
-                      <button mat-button color="warn" (click)="cancelRequest(request.id)" [disabled]="isResponding[request.id]">
+                      <button mat-button color="warn" class="bgn-press" (click)="cancelRequest(request.id)" [disabled]="isResponding[request.id]">
                         <mat-icon>cancel</mat-icon> Cancel
                       </button>
                     </mat-card-actions>
                   </mat-card>
                 }
               } @else {
-                <div class="no-results">
+                <div class="no-results bgn-fade-up" style="--i:0">
                   <p>No active requests</p>
                 </div>
               }
@@ -240,8 +242,8 @@ import { PagedResult } from '../../../core/models/paged-result';
           <mat-tab label="Fulfilled">
             <div class="tab-content">
               @if (fulfilledRequests && fulfilledRequests.items.length > 0) {
-                @for (request of fulfilledRequests.items; track request.id) {
-                  <mat-card class="request-card fulfilled">
+                @for (request of fulfilledRequests.items; track request.id; let i = $index) {
+                  <mat-card class="request-card fulfilled bgn-hover-lift" appReveal [appRevealDelay]="i">
                     <mat-card-content>
                       <div class="card-top-row">
                         <span class="blood-badge">{{ getBloodGroupLabel(request.bloodGroup) }}</span>
@@ -265,7 +267,7 @@ import { PagedResult } from '../../../core/models/paged-result';
                   </mat-card>
                 }
               } @else {
-                <div class="no-results">
+                <div class="no-results bgn-fade-up" style="--i:0">
                   <p>No fulfilled requests</p>
                 </div>
               }
@@ -312,11 +314,12 @@ import { PagedResult } from '../../../core/models/paged-result';
     .response-pending { background: #fff3e0; color: #e65100; }
     .no-results { text-align: center; padding: 60px; color: #999; }
     .no-results mat-icon { font-size: 48px; width: 48px; height: 48px; }
-    .matches-inline { margin-top: 16px; padding: 12px; background: #f9f9f9; border-radius: 8px; }
+    .matches-inline { margin-top: 16px; padding: 12px; background: #f9f9f9; border-radius: 8px; animation: bgn-fade-up 0.35s ease-out; }
     .matches-inline h4 { margin: 0 0 8px; font-size: 14px; color: #666; }
     .match-status { margin: 0; font-size: 13px; color: #999; padding: 8px 0; }
     .match-status.error { color: var(--bgn-danger, #c62828); }
-    .match-row { display: flex; align-items: center; gap: 12px; padding: 6px 0; border-bottom: 1px solid #eee; }
+    .match-row { display: flex; align-items: center; gap: 12px; padding: 6px 0; border-bottom: 1px solid #eee; transition: background 0.15s ease; }
+    .match-row:hover { background: rgba(0, 0, 0, 0.02); }
     .match-row:last-child { border-bottom: none; }
     .match-name { font-weight: 500; }
     .match-score { color: #666; font-size: 13px; }

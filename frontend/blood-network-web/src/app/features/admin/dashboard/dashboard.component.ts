@@ -11,6 +11,8 @@ import { FooterComponent } from '../../../layout/footer/footer.component';
 import { SkeletonComponent } from '../../../shared/components/skeleton/skeleton.component';
 import { AdminService } from '../../../core/services/admin.service';
 import { AdminDashboardStats } from '../../../core/models/admin';
+import { RevealDirective } from '../../../shared/directives/reveal.directive';
+import { CountUpDirective } from '../../../shared/directives/count-up.directive';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -25,12 +27,14 @@ import { AdminDashboardStats } from '../../../core/models/admin';
     MatTabsModule,
     HeaderComponent,
     FooterComponent,
-    SkeletonComponent
+    SkeletonComponent,
+    RevealDirective,
+    CountUpDirective
   ],
   template: `
     <app-header />
     <main class="dashboard-container">
-      <div class="dashboard-header">
+      <div class="dashboard-header bgn-fade-up">
         <h1>Admin Dashboard</h1>
       </div>
 
@@ -57,76 +61,76 @@ import { AdminDashboardStats } from '../../../core/models/admin';
         <div class="error-banner">
           <mat-icon>error</mat-icon>
           <span>{{ errorMessage }}</span>
-          <button mat-button (click)="retry()">Retry</button>
+          <button mat-button (click)="retry()" class="bgn-press">Retry</button>
         </div>
       } @else if (stats) {
         <div class="cards-grid">
-          <mat-card>
+          <mat-card appReveal [appRevealDelay]="0" class="bgn-hover-lift">
             <mat-card-header>
               <mat-icon class="card-icon users">people</mat-icon>
               <mat-card-title>Total Users</mat-card-title>
             </mat-card-header>
             <mat-card-content>
-              <div class="stat-value">{{ stats.totalUsers }}</div>
+              <div class="stat-value" [appCountUp]="stats.totalUsers">0</div>
               <div class="stat-detail">{{ stats.totalDonors }} donors, {{ stats.totalRequesters }} requesters</div>
             </mat-card-content>
           </mat-card>
 
-          <mat-card>
+          <mat-card appReveal [appRevealDelay]="1" class="bgn-hover-lift">
             <mat-card-header>
               <mat-icon class="card-icon requests">bloodtype</mat-icon>
               <mat-card-title>Blood Requests</mat-card-title>
             </mat-card-header>
             <mat-card-content>
-              <div class="stat-value">{{ stats.totalBloodRequests }}</div>
+              <div class="stat-value" [appCountUp]="stats.totalBloodRequests">0</div>
               <div class="stat-detail">{{ stats.openBloodRequests }} open, {{ stats.fulfilledBloodRequests }} fulfilled</div>
             </mat-card-content>
           </mat-card>
 
-          <mat-card>
+          <mat-card appReveal [appRevealDelay]="2" class="bgn-hover-lift">
             <mat-card-header>
               <mat-icon class="card-icon matches">handshake</mat-icon>
               <mat-card-title>Matches</mat-card-title>
             </mat-card-header>
             <mat-card-content>
-              <div class="stat-value">{{ stats.totalMatches }}</div>
+              <div class="stat-value" [appCountUp]="stats.totalMatches">0</div>
               <div class="stat-detail">{{ stats.acceptedMatches }} accepted</div>
             </mat-card-content>
           </mat-card>
 
-          <mat-card>
+          <mat-card appReveal [appRevealDelay]="3" class="bgn-hover-lift">
             <mat-card-header>
               <mat-icon class="card-icon reports">flag</mat-icon>
               <mat-card-title>Reports</mat-card-title>
             </mat-card-header>
             <mat-card-content>
-              <div class="stat-value">{{ stats.totalReports }}</div>
+              <div class="stat-value" [appCountUp]="stats.totalReports">0</div>
               <div class="stat-detail">{{ stats.openReports }} open</div>
             </mat-card-content>
           </mat-card>
 
-          <mat-card>
+          <mat-card appReveal [appRevealDelay]="4" class="bgn-hover-lift">
             <mat-card-header>
               <mat-icon class="card-icon verify">verified</mat-icon>
               <mat-card-title>Pending Verifications</mat-card-title>
             </mat-card-header>
             <mat-card-content>
-              <div class="stat-value">{{ stats.pendingVerifications }}</div>
+              <div class="stat-value" [appCountUp]="stats.pendingVerifications">0</div>
             </mat-card-content>
           </mat-card>
         </div>
 
-        <div class="nav-cards">
-          <a mat-raised-button routerLink="/admin/users" routerLinkActive="active-link">
+        <div class="nav-cards bgn-fade-up" style="--i:5">
+          <a mat-raised-button routerLink="/admin/users" routerLinkActive="active-link" class="bgn-press">
             <mat-icon>people</mat-icon> User Management
           </a>
-          <a mat-raised-button routerLink="/admin/reports" routerLinkActive="active-link">
+          <a mat-raised-button routerLink="/admin/reports" routerLinkActive="active-link" class="bgn-press">
             <mat-icon>flag</mat-icon> Reports
           </a>
-          <a mat-raised-button routerLink="/admin/audit-logs" routerLinkActive="active-link">
+          <a mat-raised-button routerLink="/admin/audit-logs" routerLinkActive="active-link" class="bgn-press">
             <mat-icon>history</mat-icon> Audit Logs
           </a>
-          <a mat-raised-button routerLink="/admin/settings" routerLinkActive="active-link">
+          <a mat-raised-button routerLink="/admin/settings" routerLinkActive="active-link" class="bgn-press">
             <mat-icon>settings</mat-icon> Settings
           </a>
         </div>
@@ -139,6 +143,7 @@ import { AdminDashboardStats } from '../../../core/models/admin';
     .dashboard-header { margin-bottom: 24px; }
     .dashboard-header h1 { margin: 0; font-size: 24px; }
     .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-bottom: 32px; }
+    .cards-grid mat-card { transition: background-color 0.3s ease, border-color 0.3s ease; }
     .sk-card { min-height: 120px; }
     .card-icon { font-size: 32px; width: 32px; height: 32px; }
     .card-icon.users { color: #1565c0; }

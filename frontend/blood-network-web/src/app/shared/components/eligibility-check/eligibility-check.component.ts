@@ -13,6 +13,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { retry, timer, throwError } from 'rxjs';
 import { environment } from '../../../../environments/environment';
+import { RevealDirective } from '../../directives/reveal.directive';
 
 interface EligibilityQuestion {
   id: number;
@@ -55,13 +56,14 @@ interface EligibilityResult {
     MatProgressBarModule,
     MatInputModule,
     MatFormFieldModule,
+    RevealDirective,
   ],
   template: `
     <app-header />
     <div class="eligibility-page page-wrap">
       <div class="container eligibility-container">
-        <div class="page-header">
-          <mat-icon class="header-icon">fact_check</mat-icon>
+        <div class="page-header bgn-fade-up" style="--i:0">
+          <mat-icon class="header-icon bgn-float">fact_check</mat-icon>
           <div>
             <h1>Donor Eligibility Check</h1>
             <p class="subtitle">যোগ্যতা পরীক্ষা — Blood Donation Self-Assessment</p>
@@ -69,7 +71,7 @@ interface EligibilityResult {
         </div>
 
         @if (error()) {
-          <div class="error-banner">
+          <div class="error-banner bgn-fade-up">
             <mat-icon>error_outline</mat-icon>
             <span>{{ error() }}</span>
           </div>
@@ -82,7 +84,7 @@ interface EligibilityResult {
               <p class="loading-text">Loading questions / প্রশ্ন লোড হচ্ছে...</p>
             </mat-card>
           } @else if (questions().length > 0) {
-            <mat-card class="progress-card">
+            <mat-card class="progress-card" appReveal>
               <div class="progress-header">
                 <span>Question {{ currentIndex() + 1 }} of {{ questions().length }}</span>
                 <span>{{ progressPercent() }}%</span>
@@ -90,13 +92,13 @@ interface EligibilityResult {
               <mat-progress-bar mode="determinate" [value]="progressPercent()"></mat-progress-bar>
             </mat-card>
 
-            <mat-card class="question-card">
+            <mat-card class="question-card" appReveal [appRevealDelay]="1">
               <div class="question-number">Q{{ currentIndex() + 1 }}</div>
               <h2 class="question-title">{{ currentQuestion().questionEn }}</h2>
               <p class="question-bn">{{ currentQuestion().questionBanglish }}</p>
 
               @if (currentQuestion().questionType === 'yesno') {
-                <div class="yesno-options">
+                <div class="yesno-options bgn-fade-up">
                   <label class="radio-option" [class.selected]="answers()[qKey(currentQuestion())] === 'yes'">
                     <input
                       type="radio"
@@ -117,7 +119,7 @@ interface EligibilityResult {
                   </label>
                 </div>
               } @else {
-                <mat-form-field appearance="outline" class="number-field">
+                <mat-form-field appearance="outline" class="number-field bgn-fade-up">
                   <mat-label>{{ currentQuestion().questionEn }}</mat-label>
                   <input
                     matInput
@@ -139,6 +141,7 @@ interface EligibilityResult {
               <div class="nav-buttons">
                 <button
                   mat-stroked-button
+                  class="bgn-press"
                   (click)="prev()"
                   [disabled]="currentIndex() === 0"
                 >
@@ -149,6 +152,7 @@ interface EligibilityResult {
                   <button
                     mat-flat-button
                     color="primary"
+                    class="bgn-press"
                     (click)="next()"
                     [disabled]="!canProceed()"
                   >
@@ -159,6 +163,7 @@ interface EligibilityResult {
                   <button
                     mat-flat-button
                     color="primary"
+                    class="bgn-press"
                     (click)="submit()"
                     [disabled]="!canProceed() || submitting()"
                   >
@@ -174,9 +179,9 @@ interface EligibilityResult {
             </mat-card>
           }
         } @else {
-          <mat-card class="result-card">
+          <mat-card class="result-card bgn-fade-up" style="--i:0">
             <div class="result-header" [class.pass]="result()!.isEligible" [class.fail]="!result()!.isEligible">
-              <mat-icon class="result-icon">
+              <mat-icon class="result-icon" [class.bgn-heartbeat]="result()!.isEligible">
                 {{ result()!.isEligible ? 'check_circle' : 'cancel' }}
               </mat-icon>
               <div>
@@ -187,35 +192,35 @@ interface EligibilityResult {
               </div>
             </div>
 
-            <div class="score-section">
+            <div class="score-section bgn-fade-up" style="--i:1">
               <span class="score-label">Score</span>
               <span class="score-value">{{ result()!.score }}%</span>
             </div>
 
             <div class="results-list">
-              @for (r of result()!.checks; track r.questionId) {
-                <div class="result-item" [class.pass]="r.passed" [class.fail]="!r.passed">
+              @for (r of result()!.checks; track r.questionId; let i = $index) {
+                <div class="result-item bgn-fade-up" [style.--i]="i + 2" [class.pass]="r.passed" [class.fail]="!r.passed">
                   <mat-icon>{{ r.passed ? 'check_circle' : 'cancel' }}</mat-icon>
                   <span>{{ r.message }} <span class="bangla">/ {{ r.messageBn }}</span></span>
                 </div>
               }
             </div>
 
-            <div class="disclaimer-box">
+            <div class="disclaimer-box bgn-fade-up">
               <mat-icon>info</mat-icon>
               <p>This is a self-assessment only. Please consult a medical professional for definitive eligibility. / এটি শুধুমাত্র আত্মমূল্যায়ন। চূড়ান্ত যোগ্যতার জন্য একজন চিকিৎসকের সাথে পরামর্শ করুন।</p>
             </div>
 
             <div class="result-actions">
-              <a mat-stroked-button routerLink="/">
+              <a mat-stroked-button routerLink="/" class="bgn-press">
                 <mat-icon>home</mat-icon>
                 Home / হোম
               </a>
-              <a mat-stroked-button routerLink="/find-blood">
+              <a mat-stroked-button routerLink="/find-blood" class="bgn-press">
                 <mat-icon>search</mat-icon>
                 Find Blood / রক্ত খুঁজুন
               </a>
-              <button mat-flat-button color="primary" (click)="reset()">
+              <button mat-flat-button color="primary" class="bgn-press" (click)="reset()">
                 <mat-icon>refresh</mat-icon>
                 Retake / আবার করুন
               </button>
@@ -322,6 +327,10 @@ interface EligibilityResult {
     .radio-option:hover {
       border-color: var(--bgn-primary);
       background: rgba(229, 57, 53, 0.04);
+      transform: translateY(-2px);
+    }
+    .radio-option:active {
+      transform: scale(0.97);
     }
     .radio-option.selected {
       border-color: var(--bgn-primary);

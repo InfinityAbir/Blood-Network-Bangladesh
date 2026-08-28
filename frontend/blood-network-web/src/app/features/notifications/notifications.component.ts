@@ -9,6 +9,7 @@ import { finalize, Subject, takeUntil } from 'rxjs';
 import { HeaderComponent } from '../../layout/header/header.component';
 import { FooterComponent } from '../../layout/footer/footer.component';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
+import { RevealDirective } from '../../shared/directives/reveal.directive';
 import { NotificationService } from '../../core/services/notification.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Notification as AppNotification } from '../../core/models/notification';
@@ -24,15 +25,16 @@ import { Notification as AppNotification } from '../../core/models/notification'
     MatDividerModule,
     HeaderComponent,
     FooterComponent,
-    SkeletonComponent
+    SkeletonComponent,
+    RevealDirective
   ],
   template: `
     <app-header />
     <main class="page-container">
-      <div class="page-header">
+      <div class="page-header bgn-fade-up" style="--i:0">
         <h1>Notifications</h1>
         @if (unreadCount > 0) {
-          <button mat-stroked-button color="primary" (click)="markAllRead()">
+          <button mat-stroked-button color="primary" class="bgn-press" (click)="markAllRead()">
             <mat-icon>done_all</mat-icon>
             Mark all as read
           </button>
@@ -53,7 +55,7 @@ import { Notification as AppNotification } from '../../core/models/notification'
           }
         </div>
       } @else if (notifications.length === 0) {
-        <mat-card class="empty-card">
+        <mat-card class="empty-card bgn-fade-up">
           <mat-card-content>
             <mat-icon class="empty-icon">notifications_off</mat-icon>
             <p>No notifications yet</p>
@@ -62,8 +64,8 @@ import { Notification as AppNotification } from '../../core/models/notification'
         </mat-card>
       } @else {
         <div class="notif-list">
-          @for (notif of notifications; track notif.id) {
-            <div class="notif-row" [class.unread]="!notif.isRead" (click)="onNotifClick(notif)">
+          @for (notif of notifications; track notif.id; let i = $index) {
+            <div class="notif-row" [class.unread]="!notif.isRead" appReveal [appRevealDelay]="i" (click)="onNotifClick(notif)">
               <mat-icon class="notif-icon" [class]="'type-' + notif.type.toLowerCase()">
                 {{ getNotifIcon(notif.type) }}
               </mat-icon>
@@ -77,16 +79,14 @@ import { Notification as AppNotification } from '../../core/models/notification'
                   }
                 </div>
               </div>
-              @if (!notif.isRead) {
-                <span class="unread-dot"></span>
-              }
+              <span class="unread-dot" [class.read]="notif.isRead"></span>
             </div>
           }
         </div>
 
         @if (hasMore) {
           <div class="load-more">
-            <button mat-stroked-button color="primary" (click)="loadMore()" [disabled]="isLoadingMore">
+            <button mat-stroked-button color="primary" class="bgn-press" (click)="loadMore()" [disabled]="isLoadingMore">
               @if (isLoadingMore) {
                 <mat-icon class="spin">sync</mat-icon>
               } @else {
@@ -128,12 +128,13 @@ import { Notification as AppNotification } from '../../core/models/notification'
       padding: 14px 16px;
       background: var(--bgn-surface);
       border: 1px solid var(--bgn-border);
+      border-left: 3px solid transparent;
       border-radius: var(--bgn-radius-sm);
       cursor: pointer;
-      transition: background 0.15s ease, border-color 0.15s ease;
+      transition: background 0.15s ease, border-color 0.2s ease, transform 0.2s ease-out, box-shadow 0.2s ease-out;
     }
-    .notif-row:hover { background: var(--bgn-surface-hover); }
-    .notif-row.unread { border-left: 3px solid var(--bgn-primary); }
+    .notif-row:hover { background: var(--bgn-surface-hover); transform: translateX(2px); box-shadow: var(--bgn-shadow-sm); }
+    .notif-row.unread { border-left-color: var(--bgn-primary); }
 
     .notif-icon { flex-shrink: 0; margin-top: 2px; }
     .notif-icon.type-bloodrequestmatch { color: #c62828; }
@@ -154,7 +155,10 @@ import { Notification as AppNotification } from '../../core/models/notification'
     .unread-dot {
       flex-shrink: 0; width: 8px; height: 8px; border-radius: 50%;
       background: var(--bgn-primary); margin-top: 6px;
+      opacity: 1; transform: scale(1);
+      transition: opacity 0.3s ease-out, transform 0.3s ease-out;
     }
+    .unread-dot.read { opacity: 0; transform: scale(0); }
 
     .load-more { display: flex; justify-content: center; padding: 24px; }
 

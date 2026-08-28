@@ -202,3 +202,87 @@ a.link-accent:hover,
   background: var(--bgn-bg);
   color: var(--bgn-text);
 }
+
+// ============================================================
+//  Motion system — keyframes + reusable animation utilities
+// ============================================================
+@keyframes bgn-fade-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes bgn-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%      { transform: translateY(-14px) rotate(4deg); }
+}
+@keyframes bgn-pulse-ring {
+  0%   { transform: scale(0.9); opacity: 0.55; }
+  70%  { transform: scale(1.6); opacity: 0; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+@keyframes bgn-heartbeat {
+  0%, 100% { transform: scale(1); }
+  15%      { transform: scale(1.12); }
+  30%      { transform: scale(1); }
+  45%      { transform: scale(1.08); }
+  60%      { transform: scale(1); }
+}
+@keyframes bgn-gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+@keyframes bgn-shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+@keyframes bgn-spin {
+  to { transform: rotate(360deg); }
+}
+
+// Scroll-reveal target — paired with [appReveal] directive (adds .bgn-visible on intersect)
+.bgn-reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+.bgn-reveal.bgn-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+// Page-load stagger — pair with style="--i: N"
+.bgn-fade-up {
+  opacity: 0;
+  animation: bgn-fade-up 0.55s ease-out forwards;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+.bgn-float { animation: bgn-float 5s ease-in-out infinite; }
+
+.bgn-gradient-bg {
+  background-size: 200% 200%;
+  animation: bgn-gradient-shift 14s ease infinite;
+}
+
+// Consistent hover-lift for cards / tiles
+.bgn-hover-lift {
+  transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+}
+.bgn-hover-lift:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--bgn-shadow-lg);
+}
+
+// Press feedback for buttons/tappables
+.bgn-press {
+  transition: transform 0.15s ease-out;
+}
+.bgn-press:active { transform: scale(0.97); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

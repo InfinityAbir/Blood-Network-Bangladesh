@@ -45,7 +45,7 @@ export interface ReportDialogData {
 
       <mat-dialog-content>
         @if (successMessage) {
-          <div class="success-state">
+          <div class="success-state bgn-fade-up">
             <mat-icon class="success-icon">check_circle</mat-icon>
             <p>{{ successMessage }}</p>
             <span>Our team will review this report shortly.</span>
@@ -79,8 +79,8 @@ export interface ReportDialogData {
 
       <mat-dialog-actions align="end">
         @if (!successMessage) {
-          <button mat-stroked-button (click)="dialogRef.close()" [disabled]="isLoading">Cancel</button>
-          <button mat-raised-button color="warn" (click)="submit()" [disabled]="reportForm.invalid || isLoading" class="submit-btn">
+          <button mat-stroked-button class="bgn-press" (click)="dialogRef.close()" [disabled]="isLoading">Cancel</button>
+          <button mat-raised-button color="warn" (click)="submit()" [disabled]="reportForm.invalid || isLoading" class="submit-btn bgn-press">
             @if (isLoading) {
               <mat-spinner diameter="18"></mat-spinner>
             } @else {
@@ -88,19 +88,28 @@ export interface ReportDialogData {
             }
           </button>
         } @else {
-          <button mat-raised-button color="primary" (click)="dialogRef.close(true)">Done</button>
+          <button mat-raised-button color="primary" class="bgn-press" (click)="dialogRef.close(true)">Done</button>
         }
       </mat-dialog-actions>
     </div>
   `,
   styles: [`
     .report-dialog { padding: 0; }
-    .dialog-header { display: flex; align-items: center; gap: 14px; padding: 20px 24px 0; }
-    .header-icon { width: 44px; height: 44px; border-radius: 12px; background: color-mix(in srgb, var(--bgn-danger, #c62828) 10%, transparent); display: flex; align-items: center; justify-content: center; }
+    .dialog-header { display: flex; align-items: center; gap: 14px; padding: 20px 24px 4px; }
+    .header-icon {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: color-mix(in srgb, var(--bgn-danger, #c62828) 10%, transparent);
+      display: flex; align-items: center; justify-content: center;
+      transition: transform 0.2s ease-out, background 0.2s ease-out;
+    }
+    .dialog-header:hover .header-icon {
+      transform: scale(1.06) rotate(-4deg);
+      background: color-mix(in srgb, var(--bgn-danger, #c62828) 16%, transparent);
+    }
     .header-icon mat-icon { color: var(--bgn-danger, #c62828); font-size: 24px; }
     .dialog-header h2 { margin: 0; font-size: 18px; font-weight: 600; }
     .subtitle { margin: 2px 0 0; font-size: 13px; color: var(--bgn-text-muted, #666); }
-    .report-form { display: flex; flex-direction: column; gap: 4px; }
+    .report-form { display: flex; flex-direction: column; gap: 10px; padding-top: 8px; }
     .full-width { width: 100%; }
     .success-state { text-align: center; padding: 24px 0; }
     .success-icon { font-size: 48px; width: 48px; height: 48px; color: var(--bgn-success, #2e7d32); margin-bottom: 12px; }

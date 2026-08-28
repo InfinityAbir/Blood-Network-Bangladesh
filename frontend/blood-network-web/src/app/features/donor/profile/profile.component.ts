@@ -13,6 +13,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { HeaderComponent } from '../../../layout/header/header.component';
 import { FooterComponent } from '../../../layout/footer/footer.component';
+import { RevealDirective } from '../../../shared/directives/reveal.directive';
 import { DonorService } from '../../../core/services/donor.service';
 import { DonorProfile } from '../../../core/models/donor';
 import { LocationService, Division, District, Upazila } from '../../../core/services/location.service';
@@ -35,12 +36,13 @@ import { BloodGroup, BloodGroupLabels } from '../../../core/models/blood-group';
     MatProgressSpinnerModule,
     MatSnackBarModule,
     HeaderComponent,
-    FooterComponent
+    FooterComponent,
+    RevealDirective
   ],
   template: `
     <app-header />
     <main class="profile-container">
-      <mat-card class="profile-card">
+      <mat-card class="profile-card" appReveal>
         <mat-card-header>
           <mat-card-title>{{ isEditing ? 'Edit Donor Profile' : 'Donor Profile Setup' }}</mat-card-title>
           <mat-card-subtitle>{{ isEditing ? 'Update your details to keep receiving match requests' : 'Complete your profile to start receiving match requests' }}</mat-card-subtitle>
@@ -136,8 +138,8 @@ import { BloodGroup, BloodGroupLabels } from '../../../core/models/blood-group';
             </mat-form-field>
 
             <div class="form-actions">
-              <a mat-stroked-button routerLink="/donor/dashboard" class="action-btn">Cancel</a>
-              <button mat-raised-button color="primary" type="submit" class="action-btn submit-btn"
+              <a mat-stroked-button routerLink="/donor/dashboard" class="action-btn bgn-press">Cancel</a>
+              <button mat-raised-button color="primary" type="submit" class="action-btn submit-btn bgn-press bgn-hover-lift"
                       [disabled]="isLoading">
                 @if (isLoading) {
                   <mat-spinner diameter="20"></mat-spinner>
@@ -158,7 +160,7 @@ import { BloodGroup, BloodGroupLabels } from '../../../core/models/blood-group';
       display: flex;
       justify-content: center;
       padding: 40px 16px;
-      background: #f5f5f5;
+      background: var(--bgn-bg);
     }
     .profile-card {
       width: 100%;

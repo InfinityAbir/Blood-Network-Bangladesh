@@ -13,6 +13,7 @@ import { finalize } from 'rxjs';
 import { HeaderComponent } from '../../../layout/header/header.component';
 import { FooterComponent } from '../../../layout/footer/footer.component';
 import { AuthService } from '../../../core/services/auth.service';
+import { RevealDirective } from '../../../shared/directives/reveal.directive';
 
 @Component({
   selector: 'app-login',
@@ -29,12 +30,16 @@ import { AuthService } from '../../../core/services/auth.service';
     MatProgressSpinnerModule,
     MatSnackBarModule,
     HeaderComponent,
-    FooterComponent
+    FooterComponent,
+    RevealDirective
   ],
   template: `
     <app-header />
     <main class="auth-container">
-      <mat-card class="auth-card">
+      <mat-card class="auth-card" appReveal>
+        <div class="auth-icon-badge bgn-float">
+          <mat-icon>bloodtype</mat-icon>
+        </div>
         <mat-card-header>
           <mat-card-title>Login</mat-card-title>
           <mat-card-subtitle>Welcome back to Blood Network Bangladesh</mat-card-subtitle>
@@ -69,7 +74,7 @@ import { AuthService } from '../../../core/services/auth.service';
               }
             </mat-form-field>
 
-            <button mat-raised-button color="primary" type="submit" class="full-width submit-btn"
+            <button mat-raised-button color="primary" type="submit" class="full-width submit-btn bgn-press"
                     [disabled]="loginForm.invalid || isLoading">
               @if (isLoading) {
                 <mat-spinner diameter="20"></mat-spinner>
@@ -97,12 +102,42 @@ import { AuthService } from '../../../core/services/auth.service';
       background: var(--bgn-bg);
     }
     .auth-card {
+      position: relative;
+      overflow: hidden;
       width: 100%;
       max-width: 420px;
       padding: 12px 18px;
       border-radius: var(--bgn-radius-lg) !important;
       border: 1px solid var(--bgn-border) !important;
       box-shadow: var(--bgn-shadow-lg) !important;
+    }
+    .auth-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 5px;
+      background: var(--bgn-gradient);
+      background-size: 200% 200%;
+      animation: bgn-gradient-shift 8s ease infinite;
+    }
+    .auth-icon-badge {
+      width: 56px;
+      height: 56px;
+      margin: 10px auto 0;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bgn-gradient);
+      box-shadow: var(--bgn-shadow-md);
+    }
+    .auth-icon-badge mat-icon {
+      color: #fff;
+      font-size: 28px;
+      width: 28px;
+      height: 28px;
     }
     .full-width {
       width: 100%;
@@ -111,6 +146,11 @@ import { AuthService } from '../../../core/services/auth.service';
       margin-top: 16px;
       height: 48px;
       border-radius: var(--bgn-radius-pill) !important;
+      transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+    }
+    .submit-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: var(--bgn-shadow-md);
     }
     .error-banner {
       background: color-mix(in srgb, var(--bgn-danger) 12%, transparent);

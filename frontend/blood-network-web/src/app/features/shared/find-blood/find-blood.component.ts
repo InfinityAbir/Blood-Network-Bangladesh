@@ -13,6 +13,7 @@ import { finalize } from 'rxjs';
 import { HeaderComponent } from '../../../layout/header/header.component';
 import { FooterComponent } from '../../../layout/footer/footer.component';
 import { SkeletonComponent } from '../../../shared/components/skeleton/skeleton.component';
+import { RevealDirective } from '../../../shared/directives/reveal.directive';
 import { DonorService, DonorSearchFilters } from '../../../core/services/donor.service';
 import { LocationService, Division, District, Upazila } from '../../../core/services/location.service';
 import { PublicDonor, AvailabilityStatus, VerificationStatus } from '../../../core/models/donor';
@@ -35,17 +36,18 @@ import { PagedResult } from '../../../core/models/paged-result';
     MatChipsModule,
     HeaderComponent,
     FooterComponent,
-    SkeletonComponent
+    SkeletonComponent,
+    RevealDirective
   ],
   template: `
     <app-header />
     <main class="search-container">
-      <div class="search-header">
+      <div class="search-header bgn-fade-up" style="--i:0">
         <h1>Find Blood Donors</h1>
         <p>Search for verified blood donors across Bangladesh</p>
       </div>
 
-      <mat-card class="filter-card">
+      <mat-card class="filter-card bgn-fade-up" style="--i:1">
         <form [formGroup]="searchForm" (ngSubmit)="onSearch()">
           <div class="filter-row">
             <mat-form-field appearance="outline">
@@ -98,10 +100,10 @@ import { PagedResult } from '../../../core/models/paged-result';
             </mat-form-field>
 
             <div class="filter-actions">
-              <button mat-stroked-button type="button" (click)="resetFilters()" aria-label="Reset filters">
+              <button mat-stroked-button type="button" class="bgn-press" (click)="resetFilters()" aria-label="Reset filters">
                 <mat-icon>clear</mat-icon> Reset
               </button>
-              <button mat-raised-button color="primary" type="submit">
+              <button mat-raised-button color="primary" class="bgn-press" type="submit">
                 <mat-icon>search</mat-icon> Search
               </button>
             </div>
@@ -110,10 +112,10 @@ import { PagedResult } from '../../../core/models/paged-result';
       </mat-card>
 
       @if (errorMessage) {
-        <div class="error-banner" role="alert">
+        <div class="error-banner bgn-fade-up" role="alert">
           <mat-icon>error_outline</mat-icon>
           <span>{{ errorMessage }}</span>
-          <button mat-stroked-button (click)="onSearch()">Retry</button>
+          <button mat-stroked-button class="bgn-press" (click)="onSearch()">Retry</button>
         </div>
       }
 
@@ -141,8 +143,8 @@ import { PagedResult } from '../../../core/models/paged-result';
         </div>
 
         <div class="results-grid">
-          @for (donor of results.items; track donor.id) {
-            <mat-card class="donor-card">
+          @for (donor of results.items; track donor.id; let i = $index) {
+            <mat-card class="donor-card bgn-hover-lift" appReveal [appRevealDelay]="i">
               <mat-card-header>
                 <mat-card-title>{{ donor.firstName }}</mat-card-title>
                 <mat-card-subtitle>{{ donor.districtName }}, {{ donor.upazilaName }}</mat-card-subtitle>
@@ -165,30 +167,30 @@ import { PagedResult } from '../../../core/models/paged-result';
                 }
               </mat-card-content>
               <mat-card-actions align="end">
-                <a mat-raised-button color="primary" routerLink="/request-blood" [queryParams]="{bloodGroup: donor.bloodGroup}">
+                <a mat-raised-button color="primary" class="bgn-press" routerLink="/request-blood" [queryParams]="{bloodGroup: donor.bloodGroup}">
                   <mat-icon>send</mat-icon> Request Blood
                 </a>
               </mat-card-actions>
             </mat-card>
            } @empty {
-             <div class="no-results">
+             <div class="no-results bgn-fade-up">
                <mat-icon>search_off</mat-icon>
                <p>No donors found matching your criteria</p>
                <p class="hint">Try adjusting filters or create a request to notify donors.</p>
-               <a mat-raised-button color="primary" routerLink="/request-blood"><mat-icon>volunteer_activism</mat-icon> Create Blood Request</a>
+               <a mat-raised-button color="primary" class="bgn-press" routerLink="/request-blood"><mat-icon>volunteer_activism</mat-icon> Create Blood Request</a>
              </div>
            }
          </div>
-         <div class="cta-banner">
+         <div class="cta-banner" appReveal>
            <p>Can't find the right donor? Create a blood request and we'll match you automatically.</p>
-           <a mat-raised-button color="primary" routerLink="/request-blood"><mat-icon>send</mat-icon> Request Blood Now</a>
+           <a mat-raised-button color="primary" class="bgn-press" routerLink="/request-blood"><mat-icon>send</mat-icon> Request Blood Now</a>
          </div>
 
         @if (results.totalPages > 1) {
           <div class="pagination" role="navigation" aria-label="Search results pagination">
-            <button mat-button [disabled]="!results.hasPrevious" (click)="goToPage(results.page - 1)" aria-label="Previous page">Previous</button>
+            <button mat-button class="bgn-press" [disabled]="!results.hasPrevious" (click)="goToPage(results.page - 1)" aria-label="Previous page">Previous</button>
             <span aria-current="page">Page {{ results.page }} of {{ results.totalPages }}</span>
-            <button mat-button [disabled]="!results.hasNext" (click)="goToPage(results.page + 1)" aria-label="Next page">Next</button>
+            <button mat-button class="bgn-press" [disabled]="!results.hasNext" (click)="goToPage(results.page + 1)" aria-label="Next page">Next</button>
           </div>
         }
       }

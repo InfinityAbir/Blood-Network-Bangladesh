@@ -16,6 +16,7 @@ import { SkeletonComponent } from '../../../shared/components/skeleton/skeleton.
 import { AdminService } from '../../../core/services/admin.service';
 import { AdminReport } from '../../../core/models/admin';
 import { PagedResult } from '../../../core/models/paged-result';
+import { RevealDirective } from '../../../shared/directives/reveal.directive';
 
 @Component({
   selector: 'app-report-management',
@@ -33,7 +34,8 @@ import { PagedResult } from '../../../core/models/paged-result';
     MatChipsModule,
     HeaderComponent,
     FooterComponent,
-    SkeletonComponent
+    SkeletonComponent,
+    RevealDirective
   ],
   template: `
     <app-header />
@@ -41,7 +43,7 @@ import { PagedResult } from '../../../core/models/paged-result';
       <a mat-button routerLink="/admin" class="back-link"><mat-icon>arrow_back</mat-icon> Back to Dashboard</a>
       <h1>Report Management</h1>
 
-      <div class="filters">
+      <div class="filters bgn-fade-up">
         <mat-form-field appearance="outline">
           <mat-label>Status</mat-label>
           <mat-select [(ngModel)]="selectedStatus" (selectionChange)="loadReports()">
@@ -52,8 +54,8 @@ import { PagedResult } from '../../../core/models/paged-result';
             <mat-option value="Dismissed">Dismissed</mat-option>
           </mat-select>
         </mat-form-field>
-        <button mat-raised-button color="primary" (click)="loadReports()">Filter</button>
-        <button mat-stroked-button (click)="selectedStatus=''; loadReports()"><mat-icon>clear</mat-icon> Reset</button>
+        <button mat-raised-button color="primary" (click)="loadReports()" class="bgn-press">Filter</button>
+        <button mat-stroked-button (click)="selectedStatus=''; loadReports()" class="bgn-press"><mat-icon>clear</mat-icon> Reset</button>
       </div>
 
       @if (isLoading) {
@@ -74,9 +76,10 @@ import { PagedResult } from '../../../core/models/paged-result';
           }
         </div>
       } @else if (result && result.items.length > 0) {
+        <div class="results-panel" appReveal>
         <div class="result-info">Showing {{ result.items.length }} of {{ result.totalCount }} reports</div>
         @for (report of result.items; track report.id) {
-          <mat-card class="report-card">
+          <mat-card class="report-card bgn-hover-lift">
             <mat-card-header>
               <mat-card-title>{{ report.reason }}</mat-card-title>
               <mat-card-subtitle>Reported by {{ report.reporterName }} against {{ report.reportedUserName }}</mat-card-subtitle>
@@ -98,19 +101,20 @@ import { PagedResult } from '../../../core/models/paged-result';
             </mat-card-content>
             @if (report.status === 'Open' || report.status === 'UnderReview') {
               <mat-card-actions align="end">
-                <button mat-button (click)="resolveReport(report.id, 'Dismissed')">Dismiss</button>
-                <button mat-raised-button color="primary" (click)="resolveReport(report.id, 'Resolved')">Resolve</button>
+                <button mat-button (click)="resolveReport(report.id, 'Dismissed')" class="bgn-press">Dismiss</button>
+                <button mat-raised-button color="primary" (click)="resolveReport(report.id, 'Resolved')" class="bgn-press">Resolve</button>
               </mat-card-actions>
             }
           </mat-card>
         }
         @if (result.totalPages > 1) {
           <div class="pagination">
-            <button mat-button [disabled]="!result.hasPrevious" (click)="goPage(result.page - 1)">Previous</button>
+            <button mat-button [disabled]="!result.hasPrevious" (click)="goPage(result.page - 1)" class="bgn-press">Previous</button>
             <span>Page {{ result.page }} of {{ result.totalPages }}</span>
-            <button mat-button [disabled]="!result.hasNext" (click)="goPage(result.page + 1)">Next</button>
+            <button mat-button [disabled]="!result.hasNext" (click)="goPage(result.page + 1)" class="bgn-press">Next</button>
           </div>
         }
+        </div>
       } @else {
         <div class="no-results">No reports found</div>
       }
@@ -124,6 +128,7 @@ import { PagedResult } from '../../../core/models/paged-result';
     .sk-list { display: flex; flex-direction: column; gap: 8px; }
     .sk-report-card { min-height: 110px; }
     .sk-report-info { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+    .results-panel { display: flex; flex-direction: column; }
     .result-info { font-size: 13px; color: #666; margin-bottom: 12px; }
     .report-card { margin-bottom: 8px; }
     .description { color: #333; margin: 8px 0; }

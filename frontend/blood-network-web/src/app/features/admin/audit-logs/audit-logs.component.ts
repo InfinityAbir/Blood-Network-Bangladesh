@@ -15,6 +15,7 @@ import { SkeletonComponent } from '../../../shared/components/skeleton/skeleton.
 import { AdminService } from '../../../core/services/admin.service';
 import { AdminAuditLog } from '../../../core/models/admin';
 import { PagedResult } from '../../../core/models/paged-result';
+import { RevealDirective } from '../../../shared/directives/reveal.directive';
 
 @Component({
   selector: 'app-audit-log-viewer',
@@ -31,7 +32,8 @@ import { PagedResult } from '../../../core/models/paged-result';
     MatInputModule,
     HeaderComponent,
     FooterComponent,
-    SkeletonComponent
+    SkeletonComponent,
+    RevealDirective
   ],
   template: `
     <app-header />
@@ -39,13 +41,13 @@ import { PagedResult } from '../../../core/models/paged-result';
       <a mat-button routerLink="/admin" class="back-link"><mat-icon>arrow_back</mat-icon> Back to Dashboard</a>
       <h1>Audit Logs</h1>
 
-      <div class="filters">
+      <div class="filters bgn-fade-up">
         <mat-form-field appearance="outline">
           <mat-label>Entity Type</mat-label>
           <input matInput [(ngModel)]="entityTypeFilter" placeholder="e.g. User, BloodRequest" (keyup.enter)="loadLogs()">
         </mat-form-field>
-        <button mat-raised-button color="primary" (click)="loadLogs()">Filter</button>
-        <button mat-stroked-button (click)="entityTypeFilter=''; loadLogs()"><mat-icon>clear</mat-icon> Reset</button>
+        <button mat-raised-button color="primary" (click)="loadLogs()" class="bgn-press">Filter</button>
+        <button mat-stroked-button (click)="entityTypeFilter=''; loadLogs()" class="bgn-press"><mat-icon>clear</mat-icon> Reset</button>
       </div>
 
       @if (isLoading) {
@@ -75,7 +77,7 @@ import { PagedResult } from '../../../core/models/paged-result';
         </mat-card>
       } @else if (result && result.items.length > 0) {
         <div class="result-info">Showing {{ result.items.length }} of {{ result.totalCount }} logs</div>
-        <mat-card>
+        <mat-card appReveal>
           <table class="audit-table">
             <thead>
               <tr>
@@ -105,9 +107,9 @@ import { PagedResult } from '../../../core/models/paged-result';
         </mat-card>
         @if (result.totalPages > 1) {
           <div class="pagination">
-            <button mat-button [disabled]="!result.hasPrevious" (click)="goPage(result.page - 1)">Previous</button>
+            <button mat-button [disabled]="!result.hasPrevious" (click)="goPage(result.page - 1)" class="bgn-press">Previous</button>
             <span>Page {{ result.page }} of {{ result.totalPages }}</span>
-            <button mat-button [disabled]="!result.hasNext" (click)="goPage(result.page + 1)">Next</button>
+            <button mat-button [disabled]="!result.hasNext" (click)="goPage(result.page + 1)" class="bgn-press">Next</button>
           </div>
         }
       } @else {
@@ -128,7 +130,8 @@ import { PagedResult } from '../../../core/models/paged-result';
     .audit-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .audit-table th { text-align: left; padding: 10px 8px; border-bottom: 2px solid #ddd; font-weight: 500; color: #666; }
     .audit-table td { padding: 8px; border-bottom: 1px solid #eee; }
-    .audit-table tr:hover { background: #f9f9f9; }
+    .audit-table tbody tr { transition: background-color 0.15s ease; }
+    .audit-table tbody tr:hover { background: var(--bgn-surface-2); }
     .action-badge { background: #e3f2fd; color: #1565c0; padding: 2px 8px; border-radius: 8px; font-size: 12px; }
     .mono { font-family: monospace; font-size: 12px; }
     .metadata { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

@@ -20,15 +20,15 @@ import { AuthService } from '../../../core/services/auth.service';
     <app-header />
     <main class="settings-wrap">
       <div class="settings-container">
-        <a mat-button [routerLink]="dashboardLink" class="back-link"><mat-icon>arrow_back</mat-icon> Back to Dashboard</a>
-        <mat-card class="settings-card">
+        <a mat-button [routerLink]="dashboardLink" class="back-link bgn-fade-up" style="--i:0"><mat-icon>arrow_back</mat-icon> Back to Dashboard</a>
+        <mat-card class="settings-card bgn-fade-up" style="--i:1">
         <mat-card-header>
           <mat-card-title>Account Settings</mat-card-title>
           <mat-card-subtitle>Update your email, phone number or password. Current password is required for any change.</mat-card-subtitle>
         </mat-card-header>
         <mat-card-content>
-          @if (errorMessage) { <div class="banner error">{{ errorMessage }}</div> }
-          @if (successMessage) { <div class="banner success">{{ successMessage }}</div> }
+          @if (errorMessage) { <div class="banner error bgn-fade-up">{{ errorMessage }}</div> }
+          @if (successMessage) { <div class="banner success bgn-fade-up">{{ successMessage }}</div> }
           <form [formGroup]="form" (ngSubmit)="onSubmit()">
             <mat-form-field appearance="outline" class="full">
               <mat-label>Current Password</mat-label>
@@ -75,8 +75,8 @@ import { AuthService } from '../../../core/services/auth.service';
             }
 
             <div class="form-actions">
-              <a mat-stroked-button [routerLink]="dashboardLink" class="cancel-btn">Cancel</a>
-              <button mat-raised-button color="primary" type="submit" class="submit" [disabled]="form.invalid || isLoading || !hasAnyChange()">
+              <a mat-stroked-button [routerLink]="dashboardLink" class="cancel-btn bgn-press">Cancel</a>
+              <button mat-raised-button color="primary" type="submit" class="submit bgn-press" [disabled]="form.invalid || isLoading || !hasAnyChange()">
                 @if (isLoading) { <mat-spinner diameter="20"></mat-spinner> } @else { Save Changes }
               </button>
             </div>
@@ -93,6 +93,8 @@ import { AuthService } from '../../../core/services/auth.service';
     .back-link { align-self: flex-start; }
     .settings-card { width:100%; padding:16px 18px; border-radius: var(--bgn-radius-lg) !important; border:1px solid var(--bgn-border) !important; box-shadow: var(--bgn-shadow-lg) !important; }
     .full { width:100%; }
+    .full mat-icon[matSuffix] { transition: color 0.2s ease, transform 0.2s ease; }
+    .full button[matSuffix]:active mat-icon { transform: scale(0.88); }
     .form-actions { display:flex; gap:12px; margin-top:12px; }
     .form-actions .cancel-btn, .form-actions .submit { flex:1; height:48px; border-radius: var(--bgn-radius-pill) !important; }
     .banner { padding:12px 16px; border-radius: var(--bgn-radius-sm); margin-bottom:16px; font-size:14px; border:1px solid; }

@@ -1,6 +1,6 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, HostListener, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, Router } from '@angular/router';
+import { RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
@@ -22,6 +22,7 @@ import { Notification } from '../../core/models/notification';
   imports: [
     CommonModule,
     RouterLink,
+    RouterLinkActive,
     MatToolbarModule,
     MatButtonModule,
     MatMenuModule,
@@ -33,7 +34,7 @@ import { Notification } from '../../core/models/notification';
     MatSnackBarModule
   ],
   template: `
-    <mat-toolbar class="bgn-header">
+    <mat-toolbar class="bgn-header" [class.scrolled]="scrolled">
       <a routerLink="/" class="logo" aria-label="Blood Network Bangladesh home">
         <svg class="logo-icon" viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden="true"><path d="M12 2.5s7 5.8 7 11.2A7 7 0 1 1 5 13.7C5 8.3 12 2.5 12 2.5z"/></svg>
         <span class="logo-text">Blood Network <span class="logo-accent">BD</span></span>
@@ -43,15 +44,17 @@ import { Notification } from '../../core/models/notification';
 
       <button
         mat-icon-button
-        class="theme-toggle"
+        class="theme-toggle bgn-press"
         (click)="theme.toggle()"
         [matTooltip]="theme.mode() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
         [attr.aria-label]="theme.mode() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
-        @if (theme.mode() === 'dark') {
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
-        } @else {
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-        }
+        <span class="theme-icon-swap">
+          @if (theme.mode() === 'dark') {
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+          } @else {
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          }
+        </span>
       </button>
 
       @if (authService.isAuthenticated()) {
@@ -62,14 +65,14 @@ import { Notification } from '../../core/models/notification';
       }
 
       <nav class="desktop-nav">
-        <a mat-button routerLink="/find-blood" class="nav-link">Find Blood</a>
-        <a mat-button routerLink="/request-blood" class="nav-link">Need Blood</a>
+        <a mat-button routerLink="/find-blood" routerLinkActive="active" class="nav-link">Find Blood</a>
+        <a mat-button routerLink="/request-blood" routerLinkActive="active" class="nav-link">Need Blood</a>
         @if (authService.isAuthenticated()) {
-          <a mat-button [routerLink]="authService.getDashboardRoute()" class="nav-link">Dashboard</a>
-          <button mat-button class="logout-btn" (click)="authService.logout()">Logout</button>
+          <a mat-button [routerLink]="authService.getDashboardRoute()" routerLinkActive="active" class="nav-link">Dashboard</a>
+          <button mat-button class="logout-btn bgn-press" (click)="authService.logout()">Logout</button>
         } @else {
-          <a mat-button routerLink="/login" class="nav-link">Login</a>
-          <a mat-raised-button color="primary" routerLink="/register" class="register-btn">Register</a>
+          <a mat-button routerLink="/login" routerLinkActive="active" class="nav-link">Login</a>
+          <a mat-raised-button color="primary" routerLink="/register" class="register-btn bgn-press">Register</a>
         }
       </nav>
 
@@ -142,6 +145,13 @@ import { Notification } from '../../core/models/notification';
       align-items: center;
       flex-wrap: nowrap;
       overflow: visible;
+      transition: box-shadow 0.25s ease, background 0.25s ease, height 0.25s ease, min-height 0.25s ease;
+    }
+    .bgn-header.scrolled {
+      height: 58px;
+      min-height: 58px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.22);
+      backdrop-filter: saturate(160%) blur(10px);
     }
 
     .logo {
@@ -156,7 +166,10 @@ import { Notification } from '../../core/models/notification';
       flex-shrink: 0;
       min-width: 0;
       white-space: nowrap;
+      transition: transform 0.2s ease-out;
     }
+    .logo:hover { transform: scale(1.03); }
+    .logo:hover .logo-icon { animation: bgn-heartbeat 0.9s ease-in-out; }
     .logo-icon { color: #fff; height: 26px; width: 26px; font-size: 26px; line-height: 26px; flex-shrink: 0; overflow: visible; }
     .logo-accent { color: #ffd2d2; font-weight: 800; }
     .logo-text { white-space: nowrap; overflow: visible; }
@@ -164,12 +177,23 @@ import { Notification } from '../../core/models/notification';
     .spacer { flex: 1 1 auto; min-width: 8px; }
 
     .nav-link {
+      position: relative;
       color: #fff !important;
       opacity: 0.92;
       white-space: nowrap;
       flex-shrink: 0;
+      transition: opacity 0.2s ease, background-color 0.2s ease;
     }
     .nav-link:hover { opacity: 1; background: rgba(255,255,255,0.14) !important; }
+    .nav-link::after {
+      content: '';
+      position: absolute; left: 14px; right: 14px; bottom: 6px;
+      height: 2px; background: #fff; border-radius: 2px;
+      transform: scaleX(0); transform-origin: center;
+      transition: transform 0.25s ease-out;
+    }
+    .nav-link:hover::after,
+    .nav-link.active::after { transform: scaleX(1); }
 
     .theme-toggle {
       color: #fff !important;
@@ -177,10 +201,20 @@ import { Notification } from '../../core/models/notification';
       width: 40px; height: 40px;
       display: inline-flex; align-items: center; justify-content: center;
       border-radius: 50%;
+      transition: background-color 0.2s ease;
     }
+    .theme-toggle:hover { background: rgba(255,255,255,0.14); }
     .theme-toggle mat-icon { font-size: 22px; height: 22px; width: 22px; line-height: 22px; }
+    .theme-icon-swap {
+      display: inline-flex; align-items: center; justify-content: center;
+      animation: bgn-fade-up 0.3s ease-out;
+    }
 
-    .register-btn { color: #b71c1c !important; background: #fff !important; flex-shrink: 0; white-space: nowrap; }
+    .register-btn {
+      color: #b71c1c !important; background: #fff !important; flex-shrink: 0; white-space: nowrap;
+      transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+    }
+    .register-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 14px -4px rgba(0,0,0,0.35); }
 
     .notif-btn { color: #fff !important; flex-shrink: 0; }
     .logout-btn { color: #fff !important; flex-shrink: 0; white-space: nowrap; }
@@ -224,7 +258,13 @@ import { Notification } from '../../core/models/notification';
 export class HeaderComponent implements OnInit, OnDestroy {
   notifications: Notification[] = [];
   unreadCount = 0;
+  scrolled = false;
   private subscriptions: Subscription[] = [];
+
+  @HostListener('window:scroll')
+  onWindowScroll(): void {
+    this.scrolled = window.scrollY > 8;
+  }
 
   constructor(
     public authService: AuthService,

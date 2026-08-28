@@ -29,7 +29,7 @@ interface ChatMsg {
   template: `
     <!-- FAB Button -->
     <button
-      class="chatbot-fab"
+      class="chatbot-fab bgn-press"
       (click)="toggleChat()"
       [attr.aria-label]="isOpen() ? 'Close chat' : 'Open Blood Buddy chat'"
     >
@@ -66,7 +66,7 @@ interface ChatMsg {
 
         <div class="chatbot-messages" #messagesContainer>
           @for (msg of messages(); track $index) {
-            <div class="message" [class.user]="msg.role === 'user'" [class.assistant]="msg.role === 'assistant'">
+            <div class="message bgn-fade-up" [class.user]="msg.role === 'user'" [class.assistant]="msg.role === 'assistant'">
               <div class="bubble">{{ msg.content }}</div>
             </div>
           }
@@ -99,7 +99,7 @@ interface ChatMsg {
             (click)="sendMessage()"
             [disabled]="!userInput.trim() || loading()"
             aria-label="Send message"
-            class="send-btn"
+            class="send-btn bgn-press"
           >
             <mat-icon>send</mat-icon>
           </button>
@@ -148,12 +148,13 @@ interface ChatMsg {
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      animation: slideUp 0.25s ease;
+      transform-origin: bottom right;
+      animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     @keyframes slideUp {
-      from { opacity: 0; transform: translateY(16px); }
-      to { opacity: 1; transform: translateY(0); }
+      from { opacity: 0; transform: translateY(16px) scale(0.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
     }
 
     .chatbot-header {

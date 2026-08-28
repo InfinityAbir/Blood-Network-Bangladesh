@@ -14,6 +14,8 @@ import { HeaderComponent } from '../../../layout/header/header.component';
 import { FooterComponent } from '../../../layout/footer/footer.component';
 import { SkeletonComponent } from '../../../shared/components/skeleton/skeleton.component';
 import { ReportDialogComponent } from '../../../shared/components/report-dialog/report-dialog.component';
+import { RevealDirective } from '../../../shared/directives/reveal.directive';
+import { CountUpDirective } from '../../../shared/directives/count-up.directive';
 import { DonorService } from '../../../core/services/donor.service';
 import { MatchService } from '../../../core/services/match.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -37,7 +39,9 @@ import { BloodRequestMatch } from '../../../core/models/match';
     MatDialogModule,
     HeaderComponent,
     FooterComponent,
-    SkeletonComponent
+    SkeletonComponent,
+    RevealDirective,
+    CountUpDirective
   ],
   template: `
     <app-header />
@@ -67,16 +71,16 @@ import { BloodRequestMatch } from '../../../core/models/match';
         <div class="error-banner" role="alert">
           <mat-icon>error_outline</mat-icon>
           <span>{{ loadError }}</span>
-          <button mat-stroked-button (click)="loadProfile()">Retry</button>
+          <button mat-stroked-button (click)="loadProfile()" class="bgn-press">Retry</button>
         </div>
       } @else if (profile) {
-        <div class="dashboard-header">
+        <div class="dashboard-header bgn-fade-up" style="--i:0">
           <h1>Donor Dashboard</h1>
           <p>Welcome, {{ userName }} — {{ getBloodGroupLabel(profile.bloodGroup) }} • {{ profile.districtName }}, {{ profile.upazilaName }}</p>
         </div>
 
         <div class="cards-grid">
-          <mat-card>
+          <mat-card appReveal [appRevealDelay]="0" class="bgn-hover-lift">
             <mat-card-header>
               <mat-card-title>Blood Group</mat-card-title>
             </mat-card-header>
@@ -85,7 +89,7 @@ import { BloodRequestMatch } from '../../../core/models/match';
             </mat-card-content>
           </mat-card>
 
-          <mat-card>
+          <mat-card appReveal [appRevealDelay]="1" class="bgn-hover-lift">
             <mat-card-header>
               <mat-card-title>Status</mat-card-title>
             </mat-card-header>
@@ -96,7 +100,7 @@ import { BloodRequestMatch } from '../../../core/models/match';
             </mat-card-content>
           </mat-card>
 
-          <mat-card>
+          <mat-card appReveal [appRevealDelay]="2" class="bgn-hover-lift">
             <mat-card-header>
               <mat-card-title>Verification</mat-card-title>
             </mat-card-header>
@@ -110,16 +114,16 @@ import { BloodRequestMatch } from '../../../core/models/match';
             </mat-card-content>
           </mat-card>
 
-          <mat-card>
+          <mat-card appReveal [appRevealDelay]="3" class="bgn-hover-lift">
             <mat-card-header>
               <mat-card-title>Total Donations</mat-card-title>
             </mat-card-header>
             <mat-card-content>
-              <div class="stat-value">{{ profile.totalDonationCount }}</div>
+              <div class="stat-value"><span [appCountUp]="profile.totalDonationCount">0</span></div>
             </mat-card-content>
           </mat-card>
 
-          <mat-card>
+          <mat-card appReveal [appRevealDelay]="4" class="bgn-hover-lift">
             <mat-card-header>
               <mat-card-title>Location</mat-card-title>
             </mat-card-header>
@@ -128,7 +132,7 @@ import { BloodRequestMatch } from '../../../core/models/match';
             </mat-card-content>
           </mat-card>
 
-          <mat-card matTooltip="From your donor profile. Eligibility check does not update this.">
+          <mat-card appReveal [appRevealDelay]="5" class="bgn-hover-lift" matTooltip="From your donor profile. Eligibility check does not update this.">
             <mat-card-header>
               <mat-card-title>Last Donation</mat-card-title>
             </mat-card-header>
@@ -144,15 +148,15 @@ import { BloodRequestMatch } from '../../../core/models/match';
         </div>
 
         <div class="actions">
-          <button mat-raised-button color="primary" (click)="toggleAvailability()" [disabled]="isToggling">
+          <button mat-raised-button color="primary" class="bgn-press" (click)="toggleAvailability()" [disabled]="isToggling">
             @if (isToggling) { <mat-spinner diameter="18"></mat-spinner> }
             @else { <mat-icon>{{ profile.availabilityStatus === 'Available' ? 'block' : 'check_circle' }}</mat-icon> }
             {{ profile.availabilityStatus === 'Available' ? 'Mark Unavailable' : 'Mark Available' }}
           </button>
-          <a mat-stroked-button routerLink="/donor/profile">
+          <a mat-stroked-button routerLink="/donor/profile" class="bgn-press">
             <mat-icon>edit</mat-icon> Edit Profile
           </a>
-          <a mat-stroked-button routerLink="/settings">
+          <a mat-stroked-button routerLink="/settings" class="bgn-press">
             <mat-icon>settings</mat-icon> Settings
           </a>
         </div>
@@ -162,10 +166,10 @@ import { BloodRequestMatch } from '../../../core/models/match';
           @if (matchesLoading) {
             <mat-card><mat-card-content><app-skeleton type="line" width="100%" height="60px" /></mat-card-content></mat-card>
           } @else if (matchesError) {
-            <div class="error-banner small" role="alert"><mat-icon>error_outline</mat-icon><span>{{ matchesError }}</span><button mat-button (click)="loadMatches()">Retry</button></div>
+            <div class="error-banner small" role="alert"><mat-icon>error_outline</mat-icon><span>{{ matchesError }}</span><button mat-button (click)="loadMatches()" class="bgn-press">Retry</button></div>
           } @else if (pendingMatches.length > 0) {
-            @for (match of pendingMatches; track match.id) {
-              <mat-card class="match-card">
+            @for (match of pendingMatches; track match.id; let i = $index) {
+              <mat-card class="match-card bgn-hover-lift" appReveal [appRevealDelay]="i">
                 <mat-card-content>
                   <div class="match-top-row">
                     <span class="blood-badge">{{ getBloodGroupLabel(match.donorBloodGroup) }}</span>
@@ -188,10 +192,10 @@ import { BloodRequestMatch } from '../../../core/models/match';
                     <mat-icon>flag</mat-icon>
                   </button>
                   <div class="actions-right">
-                    <button mat-stroked-button color="warn" (click)="declineMatch(match.id)" [disabled]="isResponding[match.id]" class="action-btn">
+                    <button mat-stroked-button color="warn" (click)="declineMatch(match.id)" [disabled]="isResponding[match.id]" class="action-btn bgn-press">
                       @if (isResponding[match.id]) { <mat-spinner diameter="16"></mat-spinner> } @else { Decline }
                     </button>
-                    <button mat-raised-button color="primary" (click)="acceptMatch(match.id)" [disabled]="isResponding[match.id]" class="action-btn">
+                    <button mat-raised-button color="primary" (click)="acceptMatch(match.id)" [disabled]="isResponding[match.id]" class="action-btn bgn-press">
                       @if (isResponding[match.id]) { <mat-spinner diameter="16"></mat-spinner> } @else { Accept }
                     </button>
                   </div>
@@ -199,7 +203,7 @@ import { BloodRequestMatch } from '../../../core/models/match';
               </mat-card>
             }
           } @else {
-            <div class="empty-state">
+            <div class="empty-state" appReveal>
               <mat-icon>volunteer_activism</mat-icon>
               <p>No pending requests right now</p>
               <span>We'll notify you when a nearby patient needs your blood type. Keep your profile available and verified.</span>
@@ -210,8 +214,8 @@ import { BloodRequestMatch } from '../../../core/models/match';
         @if (otherMatches.length > 0) {
           <div class="matches-section">
             <h2>Recent Activity</h2>
-            @for (match of otherMatches; track match.id) {
-              <mat-card class="match-card small">
+            @for (match of otherMatches; track match.id; let i = $index) {
+              <mat-card class="match-card small bgn-hover-lift" appReveal [appRevealDelay]="i">
                 <mat-card-content>
                   <div class="match-row">
                     <span class="blood-badge small">{{ getBloodGroupLabel(match.donorBloodGroup) }}</span>
@@ -228,7 +232,7 @@ import { BloodRequestMatch } from '../../../core/models/match';
         }
       } @else {
         <div class="no-profile">
-          <mat-card>
+          <mat-card appReveal class="bgn-hover-lift">
             <mat-card-header>
               <mat-card-title>No Profile Found</mat-card-title>
               <mat-card-subtitle>You need to create a donor profile first</mat-card-subtitle>
@@ -237,7 +241,7 @@ import { BloodRequestMatch } from '../../../core/models/match';
               <p>Complete your donor profile to start receiving blood match requests.</p>
             </mat-card-content>
             <mat-card-actions>
-              <a mat-raised-button color="primary" routerLink="/donor/profile">Create Profile</a>
+              <a mat-raised-button color="primary" routerLink="/donor/profile" class="bgn-press">Create Profile</a>
             </mat-card-actions>
           </mat-card>
         </div>

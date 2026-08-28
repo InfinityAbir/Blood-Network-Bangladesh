@@ -11,24 +11,25 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { HeaderComponent } from '../../../layout/header/header.component';
 import { FooterComponent } from '../../../layout/footer/footer.component';
 import { AuthService } from '../../../core/services/auth.service';
+import { RevealDirective } from '../../../shared/directives/reveal.directive';
 
 @Component({
   selector: 'app-admin-settings',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, MatCardModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule, HeaderComponent, FooterComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, MatCardModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule, HeaderComponent, FooterComponent, RevealDirective],
   template: `
     <app-header />
     <main class="settings-wrap">
       <div class="settings-container">
-        <a mat-button routerLink="/admin" class="back-link"><mat-icon>arrow_back</mat-icon> Back to Dashboard</a>
-        <mat-card class="settings-card">
+        <a mat-button routerLink="/admin" class="back-link bgn-press"><mat-icon>arrow_back</mat-icon> Back to Dashboard</a>
+        <mat-card class="settings-card" appReveal>
         <mat-card-header>
           <mat-card-title>Admin Settings</mat-card-title>
           <mat-card-subtitle>Update your email, phone number or password. Current password is required for any change.</mat-card-subtitle>
         </mat-card-header>
         <mat-card-content>
-          @if (errorMessage) { <div class="banner error">{{ errorMessage }}</div> }
-          @if (successMessage) { <div class="banner success">{{ successMessage }}</div> }
+          @if (errorMessage) { <div class="banner error bgn-fade-up">{{ errorMessage }}</div> }
+          @if (successMessage) { <div class="banner success bgn-fade-up">{{ successMessage }}</div> }
           <form [formGroup]="form" (ngSubmit)="onSubmit()">
             <mat-form-field appearance="outline" class="full">
               <mat-label>Current Password</mat-label>
@@ -75,8 +76,8 @@ import { AuthService } from '../../../core/services/auth.service';
             }
 
             <div class="form-actions">
-              <a mat-stroked-button routerLink="/admin" class="cancel-btn">Cancel</a>
-              <button mat-raised-button color="primary" type="submit" class="submit" [disabled]="form.invalid || isLoading || !hasAnyChange()">
+              <a mat-stroked-button routerLink="/admin" class="cancel-btn bgn-press">Cancel</a>
+              <button mat-raised-button color="primary" type="submit" class="submit bgn-press" [disabled]="form.invalid || isLoading || !hasAnyChange()">
                 @if (isLoading) { <mat-spinner diameter="20"></mat-spinner> } @else { Save Changes }
               </button>
             </div>
