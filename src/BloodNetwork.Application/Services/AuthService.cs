@@ -42,6 +42,19 @@ public class AuthService
             u => u.PhoneNumber == request.PhoneNumber, cancellationToken);
 
         if (existingPhone)
+        {
+            // Auto-cleanup: if account is unverified and older than 24h, delete it
+            var staleUser = await _userRepository.FirstOrDefaultAsync(
+                u => u.PhoneNumber == request.PhoneNumber && !u.IsPhoneVerified, cancellationToken);
+            if (staleUser != null && staleUser.CreatedAt < DateTime.UtcNow.AddHours(-24))
+            {
+                await _userRepository.DeleteAsync(staleUser);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+                existingPhone = false;
+            }
+        }
+
+        if (existingPhone)
             return Result<AuthResponse>.Failure("A user with this phone number already exists");
 
         if (!string.IsNullOrEmpty(request.Email))
@@ -50,7 +63,16 @@ public class AuthService
                 u => u.Email == request.Email, cancellationToken);
 
             if (existingEmail)
-                return Result<AuthResponse>.Failure("A user with this email already exists");
+            {
+                var staleEmailUser = await _userRepository.FirstOrDefaultAsync(
+                    u => u.Email == request.Email && !u.IsPhoneVerified, cancellationToken);
+                if (staleEmailUser != null && staleEmailUser.CreatedAt < DateTime.UtcNow.AddHours(-24))
+                {
+                    await _userRepository.DeleteAsync(staleEmailUser);
+                    await _unitOfWork.SaveChangesAsync(cancellationToken);
+                    existingEmail = false;
+                }
+            }
         }
 
         // Never trust client-provided role — force to Donor/Requester only

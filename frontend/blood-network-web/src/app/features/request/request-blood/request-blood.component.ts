@@ -243,7 +243,13 @@ import { BloodGroup, BloodGroupLabels } from '../../../core/models/blood-group';
     .form-actions .cancel-btn { max-width: 140px; }
     .error-banner { background: color-mix(in srgb, var(--bgn-danger) 12%, transparent); color: var(--bgn-danger); border: 1px solid color-mix(in srgb, var(--bgn-danger) 30%, transparent); padding: 12px 16px; border-radius: var(--bgn-radius-md); margin-bottom: 16px; }
     .success-banner { background: color-mix(in srgb, var(--bgn-success) 14%, transparent); color: var(--bgn-success); border: 1px solid color-mix(in srgb, var(--bgn-success) 30%, transparent); padding: 12px 16px; border-radius: var(--bgn-radius-md); margin-bottom: 16px; }
-    @media (max-width: 600px) { .form-row { flex-direction: column; } .form-row mat-form-field { min-width: 0; } .form-actions { flex-direction: column-reverse; } .form-actions .cancel-btn { max-width: none; } }
+    @media (max-width: 600px) {
+      .form-row { flex-direction: column; }
+      .form-row mat-form-field { min-width: 0; }
+      .form-actions { flex-direction: column; gap: 8px; }
+      .form-actions .submit-btn, .form-actions .cancel-btn { width: 100%; max-width: none; height: 48px; font-size: 16px; border-radius: var(--bgn-radius-pill) !important; }
+      .form-actions .submit-btn { order: -1; }
+    }
   `]
 })
 export class RequestBloodComponent implements OnInit {

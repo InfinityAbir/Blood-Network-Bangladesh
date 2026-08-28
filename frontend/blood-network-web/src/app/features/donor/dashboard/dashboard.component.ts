@@ -282,9 +282,9 @@ import { BloodRequestMatch } from '../../../core/models/match';
     .meta-item { display: flex; align-items: center; gap: 4px; }
     .meta-item mat-icon { font-size: 16px; width: 16px; height: 16px; }
     .action-btn { min-width: 100px; height: 40px; }
-    mat-card-actions { padding: 8px 16px 12px !important; display: flex; justify-content: space-between; align-items: center; }
+    .match-card ::ng-deep .mat-mdc-card-actions { padding: 8px 16px 12px !important; display: flex !important; justify-content: space-between !important; align-items: center !important; }
     .actions-right { display: flex; gap: 8px; }
-    .report-btn { color: var(--bgn-text-muted, #999); }
+    .report-btn { color: #999 !important; flex-shrink: 0; }
     .match-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
     .match-row .score { font-weight: 500; }
     .match-row .date { color: var(--bgn-text-muted); font-size: 12px; }
