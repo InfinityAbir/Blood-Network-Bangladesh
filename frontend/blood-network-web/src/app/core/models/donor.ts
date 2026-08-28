@@ -25,6 +25,7 @@ export interface DonorProfile {
   upazilaId: string;
   upazilaName?: string;
   area?: string;
+  customAddress?: string;
   lastDonationDate?: string;
   availabilityStatus: AvailabilityStatus;
   verificationStatus: VerificationStatus;

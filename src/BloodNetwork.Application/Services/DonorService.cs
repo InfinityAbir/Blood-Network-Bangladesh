@@ -153,16 +153,24 @@ public class DonorService
 
     public async Task<Result<DonorProfileDto>> GetMyProfileAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        var profile = await _donorProfileRepository.FirstOrDefaultAsync(
-            p => p.UserId == userId, cancellationToken);
+        try
+        {
+            var profile = await _donorProfileRepository.FirstOrDefaultAsync(
+                p => p.UserId == userId, cancellationToken);
 
-        if (profile is null)
-            return Result<DonorProfileDto>.Failure("Donor profile not found");
+            if (profile is null)
+                return Result<DonorProfileDto>.Failure("Donor profile not found");
 
-        var district = await _districtRepository.GetByIdAsync(profile.DistrictId, cancellationToken);
-        var upazila = await _upazilaRepository.GetByIdAsync(profile.UpazilaId, cancellationToken);
+            var district = await _districtRepository.GetByIdAsync(profile.DistrictId, cancellationToken);
+            var upazila = await _upazilaRepository.GetByIdAsync(profile.UpazilaId, cancellationToken);
 
-        return Result<DonorProfileDto>.Success(MapToDto(profile, district?.Name, upazila?.Name));
+            return Result<DonorProfileDto>.Success(MapToDto(profile, district?.Name, upazila?.Name));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "GetMyProfile failed for user {UserId}", userId);
+            return Result<DonorProfileDto>.Failure($"Profile load failed: {ex.InnerException?.Message ?? ex.Message}");
+        }
     }
 
     public async Task<Result<DonorProfileDto>> ToggleAvailabilityAsync(Guid userId, ToggleAvailabilityRequest request, CancellationToken cancellationToken = default)
