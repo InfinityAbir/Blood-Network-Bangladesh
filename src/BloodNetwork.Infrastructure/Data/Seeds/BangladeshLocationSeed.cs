@@ -1,4 +1,4 @@
-using BloodNetwork.Domain.Entities;
+﻿using BloodNetwork.Domain.Entities;
 
 namespace BloodNetwork.Infrastructure.Data.Seeds;
 
@@ -350,7 +350,7 @@ public static class BangladeshLocationSeed
             new() { Id = new Guid("aa000019-0000-4000-8000-000000000003"), DistrictId = districts.First(d => d.Name == "Noakhali").Id, Name = "Begumganj", NameBn = "বেগমগঞ্জ" },
             new() { Id = new Guid("aa000019-0000-4000-8000-000000000004"), DistrictId = districts.First(d => d.Name == "Noakhali").Id, Name = "Chatkhil", NameBn = "চাটখিল" },
             new() { Id = new Guid("aa000019-0000-4000-8000-000000000005"), DistrictId = districts.First(d => d.Name == "Noakhali").Id, Name = "Companiganj", NameBn = "কোম্পানীগঞ্জ" },
-            new() { Id = new Guid("aa000019-0000-4000-8000-000000000006"), DistrictId = districts.First(d => d.Name == "Noakhali").Id, Name = "Hatiya", NameBn = "পটিয়া" },
+            new() { Id = new Guid("aa000019-0000-4000-8000-000000000006"), DistrictId = districts.First(d => d.Name == "Noakhali").Id, Name = "Hatiya", NameBn = "হাতিয়া" },
             new() { Id = new Guid("aa000019-0000-4000-8000-000000000007"), DistrictId = districts.First(d => d.Name == "Noakhali").Id, Name = "Kabirhat", NameBn = "কবিরহাট" },
             new() { Id = new Guid("aa000019-0000-4000-8000-000000000008"), DistrictId = districts.First(d => d.Name == "Noakhali").Id, Name = "Senbag", NameBn = "সেনবাগ" },
             new() { Id = new Guid("aa000019-0000-4000-8000-000000000009"), DistrictId = districts.First(d => d.Name == "Noakhali").Id, Name = "Subarnachar", NameBn = "সুবর্ণচর" },
@@ -645,7 +645,6 @@ public static class BangladeshLocationSeed
             // Moulvibazar District
             new() { Id = new Guid("aa000050-0000-4000-8000-000000000001"), DistrictId = districts.First(d => d.Name == "Moulvibazar").Id, Name = "Moulvibazar Sadar", NameBn = "মৌলভীবাজার সদর" },
             new() { Id = new Guid("aa000050-0000-4000-8000-000000000002"), DistrictId = districts.First(d => d.Name == "Moulvibazar").Id, Name = "Barlekha", NameBn = "বড়লেখা" },
-            new() { Id = new Guid("aa000050-0000-4000-8000-000000000003"), DistrictId = districts.First(d => d.Name == "Moulvibazar").Id, Name = "Baralekha", NameBn = "বড়লেখা" },
             new() { Id = new Guid("aa000050-0000-4000-8000-000000000004"), DistrictId = districts.First(d => d.Name == "Moulvibazar").Id, Name = "Juri", NameBn = "জুড়ী" },
             new() { Id = new Guid("aa000050-0000-4000-8000-000000000005"), DistrictId = districts.First(d => d.Name == "Moulvibazar").Id, Name = "Kamalganj", NameBn = "জামালগঞ্জ" },
             new() { Id = new Guid("aa000050-0000-4000-8000-000000000006"), DistrictId = districts.First(d => d.Name == "Moulvibazar").Id, Name = "Kulaura", NameBn = "কুলাউড়া" },
