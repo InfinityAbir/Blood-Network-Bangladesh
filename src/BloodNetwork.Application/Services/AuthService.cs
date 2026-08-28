@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using BloodNetwork.Application.Common;
 using BloodNetwork.Application.DTOs;
 using BloodNetwork.Application.Interfaces;
@@ -143,8 +145,9 @@ public class AuthService
 
     public async Task<Result<AuthResponse>> RefreshTokenAsync(string refreshTokenValue, CancellationToken cancellationToken = default)
     {
+        var tokenHash = HashToken(refreshTokenValue);
         var refreshToken = await _refreshTokenRepository.FirstOrDefaultAsync(
-            t => t.Token == refreshTokenValue, cancellationToken);
+            t => t.Token == tokenHash, cancellationToken);
 
         if (refreshToken == null)
             return Result<AuthResponse>.Failure("Invalid refresh token");
@@ -181,7 +184,7 @@ public class AuthService
 
         // Create a new refresh token
         var newRefreshToken = await CreateRefreshTokenAsync(user.Id, cancellationToken);
-        refreshToken.ReplacedByToken = newRefreshToken;
+        refreshToken.ReplacedByToken = HashToken(newRefreshToken);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -193,8 +196,9 @@ public class AuthService
 
     public async Task RevokeRefreshTokenAsync(string refreshTokenValue, CancellationToken cancellationToken = default)
     {
+        var tokenHash = HashToken(refreshTokenValue);
         var refreshToken = await _refreshTokenRepository.FirstOrDefaultAsync(
-            t => t.Token == refreshTokenValue, cancellationToken);
+            t => t.Token == tokenHash, cancellationToken);
 
         if (refreshToken != null)
         {
@@ -317,7 +321,7 @@ public class AuthService
         var refreshToken = new RefreshToken
         {
             UserId = userId,
-            Token = tokenValue,
+            Token = HashToken(tokenValue),
             ExpiresAt = DateTime.UtcNow.AddDays(7),
             IsRevoked = false
         };
@@ -325,8 +329,14 @@ public class AuthService
         await _refreshTokenRepository.AddAsync(refreshToken, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+        // Only the raw value is ever returned to the client - the database only ever sees its hash.
         return tokenValue;
     }
+
+    // Refresh tokens are high-entropy opaque values (64 random bytes), so hashing here is
+    // purely defense-in-depth against a database dump/backup leak, not brute-force protection.
+    private static string HashToken(string token) =>
+        Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
 
     private static UserDto MapToDto(User user)
     {

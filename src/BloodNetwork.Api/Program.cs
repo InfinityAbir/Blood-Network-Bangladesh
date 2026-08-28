@@ -116,30 +116,47 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Partition key for rate limiting: authenticated requests are keyed per-user (from the
+// JWT), anonymous ones per client IP. Using a bare AddFixedWindowLimiter would create a
+// single counter shared by every client hitting the API - one caller could exhaust it
+// and lock everyone else out of login/register/refresh or the whole authenticated API.
+static string RateLimitPartitionKey(HttpContext httpContext)
+{
+    var userId = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+    if (!string.IsNullOrEmpty(userId)) return $"user:{userId}";
+    return $"ip:{httpContext.Connection.RemoteIpAddress}";
+}
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
-    options.AddFixedWindowLimiter("auth", lo =>
-    {
-        lo.PermitLimit = 10;
-        lo.Window = TimeSpan.FromMinutes(1);
-        lo.QueueLimit = 0;
-    });
+    options.AddPolicy("auth", httpContext => RateLimitPartition.GetFixedWindowLimiter(
+        partitionKey: RateLimitPartitionKey(httpContext),
+        factory: _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 10,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+        }));
 
-    options.AddFixedWindowLimiter("api", lo =>
-    {
-        lo.PermitLimit = 60;
-        lo.Window = TimeSpan.FromMinutes(1);
-        lo.QueueLimit = 0;
-    });
+    options.AddPolicy("api", httpContext => RateLimitPartition.GetFixedWindowLimiter(
+        partitionKey: RateLimitPartitionKey(httpContext),
+        factory: _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 60,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+        }));
 
-    options.AddFixedWindowLimiter("search", lo =>
-    {
-        lo.PermitLimit = 30;
-        lo.Window = TimeSpan.FromMinutes(1);
-        lo.QueueLimit = 0;
-    });
+    options.AddPolicy("search", httpContext => RateLimitPartition.GetFixedWindowLimiter(
+        partitionKey: RateLimitPartitionKey(httpContext),
+        factory: _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 30,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+        }));
 
     options.OnRejected = async (ctx, ct) =>
     {
