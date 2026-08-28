@@ -102,7 +102,7 @@ public class DonorService
         catch (Exception ex)
         {
             _logger.LogError(ex, "CreateProfile failed for user {UserId}", userId);
-            return Result<DonorProfileDto>.Failure($"Profile create failed: {ex.Message}");
+            return Result<DonorProfileDto>.Failure($"Profile create failed: {ex.InnerException?.Message ?? ex.Message}");
         }
     }
 
@@ -145,7 +145,7 @@ public class DonorService
         catch (Exception ex)
         {
             _logger.LogError(ex, "UpdateProfile failed for user {UserId}", userId);
-            return Result<DonorProfileDto>.Failure($"Profile update failed: {ex.Message}");
+            return Result<DonorProfileDto>.Failure($"Profile update failed: {ex.InnerException?.Message ?? ex.Message}");
         }
     }
 
