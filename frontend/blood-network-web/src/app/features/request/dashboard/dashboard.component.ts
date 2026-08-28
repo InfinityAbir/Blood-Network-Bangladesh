@@ -39,9 +39,14 @@ import { PagedResult } from '../../../core/models/paged-result';
     <main class="dashboard-container">
       <div class="dashboard-header">
         <h1>My Blood Requests</h1>
-        <a mat-raised-button color="primary" routerLink="/request-blood">
-          <mat-icon>add</mat-icon> New Request
-        </a>
+        <div class="header-actions">
+          <a mat-stroked-button routerLink="/settings">
+            <mat-icon>settings</mat-icon> Settings
+          </a>
+          <a mat-raised-button color="primary" routerLink="/request-blood">
+            <mat-icon>add</mat-icon> New Request
+          </a>
+        </div>
       </div>
 
       @if (isLoading) {
@@ -275,6 +280,7 @@ import { PagedResult } from '../../../core/models/paged-result';
     .dashboard-container { flex: 1; padding: 24px; max-width: 1200px; margin: 0 auto; width: 100%; }
     .dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
     .dashboard-header h1 { margin: 0; font-size: 24px; }
+    .header-actions { display: flex; gap: 8px; align-items: center; }
     .sk-tabs { margin-top: 16px; }
     .sk-tab-bar { display: flex; gap: 16px; margin-bottom: 24px; }
     .sk-requests { display: flex; flex-direction: column; gap: 12px; }

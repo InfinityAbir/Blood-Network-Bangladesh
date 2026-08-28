@@ -152,6 +152,9 @@ import { BloodRequestMatch } from '../../../core/models/match';
           <a mat-stroked-button routerLink="/donor/profile">
             <mat-icon>edit</mat-icon> Edit Profile
           </a>
+          <a mat-stroked-button routerLink="/settings">
+            <mat-icon>settings</mat-icon> Settings
+          </a>
         </div>
 
         <div class="matches-section">
