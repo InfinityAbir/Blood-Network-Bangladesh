@@ -16,6 +16,7 @@ export interface User {
   isPhoneVerified: boolean;
   mustChangePassword?: boolean;
   createdAt?: string;
+  photoUrl?: string;
 }
 
 export interface AuthResponse {

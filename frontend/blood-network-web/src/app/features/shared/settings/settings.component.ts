@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -11,17 +11,40 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { HeaderComponent } from '../../../layout/header/header.component';
 import { FooterComponent } from '../../../layout/footer/footer.component';
 import { AuthService } from '../../../core/services/auth.service';
+import { AvatarComponent } from '../../../shared/components/avatar/avatar.component';
 
 @Component({
   selector: 'app-user-settings',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, MatCardModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule, HeaderComponent, FooterComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterLink, MatCardModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule, HeaderComponent, FooterComponent, AvatarComponent],
   template: `
     <app-header />
     <main class="settings-wrap">
       <div class="settings-container">
         <a mat-button [routerLink]="dashboardLink" class="back-link bgn-fade-up" style="--i:0"><mat-icon>arrow_back</mat-icon> Back to Dashboard</a>
+
         <mat-card class="settings-card bgn-fade-up" style="--i:1">
+          <mat-card-header>
+            <mat-card-title>Profile Photo</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            @if (photoError) { <div class="banner error">{{ photoError }}</div> }
+            <div class="photo-row">
+              <app-avatar [photoUrl]="photoUrlInput || auth.currentUser()?.photoUrl" [size]="64" />
+              <mat-form-field appearance="outline" class="full">
+                <mat-label>Photo URL</mat-label>
+                <input matInput [(ngModel)]="photoUrlInput" [ngModelOptions]="{standalone: true}" placeholder="https://..." />
+              </mat-form-field>
+            </div>
+            <div class="form-actions">
+              <button mat-raised-button color="primary" class="bgn-press" [disabled]="isSavingPhoto || photoUrlInput === (auth.currentUser()?.photoUrl || '')" (click)="savePhoto()">
+                @if (isSavingPhoto) { <mat-spinner diameter="20"></mat-spinner> } @else { Save Photo }
+              </button>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="settings-card bgn-fade-up" style="--i:2">
         <mat-card-header>
           <mat-card-title>Account Settings</mat-card-title>
           <mat-card-subtitle>Update your email, phone number or password. Current password is required for any change.</mat-card-subtitle>
@@ -93,6 +116,7 @@ import { AuthService } from '../../../core/services/auth.service';
     .back-link { align-self: flex-start; }
     .settings-card { width:100%; padding:16px 18px; border-radius: var(--bgn-radius-lg) !important; border:1px solid var(--bgn-border) !important; box-shadow: var(--bgn-shadow-lg) !important; }
     .full { width:100%; }
+    .photo-row { display:flex; align-items:center; gap:16px; }
     .full mat-icon[matSuffix] { transition: color 0.2s ease, transform 0.2s ease; }
     .full button[matSuffix]:active mat-icon { transform: scale(0.88); }
     .form-actions { display:flex; gap:12px; margin-top:12px; }
@@ -113,7 +137,12 @@ export class UserSettingsComponent {
   successMessage = '';
   dashboardLink = '/donor/dashboard';
 
-  constructor(private fb: FormBuilder, private auth: AuthService, private router: Router) {
+  photoUrlInput = '';
+  isSavingPhoto = false;
+  photoError = '';
+
+  constructor(public auth: AuthService, private fb: FormBuilder, private router: Router) {
+    this.photoUrlInput = this.auth.currentUser()?.photoUrl || '';
     const user = this.auth.currentUser();
     if (user?.role === 'Admin') this.dashboardLink = '/admin';
     else if (user?.role === 'Requester') this.dashboardLink = '/requester/dashboard';
@@ -180,6 +209,18 @@ export class UserSettingsComponent {
       error: (err) => {
         this.isLoading = false;
         this.errorMessage = err.error?.message || err.error?.Message || 'Update failed. Check current password and try again.';
+      }
+    });
+  }
+
+  savePhoto(): void {
+    this.isSavingPhoto = true;
+    this.photoError = '';
+    this.auth.updatePhoto(this.photoUrlInput.trim()).subscribe({
+      next: () => { this.isSavingPhoto = false; },
+      error: (err) => {
+        this.isSavingPhoto = false;
+        this.photoError = err.error?.message || err.error?.Message || 'Failed to save photo.';
       }
     });
   }

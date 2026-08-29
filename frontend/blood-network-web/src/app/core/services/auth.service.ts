@@ -75,22 +75,29 @@ export class AuthService {
       );
   }
 
-  updateProfile(currentPassword: string, newEmail: string | null, newPhoneNumber: string | null, newPassword: string | null): Observable<User> {
+  updateProfile(currentPassword: string, newEmail: string | null, newPhoneNumber: string | null, newPassword: string | null, newPhotoUrl?: string | null): Observable<User> {
     const body: Record<string, string> = { currentPassword };
     if (newEmail) body['newEmail'] = newEmail;
     if (newPhoneNumber) body['newPhoneNumber'] = newPhoneNumber;
     if (newPassword) body['newPassword'] = newPassword;
+    if (newPhotoUrl !== undefined && newPhotoUrl !== null) body['newPhotoUrl'] = newPhotoUrl;
     return this.http.put<User>(`${this.apiUrl}/profile`, body)
       .pipe(
         tap(user => {
           const stored = localStorage.getItem('user');
           if (stored) {
-            const updated = { ...JSON.parse(stored), email: user.email, phoneNumber: user.phoneNumber, mustChangePassword: user.mustChangePassword };
+            const updated = { ...JSON.parse(stored), email: user.email, phoneNumber: user.phoneNumber, mustChangePassword: user.mustChangePassword, photoUrl: user.photoUrl };
             localStorage.setItem('user', JSON.stringify(updated));
             this.currentUserSignal.set(updated);
           }
         })
       );
+  }
+
+  /** Photo-only update — doesn't require the current password (a photo isn't as sensitive
+   * as email/phone/password; see backend AuthService.UpdateProfileAsync). */
+  updatePhoto(photoUrl: string): Observable<User> {
+    return this.updateProfile('', null, null, null, photoUrl);
   }
 
   logout(): void {

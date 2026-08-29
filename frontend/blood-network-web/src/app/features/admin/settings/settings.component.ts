@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -12,16 +12,39 @@ import { HeaderComponent } from '../../../layout/header/header.component';
 import { FooterComponent } from '../../../layout/footer/footer.component';
 import { AuthService } from '../../../core/services/auth.service';
 import { RevealDirective } from '../../../shared/directives/reveal.directive';
+import { AvatarComponent } from '../../../shared/components/avatar/avatar.component';
 
 @Component({
   selector: 'app-admin-settings',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, MatCardModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule, HeaderComponent, FooterComponent, RevealDirective],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterLink, MatCardModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule, HeaderComponent, FooterComponent, RevealDirective, AvatarComponent],
   template: `
     <app-header />
     <main class="settings-wrap">
       <div class="settings-container">
         <a mat-button routerLink="/admin" class="back-link bgn-press"><mat-icon>arrow_back</mat-icon> Back to Dashboard</a>
+
+        <mat-card class="settings-card" appReveal>
+          <mat-card-header>
+            <mat-card-title>Profile Photo</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            @if (photoError) { <div class="banner error">{{ photoError }}</div> }
+            <div class="photo-row">
+              <app-avatar [photoUrl]="photoUrlInput || auth.currentUser()?.photoUrl" [size]="64" />
+              <mat-form-field appearance="outline" class="full">
+                <mat-label>Photo URL</mat-label>
+                <input matInput [(ngModel)]="photoUrlInput" [ngModelOptions]="{standalone: true}" placeholder="https://..." />
+              </mat-form-field>
+            </div>
+            <div class="form-actions">
+              <button mat-raised-button color="primary" class="bgn-press" [disabled]="isSavingPhoto || photoUrlInput === (auth.currentUser()?.photoUrl || '')" (click)="savePhoto()">
+                @if (isSavingPhoto) { <mat-spinner diameter="20"></mat-spinner> } @else { Save Photo }
+              </button>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
         <mat-card class="settings-card" appReveal>
         <mat-card-header>
           <mat-card-title>Admin Settings</mat-card-title>
@@ -94,6 +117,7 @@ import { RevealDirective } from '../../../shared/directives/reveal.directive';
     .back-link { align-self: flex-start; }
     .settings-card { width:100%; padding:16px 18px; border-radius: var(--bgn-radius-lg) !important; border:1px solid var(--bgn-border) !important; box-shadow: var(--bgn-shadow-lg) !important; }
     .full { width:100%; }
+    .photo-row { display:flex; align-items:center; gap:16px; }
     .form-actions { display:flex; gap:12px; margin-top:12px; }
     .form-actions .cancel-btn, .form-actions .submit { flex:1; height:48px; border-radius: var(--bgn-radius-pill) !important; }
     .banner { padding:12px 16px; border-radius: var(--bgn-radius-sm); margin-bottom:16px; font-size:14px; border:1px solid; }
@@ -111,7 +135,12 @@ export class AdminSettingsComponent {
   errorMessage = '';
   successMessage = '';
 
-  constructor(private fb: FormBuilder, private auth: AuthService) {
+  photoUrlInput = '';
+  isSavingPhoto = false;
+  photoError = '';
+
+  constructor(public auth: AuthService, private fb: FormBuilder) {
+    this.photoUrlInput = this.auth.currentUser()?.photoUrl || '';
     this.form = this.fb.group({
       currentPassword: ['', Validators.required],
       newEmail: ['', [Validators.email]],
@@ -175,6 +204,18 @@ export class AdminSettingsComponent {
       error: (err) => {
         this.isLoading = false;
         this.errorMessage = err.error?.message || err.error?.Message || 'Update failed. Check current password and try again.';
+      }
+    });
+  }
+
+  savePhoto(): void {
+    this.isSavingPhoto = true;
+    this.photoError = '';
+    this.auth.updatePhoto(this.photoUrlInput.trim()).subscribe({
+      next: () => { this.isSavingPhoto = false; },
+      error: (err) => {
+        this.isSavingPhoto = false;
+        this.photoError = err.error?.message || err.error?.Message || 'Failed to save photo.';
       }
     });
   }

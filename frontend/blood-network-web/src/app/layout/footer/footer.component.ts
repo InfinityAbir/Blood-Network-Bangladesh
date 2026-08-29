@@ -21,6 +21,7 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
           <a routerLink="/find-blood">Find Blood</a>
           <a routerLink="/request-blood">Need Blood</a>
           <a routerLink="/register">Become a Donor</a>
+          <a routerLink="/about">About</a>
           <a routerLink="/login">Login</a>
         </div>
       </div>
