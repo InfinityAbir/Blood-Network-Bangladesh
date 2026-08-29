@@ -17,6 +17,7 @@ import { AdminService } from '../../../core/services/admin.service';
 import { AdminUser } from '../../../core/models/admin';
 import { PagedResult } from '../../../core/models/paged-result';
 import { RevealDirective } from '../../../shared/directives/reveal.directive';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-user-management',
@@ -109,7 +110,7 @@ import { RevealDirective } from '../../../shared/directives/reveal.directive';
               @if (user.role === 'Donor' && user.donorVerificationStatus === 'Verified') {
                 <button mat-button color="warn" (click)="verifyDonor(user.id, 'Rejected')" class="bgn-press">Unverify</button>
               }
-              <button mat-button [color]="user.isActive ? 'warn' : 'primary'" (click)="toggleActive(user.id, !user.isActive)" class="bgn-press">
+              <button mat-button [color]="user.isActive ? 'warn' : 'primary'" (click)="toggleActive(user.id, !user.isActive)" class="bgn-press" [disabled]="isSelf(user.id) && user.isActive">
                 {{ user.isActive ? 'Deactivate' : 'Activate' }}
               </button>
             </mat-card-actions>
@@ -171,8 +172,13 @@ export class UserManagementComponent implements OnInit {
 
   constructor(
     private adminService: AdminService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private authService: AuthService
   ) {}
+
+  isSelf(userId: string): boolean {
+    return this.authService.currentUser()?.id === userId;
+  }
 
   ngOnInit(): void {
     this.loadUsers();

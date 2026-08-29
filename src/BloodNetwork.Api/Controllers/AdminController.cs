@@ -52,6 +52,10 @@ public class AdminController : ControllerBase
     [HttpPost("users/{userId}/toggle-active")]
     public async Task<IActionResult> ToggleUserActive(Guid userId, [FromBody] ToggleUserActiveRequest request)
     {
+        var currentId = GetUserId();
+        if (currentId.HasValue && currentId.Value == userId && !request.IsActive)
+            return BadRequest(new { success = false, message = "You cannot deactivate your own account." });
+
         var result = await _adminService.ToggleUserActiveAsync(userId, request.IsActive);
         if (result == null) return NotFound();
 
