@@ -59,7 +59,9 @@ public record PublicDonorDto(
     AvailabilityStatus AvailabilityStatus,
     VerificationStatus VerificationStatus,
     double? DistanceKm,
-    string? PhotoUrl = null
+    string? PhotoUrl = null,
+    Guid? DistrictId = null,
+    Guid? UpazilaId = null
 );
 
 public record DonorSearchRequest(

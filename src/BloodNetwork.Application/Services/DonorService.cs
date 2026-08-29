@@ -310,7 +310,9 @@ public class DonorService
                 item.AvailabilityStatus,
                 item.VerificationStatus,
                 distance,
-                user?.PhotoUrl
+                user?.PhotoUrl,
+                item.DistrictId,
+                item.UpazilaId
             ));
         }
 
