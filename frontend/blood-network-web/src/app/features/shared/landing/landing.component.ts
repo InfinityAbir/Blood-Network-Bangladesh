@@ -41,17 +41,23 @@ import { CountUpDirective } from '../../../shared/directives/count-up.directive'
           </p>
           <div class="cta-buttons bgn-fade-up" style="--i:3">
             <a mat-flat-button class="cta cta-need bgn-press" routerLink="/request-blood">
-              <svg class="bgn-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M12 21s-6.5-4.2-8.2-8.2A4.6 4.6 0 0 1 7 6a3.9 3.9 0 0 1 5 2 3.9 3.9 0 0 1 5-2 4.6 4.6 0 0 1 3.2 6.8C18.5 16.8 12 21 12 21z"/></svg>
-              I Need Blood
+              <span class="cta-inner">
+                <svg class="bgn-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M12 21s-6.5-4.2-8.2-8.2A4.6 4.6 0 0 1 7 6a3.9 3.9 0 0 1 5 2 3.9 3.9 0 0 1 5-2 4.6 4.6 0 0 1 3.2 6.8C18.5 16.8 12 21 12 21z"/></svg>
+                I Need Blood
+              </span>
             </a>
             <a mat-flat-button class="cta cta-donate bgn-press" routerLink="/register">
-              <svg class="bgn-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
-              I Want to Donate
+              <span class="cta-inner">
+                <svg class="bgn-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+                I Want to Donate
+              </span>
             </a>
           </div>
           <a mat-button class="ghost-link bgn-fade-up" style="--i:4" routerLink="/find-blood">
-            <svg class="bgn-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-            Find a donor near you
+            <span class="ghost-link-inner">
+              <svg class="bgn-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+              Find a donor near you
+            </span>
           </a>
         </div>
       </section>
@@ -144,8 +150,10 @@ import { CountUpDirective } from '../../../shared/directives/count-up.directive'
             <p>Join thousands of donors saving lives every day.</p>
           </div>
           <a mat-flat-button class="cta cta-need bgn-press" routerLink="/register">
-            <svg class="bgn-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
-            Become a Donor
+            <span class="cta-inner">
+              <svg class="bgn-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+              Become a Donor
+            </span>
           </a>
         </div>
       </section>
@@ -210,13 +218,14 @@ import { CountUpDirective } from '../../../shared/directives/count-up.directive'
     .tagline { font-size: 1.15rem; max-width: 620px; margin: 0 auto 32px; opacity: 0.94; }
     .cta-buttons { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-bottom: 18px; align-items: center; }
     .cta { height: 52px !important; border-radius: var(--bgn-radius-pill) !important; font-size: 1rem !important; font-weight: 600 !important; padding: 0 28px !important; white-space: nowrap !important; }
-    .cta .mdc-button__label { display: inline-flex !important; flex-direction: row !important; flex-wrap: nowrap !important; align-items: center !important; justify-content: center !important; gap: 8px !important; line-height: 1 !important; white-space: nowrap !important; }
-    .cta .bgn-icon { display: inline-block; flex-shrink: 0; vertical-align: middle; }
+    .cta-inner { display: inline-flex; flex-direction: row; flex-wrap: nowrap; align-items: center; justify-content: center; gap: 8px; line-height: 1; white-space: nowrap; }
+    .cta-inner .bgn-icon { display: inline-block; flex-shrink: 0; }
     .cta-need { background: #fff !important; color: #b71c1c !important; }
     .cta-donate { background: rgba(255,255,255,0.16) !important; color: #fff !important; border: 1px solid rgba(255,255,255,0.4) !important; }
     .ghost-link { color: #fff !important; opacity: 1 !important; font-weight: 500 !important; background: rgba(255,255,255,0.14) !important; border: 1px solid rgba(255,255,255,0.28) !important; border-radius: var(--bgn-radius-pill) !important; backdrop-filter: blur(4px); }
     .ghost-link:hover { background: rgba(255,255,255,0.22) !important; }
-    .ghost-link .mdc-button__label { display: inline-flex !important; flex-direction: row !important; flex-wrap: nowrap !important; align-items: center !important; gap: 6px !important; white-space: nowrap !important; }
+    .ghost-link-inner { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; line-height: 1; }
+    .ghost-link-inner .bgn-icon { display: inline-block; flex-shrink: 0; }
 
     /* STATS */
     .stats {
