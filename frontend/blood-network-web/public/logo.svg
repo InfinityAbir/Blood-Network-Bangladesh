@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Blood Network Bangladesh logo">
+  <title>Blood Network Bangladesh</title>
+  <!-- Solid red circular background -->
+  <circle cx="32" cy="32" r="30" fill="#C62828"/>
+  <!-- White water-drop shape, centered -->
+  <path d="M32 14 C24 24 18 27.5 18 36 A14 14 0 0 0 46 36 C46 27.5 40 24 32 14 Z" fill="#FFFFFF"/>
+  <!-- Minimal red medical cross (+) inside the drop -->
+  <g fill="#C62828">
+    <rect x="28.6" y="30.8" width="6.8" height="2.3" rx="0.7"/>
+    <rect x="30.85" y="28.55" width="2.3" height="6.8" rx="0.7"/>
+  </g>
+</svg>

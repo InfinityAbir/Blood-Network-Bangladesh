@@ -17,10 +17,11 @@ export class AdminService {
     return this.http.get<AdminDashboardStats>(`${this.apiUrl}/dashboard`);
   }
 
-  getUsers(filters: { search?: string; role?: string; page?: number; pageSize?: number }): Observable<PagedResult<AdminUser>> {
+  getUsers(filters: { search?: string; role?: string; isActive?: boolean; page?: number; pageSize?: number }): Observable<PagedResult<AdminUser>> {
     let params = new HttpParams();
     if (filters.search) params = params.set('search', filters.search);
     if (filters.role) params = params.set('role', filters.role);
+    if (filters.isActive !== undefined && filters.isActive !== null) params = params.set('isActive', String(filters.isActive));
     if (filters.page) params = params.set('page', filters.page.toString());
     if (filters.pageSize) params = params.set('pageSize', filters.pageSize.toString());
     return this.http.get<PagedResult<AdminUser>>(`${this.apiUrl}/users`, { params });

@@ -36,10 +36,10 @@ public class AdminController : ControllerBase
     }
 
     [HttpGet("users")]
-    public async Task<IActionResult> GetUsers([FromQuery] string? search, [FromQuery] UserRole? role, [FromQuery] int page = 1, [FromQuery][Range(1, 50)] int pageSize = 20)
+    public async Task<IActionResult> GetUsers([FromQuery] string? search, [FromQuery] UserRole? role, [FromQuery] bool? isActive, [FromQuery] int page = 1, [FromQuery][Range(1, 100)] int pageSize = 10)
     {
-        var users = await _adminService.GetUsersAsync(search, role, page, pageSize);
-        var total = await _adminService.GetUserCountAsync(search, role);
+        var users = await _adminService.GetUsersAsync(search, role, isActive, page, pageSize);
+        var total = await _adminService.GetUserCountAsync(search, role, isActive);
         return Ok(new PagedResult<AdminUserDto>
         {
             Items = users,
@@ -88,7 +88,7 @@ public class AdminController : ControllerBase
     }
 
     [HttpGet("reports")]
-    public async Task<IActionResult> GetReports([FromQuery] ReportStatus? status, [FromQuery] int page = 1, [FromQuery][Range(1, 50)] int pageSize = 20)
+    public async Task<IActionResult> GetReports([FromQuery] ReportStatus? status, [FromQuery] int page = 1, [FromQuery][Range(1, 100)] int pageSize = 10)
     {
         var reports = await _adminService.GetReportsAsync(status, page, pageSize);
         var total = await _adminService.GetReportCountAsync(status);
@@ -113,7 +113,7 @@ public class AdminController : ControllerBase
     }
 
     [HttpGet("audit-logs")]
-    public async Task<IActionResult> GetAuditLogs([FromQuery] string? entityType, [FromQuery] int page = 1, [FromQuery][Range(1, 50)] int pageSize = 20)
+    public async Task<IActionResult> GetAuditLogs([FromQuery] string? entityType, [FromQuery] int page = 1, [FromQuery][Range(1, 100)] int pageSize = 10)
     {
         var logs = await _adminService.GetAuditLogsAsync(entityType, page, pageSize);
         var total = await _adminService.GetAuditLogCountAsync(entityType);

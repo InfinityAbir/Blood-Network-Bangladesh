@@ -186,7 +186,7 @@ public class AdminService : IAdminService
         return result;
     }
 
-    public async Task<IReadOnlyList<AdminUserDto>> GetUsersAsync(string? search, UserRole? role, int page = 1, int pageSize = 20)
+    public async Task<IReadOnlyList<AdminUserDto>> GetUsersAsync(string? search, UserRole? role, bool? isActive, int page = 1, int pageSize = 10)
     {
         var query = _userRepo.Query();
 
@@ -202,6 +202,9 @@ public class AdminService : IAdminService
 
         if (role.HasValue)
             query = query.Where(u => u.Role == role.Value);
+
+        if (isActive.HasValue)
+            query = query.Where(u => u.IsActive == isActive.Value);
 
         var pagedUsers = await _userRepo.ToListAsync(
             query.OrderByDescending(u => u.CreatedAt).Skip((page - 1) * pageSize).Take(pageSize));
@@ -220,7 +223,7 @@ public class AdminService : IAdminService
             .ToList();
     }
 
-    public async Task<int> GetUserCountAsync(string? search, UserRole? role)
+    public async Task<int> GetUserCountAsync(string? search, UserRole? role, bool? isActive)
     {
         var query = _userRepo.Query();
 
@@ -236,6 +239,9 @@ public class AdminService : IAdminService
 
         if (role.HasValue)
             query = query.Where(u => u.Role == role.Value);
+
+        if (isActive.HasValue)
+            query = query.Where(u => u.IsActive == isActive.Value);
 
         return await _userRepo.CountAsync(query);
     }
@@ -278,7 +284,7 @@ public class AdminService : IAdminService
         return user != null ? MapToUserDto(user, profile) : null;
     }
 
-    public async Task<IReadOnlyList<AdminReportDto>> GetReportsAsync(ReportStatus? status, int page = 1, int pageSize = 20)
+    public async Task<IReadOnlyList<AdminReportDto>> GetReportsAsync(ReportStatus? status, int page = 1, int pageSize = 10)
     {
         var query = _reportRepo.Query();
 
@@ -335,7 +341,7 @@ public class AdminService : IAdminService
         return MapToReportDto(report, reporter, reported, reviewer);
     }
 
-    public async Task<IReadOnlyList<AdminAuditLogDto>> GetAuditLogsAsync(string? entityType, int page = 1, int pageSize = 20)
+    public async Task<IReadOnlyList<AdminAuditLogDto>> GetAuditLogsAsync(string? entityType, int page = 1, int pageSize = 10)
     {
         var query = _auditLogRepo.Query();
 

@@ -13,6 +13,7 @@ import { finalize } from 'rxjs';
 import { HeaderComponent } from '../../../layout/header/header.component';
 import { FooterComponent } from '../../../layout/footer/footer.component';
 import { SkeletonComponent } from '../../../shared/components/skeleton/skeleton.component';
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { AdminService } from '../../../core/services/admin.service';
 import { AdminUser } from '../../../core/models/admin';
 import { PagedResult } from '../../../core/models/paged-result';
@@ -36,7 +37,8 @@ import { AuthService } from '../../../core/services/auth.service';
     HeaderComponent,
     FooterComponent,
     SkeletonComponent,
-    RevealDirective
+    RevealDirective,
+    PaginationComponent
   ],
   template: `
     <app-header />
@@ -45,21 +47,39 @@ import { AuthService } from '../../../core/services/auth.service';
       <h1>User Management</h1>
 
       <div class="filters bgn-fade-up">
-        <mat-form-field appearance="outline">
-          <mat-label>Search</mat-label>
-          <input matInput [(ngModel)]="searchTerm" placeholder="Name, phone, email" (keyup.enter)="loadUsers()">
-        </mat-form-field>
-        <mat-form-field appearance="outline">
-          <mat-label>Role</mat-label>
-          <mat-select [(ngModel)]="selectedRole" (selectionChange)="loadUsers()">
-            <mat-option value="">All</mat-option>
-            <mat-option value="Donor">Donor</mat-option>
-            <mat-option value="Requester">Requester</mat-option>
-            <mat-option value="Admin">Admin</mat-option>
-          </mat-select>
-        </mat-form-field>
-        <button mat-raised-button color="primary" (click)="loadUsers()" class="bgn-press">Search</button>
-        <button mat-stroked-button (click)="searchTerm=''; selectedRole=''; loadUsers()" class="bgn-press"><mat-icon>clear</mat-icon> Reset</button>
+        <div class="search-row">
+          <mat-form-field appearance="outline" class="search-field">
+            <mat-label>Search</mat-label>
+            <input matInput [(ngModel)]="searchTerm" placeholder="Name, phone, email" (keyup.enter)="loadUsers()">
+            <mat-icon matSuffix>search</mat-icon>
+          </mat-form-field>
+          <button mat-raised-button color="primary" (click)="loadUsers()" class="bgn-press search-btn">
+            <mat-icon>search</mat-icon> Search
+          </button>
+          <button mat-stroked-button (click)="resetFilters()" class="bgn-press">
+            <mat-icon>clear</mat-icon> Reset
+          </button>
+        </div>
+
+        <div class="filter-groups">
+          <div class="filter-group">
+            <span class="filter-label">Role</span>
+            <div class="chip-row">
+              <button mat-stroked-button class="filter-chip" [class.active]="selectedRole===''" (click)="setRole('')">All</button>
+              <button mat-stroked-button class="filter-chip" [class.active]="selectedRole==='Donor'" (click)="setRole('Donor')">Donor</button>
+              <button mat-stroked-button class="filter-chip" [class.active]="selectedRole==='Requester'" (click)="setRole('Requester')">Requester</button>
+              <button mat-stroked-button class="filter-chip" [class.active]="selectedRole==='Admin'" (click)="setRole('Admin')">Admin</button>
+            </div>
+          </div>
+          <div class="filter-group">
+            <span class="filter-label">Status</span>
+            <div class="chip-row">
+              <button mat-stroked-button class="filter-chip" [class.active]="selectedStatus===''" (click)="setStatus('')">All</button>
+              <button mat-stroked-button class="filter-chip" [class.active]="selectedStatus==='Active'" (click)="setStatus('Active')"><mat-icon class="chip-icon">check_circle</mat-icon> Active</button>
+              <button mat-stroked-button class="filter-chip" [class.active]="selectedStatus==='Deactive'" (click)="setStatus('Deactive')"><mat-icon class="chip-icon">block</mat-icon> Deactive</button>
+            </div>
+          </div>
+        </div>
       </div>
 
       @if (isLoading) {
@@ -82,7 +102,6 @@ import { AuthService } from '../../../core/services/auth.service';
         </div>
       } @else if (result && result.items.length > 0) {
         <div class="results-panel" appReveal>
-        <div class="result-info">Showing {{ result.items.length }} of {{ result.totalCount }} users</div>
         @for (user of result.items; track user.id) {
           <mat-card class="user-card bgn-hover-lift">
             <mat-card-header>
@@ -116,13 +135,14 @@ import { AuthService } from '../../../core/services/auth.service';
             </mat-card-actions>
           </mat-card>
         }
-        @if (result.totalPages > 1) {
-          <div class="pagination">
-            <button mat-button [disabled]="!result.hasPrevious" (click)="goPage(result.page - 1)" class="bgn-press">Previous</button>
-            <span>Page {{ result.page }} of {{ result.totalPages }}</span>
-            <button mat-button [disabled]="!result.hasNext" (click)="goPage(result.page + 1)" class="bgn-press">Next</button>
-          </div>
-        }
+        <app-pagination
+          [page]="result.page"
+          [pageSize]="pageSize"
+          [total]="result.totalCount"
+          label="users"
+          (pageChange)="goPage($event)"
+          (pageSizeChange)="onPageSizeChange($event)">
+        </app-pagination>
         </div>
       } @else {
         <div class="no-results">No users found</div>
@@ -133,8 +153,73 @@ import { AuthService } from '../../../core/services/auth.service';
   styles: [`
     .container { flex: 1; padding: 24px; max-width: 1200px; margin: 0 auto; width: 100%; }
     .back-link { margin-bottom: 12px; }
-    .filters { display: flex; gap: 12px; align-items: center; margin-bottom: 24px; flex-wrap: wrap; }
-    .filters mat-form-field { flex: 1; min-width: 200px; }
+    .filters {
+      background: var(--bgn-surface, #fff);
+      border: 1px solid var(--bgn-border, #e8e8e8);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .search-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .search-field { flex: 1; min-width: 240px; }
+    .search-btn { height: 56px; }
+    .filter-groups {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .filter-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--bgn-text-muted, #666);
+      min-width: 48px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .chip-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .filter-chip {
+      border-radius: 999px !important;
+      font-size: 13px;
+      font-weight: 500;
+      height: 32px;
+      padding: 0 14px !important;
+      border: 1px solid var(--bgn-border, #e0e0e0) !important;
+      background: var(--bgn-surface, #fff) !important;
+      color: var(--bgn-text, #333) !important;
+      transition: all 0.2s ease;
+    }
+    .filter-chip.active {
+      background: var(--bgn-primary, #e53935) !important;
+      color: #fff !important;
+      border-color: var(--bgn-primary, #e53935) !important;
+      box-shadow: 0 2px 8px rgba(229,57,53,0.25);
+    }
+    .filter-chip .chip-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      margin-right: 4px;
+    }
+    .filter-chip.active .chip-icon {
+      color: #fff;
+    }
     .sk-list { display: flex; flex-direction: column; gap: 8px; }
     .sk-user-card { min-height: 100px; }
     .sk-chips { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
@@ -168,7 +253,9 @@ export class UserManagementComponent implements OnInit {
   isLoading = true;
   searchTerm = '';
   selectedRole = '';
+  selectedStatus = '';
   currentPage = 1;
+  pageSize = 10;
 
   constructor(
     private adminService: AdminService,
@@ -184,13 +271,43 @@ export class UserManagementComponent implements OnInit {
     this.loadUsers();
   }
 
+  private getIsActive(): boolean | undefined {
+    if (this.selectedStatus === 'Active') return true;
+    if (this.selectedStatus === 'Deactive') return false;
+    return undefined;
+  }
+
+  setRole(role: string): void {
+    this.selectedRole = role;
+    this.loadUsers();
+  }
+
+  setStatus(status: string): void {
+    this.selectedStatus = status;
+    this.loadUsers();
+  }
+
+  resetFilters(): void {
+    this.searchTerm = '';
+    this.selectedRole = '';
+    this.selectedStatus = '';
+    this.loadUsers();
+  }
+
+  onPageSizeChange(size: number): void {
+    this.pageSize = size;
+    this.loadUsers();
+  }
+
   loadUsers(): void {
     this.isLoading = true;
     this.currentPage = 1;
     this.adminService.getUsers({
       search: this.searchTerm || undefined,
       role: this.selectedRole || undefined,
-      page: this.currentPage
+      isActive: this.getIsActive(),
+      page: this.currentPage,
+      pageSize: this.pageSize
     }).pipe(
       finalize(() => { this.isLoading = false; this.cdr.detectChanges(); })
     ).subscribe({
@@ -204,7 +321,9 @@ export class UserManagementComponent implements OnInit {
     this.adminService.getUsers({
       search: this.searchTerm || undefined,
       role: this.selectedRole || undefined,
-      page
+      isActive: this.getIsActive(),
+      page,
+      pageSize: this.pageSize
     }).subscribe({
       next: (result) => this.result = result,
       error: (e) => console.debug(e)

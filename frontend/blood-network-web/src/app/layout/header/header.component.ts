@@ -36,7 +36,15 @@ import { Notification } from '../../core/models/notification';
   template: `
     <mat-toolbar class="bgn-header" [class.scrolled]="scrolled">
       <a routerLink="/" class="logo" aria-label="Blood Network Bangladesh home">
-        <svg class="logo-icon" viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden="true"><path d="M12 2.5s7 5.8 7 11.2A7 7 0 1 1 5 13.7C5 8.3 12 2.5 12 2.5z"/></svg>
+        <svg class="logo-icon" viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
+          <!-- White water-drop -->
+          <path d="M12 2.5s7 5.8 7 11.2A7 7 0 1 1 5 13.7C5 8.3 12 2.5 12 2.5z" fill="#FFFFFF"/>
+          <!-- Minimal red medical cross (+) centered inside the drop -->
+          <g fill="#C62828">
+            <rect x="10.7" y="12.1" width="2.6" height="1.15" rx="0.3"/>
+            <rect x="11.42" y="10.7" width="1.15" height="2.6" rx="0.3"/>
+          </g>
+        </svg>
         <span class="logo-text">Blood Network <span class="logo-accent">BD</span></span>
       </a>
 
