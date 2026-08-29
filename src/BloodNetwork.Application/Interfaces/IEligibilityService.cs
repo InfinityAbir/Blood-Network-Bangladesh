@@ -4,6 +4,16 @@ public interface IEligibilityService
 {
     Task<IReadOnlyList<EligibilityQuestionDto>> GetQuestionsAsync();
     Task<EligibilityResultDto> EvaluateAnswersAsync(IReadOnlyList<EligibilityAnswerDto> answers);
+    Task<EligibilityStateDto?> GetStateAsync(Guid userId);
+    Task<EligibilityStateDto> SaveStateAsync(Guid userId, IReadOnlyList<EligibilityAnswerDto> answers, EligibilityResultDto result);
+    Task<bool> ClearStateAsync(Guid userId);
+}
+
+public class EligibilityStateDto
+{
+    public List<EligibilityAnswerDto> Answers { get; set; } = new();
+    public EligibilityResultDto Result { get; set; } = new();
+    public DateTime UpdatedAt { get; set; }
 }
 
 public class EligibilityQuestionDto

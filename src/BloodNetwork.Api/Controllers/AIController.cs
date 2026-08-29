@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
 using BloodNetwork.Application.DTOs;
 using BloodNetwork.Application.Interfaces;
 using BloodNetwork.Domain.Enums;
@@ -42,7 +43,41 @@ public class AIController : ControllerBase
     public async Task<IActionResult> CheckEligibility([FromBody] List<EligibilityAnswerDto> answers)
     {
         var result = await _eligibilityService.EvaluateAnswersAsync(answers);
+        // Persist per-user so the same user sees saved answers+result after logout/login
+        // (anonymous checks stay device-local; authenticated checks are stored server-side per userId).
+        var userId = GetCurrentUserIdOrNull();
+        if (userId.HasValue)
+        {
+            await _eligibilityService.SaveStateAsync(userId.Value, answers, result);
+        }
         return Ok(result);
+    }
+
+    [HttpGet("eligibility/state")]
+    [Authorize]
+    public async Task<IActionResult> GetEligibilityState()
+    {
+        var userId = GetCurrentUserIdOrNull();
+        if (!userId.HasValue) return Unauthorized();
+        var state = await _eligibilityService.GetStateAsync(userId.Value);
+        if (state == null) return NoContent();
+        return Ok(state);
+    }
+
+    [HttpDelete("eligibility/state")]
+    [Authorize]
+    public async Task<IActionResult> ClearEligibilityState()
+    {
+        var userId = GetCurrentUserIdOrNull();
+        if (!userId.HasValue) return Unauthorized();
+        await _eligibilityService.ClearStateAsync(userId.Value);
+        return NoContent();
+    }
+
+    private Guid? GetCurrentUserIdOrNull()
+    {
+        var claim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst("sub");
+        return claim != null && Guid.TryParse(claim.Value, out var id) ? id : null;
     }
 
     [HttpGet("donors/re-engagement")]

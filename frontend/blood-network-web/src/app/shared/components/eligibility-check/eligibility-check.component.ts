@@ -1,4 +1,4 @@
-import { Component, signal, computed } from '@angular/core';
+import { Component, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -14,6 +14,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { retry, timer, throwError } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { RevealDirective } from '../../directives/reveal.directive';
+import { AuthService } from '../../../core/services/auth.service';
 
 interface EligibilityQuestion {
   id: string;
@@ -425,6 +426,7 @@ export class EligibilityCheckComponent {
   result = signal<EligibilityResult | null>(null);
 
   private apiUrl = `${environment.apiUrl}/ai/eligibility`;
+  private auth = inject(AuthService);
 
   currentQuestion = computed(() => this.questions()[this.currentIndex()]!);
   progressPercent = computed(() => {
@@ -440,6 +442,72 @@ export class EligibilityCheckComponent {
     this.loadQuestions();
   }
 
+  private storageKey(): string {
+    const userId = this.auth.currentUser()?.id || 'guest';
+    return `eligibility_state_${userId}`;
+  }
+
+  private saveToLocal(answers: Record<string, string>, result: EligibilityResult | null): void {
+    try {
+      const key = this.storageKey();
+      if (result) {
+        localStorage.setItem(key, JSON.stringify({ answers, result, updatedAt: new Date().toISOString() }));
+      } else {
+        localStorage.setItem(key, JSON.stringify({ answers, result: null, updatedAt: new Date().toISOString() }));
+      }
+    } catch {}
+  }
+
+  private loadFromLocal(): { answers: Record<string, string>, result: EligibilityResult | null } | null {
+    try {
+      const raw = localStorage.getItem(this.storageKey());
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      return { answers: parsed.answers || {}, result: parsed.result || null };
+    } catch { return null; }
+  }
+
+  private clearLocal(): void {
+    try { localStorage.removeItem(this.storageKey()); } catch {}
+  }
+
+  private restoreSavedState(): void {
+    // For authenticated users, backend is source of truth (cross-device, survives logout/login per user).
+    // For guests, use localStorage per "guest" key. Both are isolated by userId.
+    if (this.auth.currentUser()) {
+      this.http.get<any>(`${this.apiUrl}/state`).subscribe({
+        next: (state) => {
+          if (state && state.answers && state.result && state.answers.length > 0) {
+            const ansMap: Record<string, string> = {};
+            for (const a of state.answers) ansMap[String(a.questionId)] = a.answer;
+            this.answers.set(ansMap);
+            this.result.set(state.result as EligibilityResult);
+            this.saveToLocal(ansMap, state.result as EligibilityResult);
+          } else {
+            const local = this.loadFromLocal();
+            if (local && (Object.keys(local.answers).length > 0 || local.result)) {
+              this.answers.set(local.answers);
+              if (local.result) this.result.set(local.result);
+            }
+          }
+        },
+        error: () => {
+          const local = this.loadFromLocal();
+          if (local && (Object.keys(local.answers).length > 0 || local.result)) {
+            this.answers.set(local.answers);
+            if (local.result) this.result.set(local.result);
+          }
+        }
+      });
+      return;
+    }
+    const local = this.loadFromLocal();
+    if (local && (Object.keys(local.answers).length > 0 || local.result)) {
+      this.answers.set(local.answers);
+      if (local.result) this.result.set(local.result);
+    }
+  }
+
   loadQuestions(): void {
     this.loading.set(true);
     this.error.set(null);
@@ -447,6 +515,8 @@ export class EligibilityCheckComponent {
       next: (qs) => {
         this.questions.set(qs);
         this.loading.set(false);
+        // Restore per-user saved answers+result after questions are known
+        this.restoreSavedState();
       },
       error: () => {
         this.error.set('Failed to load questions. Please try again later. / প্রশ্ন লোড করতে ব্যর্থ।');
@@ -528,6 +598,9 @@ export class EligibilityCheckComponent {
       next: (res) => {
         this.result.set(res);
         this.submitting.set(false);
+        // Persist per-user so same user sees it after logout/login; isolated by userId (guest vs authenticated)
+        this.saveToLocal(ans, res);
+        // Backend already persists for authenticated users via POST /check, no extra call needed
       },
       error: () => {
         this.error.set('Failed to submit. Please try again later. / জমা দিতে ব্যর্থ। কিছুক্ষণ পর আবার চেষ্টা করুন।');
@@ -542,6 +615,11 @@ export class EligibilityCheckComponent {
     this.currentIndex.set(0);
     this.result.set(null);
     this.error.set(null);
+    this.clearLocal();
+    // Also clear server-side per-user state if authenticated
+    if (this.auth.currentUser()) {
+      this.http.delete(`${this.apiUrl}/state`).subscribe({ next: () => {}, error: () => {} });
+    }
     this.loadQuestions();
   }
 }

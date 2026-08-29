@@ -34,6 +34,7 @@ public class BloodNetworkDbContext : DbContext
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<DeveloperInfo> DeveloperInfo => Set<DeveloperInfo>();
     public DbSet<EligibilityQuestion> EligibilityQuestions => Set<EligibilityQuestion>();
+    public DbSet<UserEligibilityState> UserEligibilityStates => Set<UserEligibilityState>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -94,6 +95,7 @@ public class BloodNetworkDbContext : DbContext
         modelBuilder.Entity<Upazila>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<DeveloperInfo>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<EligibilityQuestion>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<UserEligibilityState>().HasQueryFilter(e => !e.IsDeleted);
     }
 
     private static void ConfigureIndexes(ModelBuilder modelBuilder)
@@ -149,6 +151,11 @@ public class BloodNetworkDbContext : DbContext
             e.HasIndex(t => t.Token).IsUnique();
             e.HasIndex(t => t.UserId);
             e.HasIndex(t => new { t.UserId, t.IsRevoked });
+        });
+
+        modelBuilder.Entity<UserEligibilityState>(e =>
+        {
+            e.HasIndex(s => s.UserId).IsUnique();
         });
     }
 

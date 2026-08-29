@@ -7,10 +7,12 @@ namespace BloodNetwork.Application.Services;
 public class EligibilityService : IEligibilityService
 {
     private readonly IRepository<EligibilityQuestion> _questionRepo;
+    private readonly IRepository<UserEligibilityState> _stateRepo;
 
-    public EligibilityService(IRepository<EligibilityQuestion> questionRepo)
+    public EligibilityService(IRepository<EligibilityQuestion> questionRepo, IRepository<UserEligibilityState> stateRepo)
     {
         _questionRepo = questionRepo;
+        _stateRepo = stateRepo;
     }
 
     public async Task<IReadOnlyList<EligibilityQuestionDto>> GetQuestionsAsync()
@@ -124,6 +126,57 @@ public class EligibilityService : IEligibilityService
     {
         var normalized = answer.Trim().ToLowerInvariant();
         return normalized is "yes" or "হ্যাঁ" or "ha" or "haa" or "h" or "true" or "1";
+    }
+
+    public async Task<EligibilityStateDto?> GetStateAsync(Guid userId)
+    {
+        var state = await _stateRepo.FirstOrDefaultAsync(q => q.UserId == userId);
+        if (state == null) return null;
+        try
+        {
+            var answers = System.Text.Json.JsonSerializer.Deserialize<List<EligibilityAnswerDto>>(state.AnswersJson) ?? new();
+            var result = System.Text.Json.JsonSerializer.Deserialize<EligibilityResultDto>(state.ResultJson);
+            if (result == null) return null;
+            return new EligibilityStateDto { Answers = answers, Result = result, UpdatedAt = state.UpdatedAt ?? state.CreatedAt };
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<EligibilityStateDto> SaveStateAsync(Guid userId, IReadOnlyList<EligibilityAnswerDto> answers, EligibilityResultDto result)
+    {
+        var answersJson = System.Text.Json.JsonSerializer.Serialize(answers);
+        var resultJson = System.Text.Json.JsonSerializer.Serialize(result);
+        var existing = await _stateRepo.FirstOrDefaultAsync(q => q.UserId == userId);
+        if (existing == null)
+        {
+            existing = new UserEligibilityState
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                AnswersJson = answersJson,
+                ResultJson = resultJson,
+            };
+            await _stateRepo.AddAsync(existing);
+        }
+        else
+        {
+            existing.AnswersJson = answersJson;
+            existing.ResultJson = resultJson;
+            existing.UpdatedAt = DateTime.UtcNow;
+            await _stateRepo.UpdateAsync(existing);
+        }
+        return new EligibilityStateDto { Answers = answers.ToList(), Result = result, UpdatedAt = existing.UpdatedAt ?? existing.CreatedAt };
+    }
+
+    public async Task<bool> ClearStateAsync(Guid userId)
+    {
+        var existing = await _stateRepo.FirstOrDefaultAsync(q => q.UserId == userId);
+        if (existing == null) return false;
+        await _stateRepo.DeleteAsync(existing);
+        return true;
     }
 
     private static EligibilityQuestionDto MapToDto(EligibilityQuestion q) => new()
