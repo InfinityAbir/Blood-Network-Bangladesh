@@ -8,5 +8,6 @@ public enum NotificationType
     DonorDeclined,
     ProfileReminder,
     Availability,
-    System
+    System,
+    NewRequestPendingReview
 }

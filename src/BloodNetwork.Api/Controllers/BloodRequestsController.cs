@@ -122,6 +122,25 @@ public class BloodRequestsController : ControllerBase
         return BadRequest(new { success = false, message = result.Error });
     }
 
+    [HttpPatch("{id:guid}")]
+    [Authorize]
+    [ProducesResponseType(typeof(BloodRequestDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> UpdateRequest(Guid id, [FromBody] UpdateBloodRequestRequest request, CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        if (userId == Guid.Empty)
+            return Unauthorized(new { success = false, message = "Invalid token" });
+
+        var isAdmin = User.IsInRole("Admin");
+        var result = await _requestService.UpdateRequestAsync(id, userId, isAdmin, request, cancellationToken);
+
+        if (result.IsSuccess)
+            return Ok(result.Value);
+
+        return BadRequest(new { success = false, message = result.Error });
+    }
+
     [HttpPatch("{id:guid}/cancel")]
     [Authorize]
     [ProducesResponseType(typeof(BloodRequestDto), StatusCodes.Status200OK)]

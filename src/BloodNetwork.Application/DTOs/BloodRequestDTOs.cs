@@ -74,6 +74,24 @@ public record BloodRequestSearchRequest(
     int PageSize = 20
 );
 
+public record UpdateBloodRequestRequest(
+    BloodGroup BloodGroup,
+    int UnitsRequired,
+    string HospitalName,
+    string HospitalAddress,
+    Guid DistrictId,
+    Guid UpazilaId,
+    string? Area,
+    DateTime RequiredBy,
+    Urgency Urgency,
+    string? PatientName,
+    string? PatientRelation,
+    string ContactPhone,
+    string? AdditionalInformation,
+    double? Latitude,
+    double? Longitude
+);
+
 public record CancelBloodRequestRequest(
     string? Reason
 );

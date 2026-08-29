@@ -111,6 +111,18 @@ public class BloodRequestService
             NotificationType.RequestUpdate,
             bloodRequest.Id);
 
+        var admins = await _userRepository.ToListAsync(
+            _userRepository.Query().Where(u => u.Role == UserRole.Admin), cancellationToken);
+        if (admins.Count > 0)
+        {
+            await _notificationService.SendBulkNotificationAsync(
+                admins.Select(a => a.Id),
+                "New Blood Request",
+                $"{user.FirstName} {user.LastName} requested {request.UnitsRequired} unit(s) of {request.BloodGroup} blood at {request.HospitalName}.",
+                NotificationType.NewRequestPendingReview,
+                bloodRequest.Id);
+        }
+
         return Result<BloodRequestDto>.Success(MapToDto(bloodRequest, user, district, upazila));
     }
 
@@ -208,6 +220,63 @@ public class BloodRequestService
         var upazila = await _upazilaRepository.GetByIdAsync(request.UpazilaId, cancellationToken);
 
         return Result<BloodRequestDto>.Success(MapToDto(request, user, district, upazila));
+    }
+
+    public async Task<Result<BloodRequestDto>> UpdateRequestAsync(Guid requestId, Guid requesterId, bool isAdmin, UpdateBloodRequestRequest request, CancellationToken cancellationToken = default)
+    {
+        var existing = await _requestRepository.GetByIdAsync(requestId, cancellationToken);
+        if (existing is null)
+            return Result<BloodRequestDto>.Failure("Blood request not found");
+
+        if (!isAdmin && existing.RequesterId != requesterId)
+            return Result<BloodRequestDto>.Failure("You can only edit your own requests");
+
+        if (existing.Status != RequestStatus.Open && existing.Status != RequestStatus.PartiallyFulfilled)
+            return Result<BloodRequestDto>.Failure("Only open or partially fulfilled requests can be edited");
+
+        if (request.UnitsRequired < existing.UnitsFulfilled)
+            return Result<BloodRequestDto>.Failure($"Units required cannot be less than the {existing.UnitsFulfilled} unit(s) already fulfilled");
+
+        var district = await _districtRepository.GetByIdAsync(request.DistrictId, cancellationToken);
+        if (district is null)
+            return Result<BloodRequestDto>.Failure("Invalid district");
+
+        var upazila = await _upazilaRepository.GetByIdAsync(request.UpazilaId, cancellationToken);
+        if (upazila is null)
+            return Result<BloodRequestDto>.Failure("Invalid upazila");
+
+        if (upazila.DistrictId != request.DistrictId)
+            return Result<BloodRequestDto>.Failure("Upazila does not belong to district");
+
+        existing.BloodGroup = request.BloodGroup;
+        existing.UnitsRequired = request.UnitsRequired;
+        existing.HospitalName = request.HospitalName;
+        existing.HospitalAddress = request.HospitalAddress;
+        existing.DistrictId = request.DistrictId;
+        existing.UpazilaId = request.UpazilaId;
+        existing.Area = request.Area;
+        existing.Latitude = request.Latitude;
+        existing.Longitude = request.Longitude;
+        existing.RequiredBy = request.RequiredBy;
+        existing.Urgency = request.Urgency;
+        existing.PatientName = request.PatientName;
+        existing.PatientRelation = request.PatientRelation;
+        existing.ContactPhone = request.ContactPhone;
+        existing.AdditionalInformation = request.AdditionalInformation;
+        existing.UpdatedAt = DateTime.UtcNow;
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        await _notificationService.SendNotificationAsync(
+            existing.RequesterId,
+            "Blood Request Updated",
+            $"Your blood request at {existing.HospitalName} has been updated.",
+            NotificationType.RequestUpdate,
+            existing.Id);
+
+        var user = await _userRepository.GetByIdAsync(existing.RequesterId, cancellationToken);
+
+        return Result<BloodRequestDto>.Success(MapToDto(existing, user, district, upazila));
     }
 
     public async Task<Result<BloodRequestDto>> UpdateFulfilledUnitsAsync(Guid requestId, Guid requesterId, int unitsFulfilled, CancellationToken cancellationToken = default)
