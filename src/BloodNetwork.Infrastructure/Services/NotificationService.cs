@@ -147,6 +147,41 @@ public class NotificationService : INotificationService
         }
     }
 
+    public async Task<bool> DeleteAsync(Guid notificationId, Guid userId)
+    {
+        var notification = await _notificationRepo.GetByIdAsync(notificationId);
+        if (notification == null || notification.UserId != userId)
+            return false;
+
+        var wasUnread = !notification.IsRead;
+        await _notificationRepo.DeleteAsync(notification);
+        await _unitOfWork.SaveChangesAsync();
+
+        if (wasUnread && _broadcaster != null)
+        {
+            var count = await _notificationRepo.CountAsync(n => n.UserId == userId && !n.IsRead);
+            await _broadcaster.BroadcastUnreadCountAsync(userId, count);
+        }
+
+        return true;
+    }
+
+    public async Task ClearAllAsync(Guid userId)
+    {
+        var all = await _notificationRepo.FindAsync(n => n.UserId == userId);
+        foreach (var notification in all)
+        {
+            await _notificationRepo.DeleteAsync(notification);
+        }
+
+        await _unitOfWork.SaveChangesAsync();
+
+        if (_broadcaster != null)
+        {
+            await _broadcaster.BroadcastUnreadCountAsync(userId, 0);
+        }
+    }
+
     private static NotificationDto MapToDto(Notification notification)
     {
         return new NotificationDto
