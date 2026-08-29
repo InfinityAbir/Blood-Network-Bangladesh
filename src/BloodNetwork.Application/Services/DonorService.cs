@@ -28,6 +28,9 @@ public class DonorService
     private const double AvailabilityNotifyRadiusKm = 10;
     private const int AvailabilityNotifyMaxRequesters = 20;
 
+    /// <summary>Matches the eligibility questionnaire's own "donated in the last 3 months?" rule.</summary>
+    private const int RecentDonationCooldownDays = 90;
+
     public DonorService(
         IRepository<DonorProfile> donorProfileRepository,
         IRepository<User> userRepository,
@@ -55,6 +58,9 @@ public class DonorService
         _logger = logger;
         _scopeFactory = scopeFactory;
     }
+
+    private static bool IsWithinRecentDonationWindow(DateTime? lastDonationDate) =>
+        lastDonationDate.HasValue && (DateTime.UtcNow - lastDonationDate.Value).TotalDays < RecentDonationCooldownDays;
 
     public async Task<Result<DonorProfileDto>> CreateProfileAsync(Guid userId, CreateDonorProfileRequest request, CancellationToken cancellationToken = default)
     {
@@ -94,7 +100,9 @@ public class DonorService
                 Latitude = request.Latitude,
                 Longitude = request.Longitude,
                 LastDonationDate = request.LastDonationDate,
-                AvailabilityStatus = AvailabilityStatus.Available,
+                AvailabilityStatus = IsWithinRecentDonationWindow(request.LastDonationDate)
+                    ? AvailabilityStatus.RecentlyDonated
+                    : AvailabilityStatus.Available,
                 VerificationStatus = VerificationStatus.Unverified
             };
 
@@ -144,8 +152,24 @@ public class DonorService
             profile.CustomAddress = request.CustomAddress;
             profile.Latitude = request.Latitude;
             profile.Longitude = request.Longitude;
+            // Downgrade to RecentlyDonated whenever the (possibly just-edited) date falls inside
+            // the cooldown, unless the donor has manually marked themselves Unavailable for some
+            // other reason — that stronger manual choice shouldn't get silently overwritten.
+            // Conversely, auto-promote back to Available once the cooldown passes, but only if
+            // this same auto-logic was what set RecentlyDonated in the first place.
+            var wasWithinWindow = IsWithinRecentDonationWindow(profile.LastDonationDate);
             profile.LastDonationDate = request.LastDonationDate;
             profile.UpdatedAt = DateTime.UtcNow;
+
+            var isWithinWindow = IsWithinRecentDonationWindow(profile.LastDonationDate);
+            if (isWithinWindow && profile.AvailabilityStatus != AvailabilityStatus.Unavailable)
+            {
+                profile.AvailabilityStatus = AvailabilityStatus.RecentlyDonated;
+            }
+            else if (!isWithinWindow && wasWithinWindow && profile.AvailabilityStatus == AvailabilityStatus.RecentlyDonated)
+            {
+                profile.AvailabilityStatus = AvailabilityStatus.Available;
+            }
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -189,6 +213,12 @@ public class DonorService
 
             if (profile is null)
                 return Result<DonorProfileDto>.Failure("Donor profile not found");
+
+            if (request.AvailabilityStatus == AvailabilityStatus.Available && IsWithinRecentDonationWindow(profile.LastDonationDate))
+            {
+                return Result<DonorProfileDto>.Failure(
+                    $"You donated on {profile.LastDonationDate:yyyy-MM-dd} — donors need to wait {RecentDonationCooldownDays} days before donating again.");
+            }
 
             profile.AvailabilityStatus = request.AvailabilityStatus;
             profile.UpdatedAt = DateTime.UtcNow;
