@@ -35,7 +35,7 @@ guardrail and the secret was one dashboard click away from being silently regene
 1. Render Dashboard → **New +** → **Static Site**
 2. Connect same GitHub repo
 3. Settings:
-   - **Name:** `blood-network-frontend`
+   - **Name:** `blood-network-bangladesh-frontend`
    - **Build Command:**
      ```
      cd frontend/blood-network-web && npm install && npm run build -- --configuration=production

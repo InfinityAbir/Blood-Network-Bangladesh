@@ -42,7 +42,7 @@ services:
       - key: Jwt__RefreshExpirationInDays
         value: "7"
       - key: AllowedOrigins
-        value: '["https://blood-network-frontend.onrender.com"]'
+        value: '["https://blood-network-bangladesh-frontend.onrender.com"]'
       # Secrets kept out of git: set once in the Render dashboard after first sync,
       # `sync: false` tells Render to leave the value alone on future blueprint syncs.
       - key: GroqApi__ApiKey
