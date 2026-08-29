@@ -76,7 +76,7 @@ public class BloodRequestService
             Area = request.Area,
             Latitude = request.Latitude,
             Longitude = request.Longitude,
-            RequiredBy = request.RequiredBy,
+            RequiredBy = DateTime.SpecifyKind(request.RequiredBy, DateTimeKind.Utc),
             Urgency = request.Urgency,
             PatientName = request.PatientName,
             PatientRelation = request.PatientRelation,
