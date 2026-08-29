@@ -213,13 +213,13 @@ import { BloodGroup, BloodGroupLabels } from '../../../core/models/blood-group';
               <a mat-stroked-button routerLink="/" class="cancel-btn bgn-press">Cancel</a>
               <button mat-raised-button color="primary" type="submit" class="submit-btn bgn-press"
                       [disabled]="isLoading">
-                @if (isLoading) {
-                  <mat-spinner diameter="20"></mat-spinner>
-                } @else {
-                  <ng-container>
+                <span class="submit-btn-inner">
+                  @if (isLoading) {
+                    <mat-spinner diameter="20"></mat-spinner>
+                  } @else {
                     <mat-icon>send</mat-icon> Submit Blood Request
-                  </ng-container>
-                }
+                  }
+                </span>
               </button>
             </div>
           </form>
@@ -241,6 +241,8 @@ import { BloodGroup, BloodGroupLabels } from '../../../core/models/blood-group';
     .form-actions { display: flex; gap: 12px; justify-content: flex-end; padding-top: 16px; border-top: 1px solid var(--bgn-border); flex-wrap: wrap; }
     .form-actions .cancel-btn, .form-actions .submit-btn { height: 48px; font-size: 15px; flex: 1; min-width: 120px; }
     .form-actions .cancel-btn { max-width: 140px; }
+    .submit-btn-inner { display: inline-flex; align-items: center; justify-content: center; gap: 8px; line-height: 1; white-space: nowrap; }
+    .submit-btn-inner mat-icon { display: inline-block; flex-shrink: 0; }
     .error-banner { background: color-mix(in srgb, var(--bgn-danger) 12%, transparent); color: var(--bgn-danger); border: 1px solid color-mix(in srgb, var(--bgn-danger) 30%, transparent); padding: 12px 16px; border-radius: var(--bgn-radius-md); margin-bottom: 16px; animation: bgn-fade-up 0.35s ease-out; }
     .success-banner { background: color-mix(in srgb, var(--bgn-success) 14%, transparent); color: var(--bgn-success); border: 1px solid color-mix(in srgb, var(--bgn-success) 30%, transparent); padding: 12px 16px; border-radius: var(--bgn-radius-md); margin-bottom: 16px; animation: bgn-fade-up 0.35s ease-out; }
     .form-section { transition: opacity 0.2s ease; }
