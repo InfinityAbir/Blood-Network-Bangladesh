@@ -148,7 +148,8 @@ import { BloodRequestMatch } from '../../../core/models/match';
         </div>
 
         <div class="actions">
-          <button mat-raised-button color="primary" class="bgn-press" (click)="toggleAvailability()" [disabled]="isToggling">
+          <button mat-raised-button color="primary" class="bgn-press" (click)="toggleAvailability()"
+                  [disabled]="isToggling || (profile.availabilityStatus === 'RecentlyDonated')">
             @if (isToggling) { <mat-spinner diameter="18"></mat-spinner> }
             @else { <mat-icon>{{ profile.availabilityStatus === 'Available' ? 'block' : 'check_circle' }}</mat-icon> }
             {{ profile.availabilityStatus === 'Available' ? 'Mark Unavailable' : 'Mark Available' }}
@@ -160,6 +161,12 @@ import { BloodRequestMatch } from '../../../core/models/match';
             <mat-icon>settings</mat-icon> Settings
           </a>
         </div>
+        @if (profile.availabilityStatus === 'RecentlyDonated') {
+          <div class="cooldown-hint">
+            <mat-icon>info</mat-icon>
+            <span>Donors need a 90-day gap between donations.{{ eligibleAgainDate() ? ' Available again on ' + (eligibleAgainDate() | date:'mediumDate') + '.' : '' }}</span>
+          </div>
+        }
 
         <div class="matches-section">
           <h2>Blood Match Requests</h2>
@@ -274,6 +281,13 @@ import { BloodRequestMatch } from '../../../core/models/match';
     .response-declined { background: #ffebee; color: #c62828; }
     .response-pending { background: #fff3e0; color: #e65100; }
     .actions { display: flex; gap: 12px; margin-bottom: 32px; flex-wrap: wrap; }
+    .cooldown-hint {
+      display: flex; align-items: center; gap: 8px;
+      margin: -20px 0 32px; padding: 10px 14px;
+      background: var(--bgn-surface-2); border-radius: var(--bgn-radius-md);
+      font-size: 13px; color: var(--bgn-text-muted);
+    }
+    .cooldown-hint mat-icon { font-size: 18px; width: 18px; height: 18px; flex-shrink: 0; color: var(--bgn-warning, #e65100); }
     .no-profile { max-width: 400px; margin: 60px auto; }
     .matches-section { margin-bottom: 32px; }
     .matches-section h2 { margin: 0 0 16px; font-size: 20px; }
@@ -427,6 +441,15 @@ export class DonorDashboardComponent implements OnInit {
 
   formatScore(score: number): number {
     return score;
+  }
+
+  eligibleAgainDate(): Date | null {
+    if (!this.profile?.lastDonationDate) return null;
+    const last = new Date(this.profile.lastDonationDate);
+    if (isNaN(last.getTime())) return null;
+    const eligible = new Date(last);
+    eligible.setDate(eligible.getDate() + 90);
+    return eligible;
   }
 
   toggleAvailability(): void {
