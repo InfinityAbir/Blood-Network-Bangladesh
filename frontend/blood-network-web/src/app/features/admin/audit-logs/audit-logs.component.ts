@@ -12,6 +12,7 @@ import { finalize } from 'rxjs';
 import { HeaderComponent } from '../../../layout/header/header.component';
 import { FooterComponent } from '../../../layout/footer/footer.component';
 import { SkeletonComponent } from '../../../shared/components/skeleton/skeleton.component';
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { AdminService } from '../../../core/services/admin.service';
 import { AdminAuditLog } from '../../../core/models/admin';
 import { PagedResult } from '../../../core/models/paged-result';
@@ -33,7 +34,8 @@ import { RevealDirective } from '../../../shared/directives/reveal.directive';
     HeaderComponent,
     FooterComponent,
     SkeletonComponent,
-    RevealDirective
+    RevealDirective,
+    PaginationComponent
   ],
   template: `
     <app-header />
@@ -105,13 +107,14 @@ import { RevealDirective } from '../../../shared/directives/reveal.directive';
             </tbody>
           </table>
         </mat-card>
-        @if (result.totalPages > 1) {
-          <div class="pagination">
-            <button mat-button [disabled]="!result.hasPrevious" (click)="goPage(result.page - 1)" class="bgn-press">Previous</button>
-            <span>Page {{ result.page }} of {{ result.totalPages }}</span>
-            <button mat-button [disabled]="!result.hasNext" (click)="goPage(result.page + 1)" class="bgn-press">Next</button>
-          </div>
-        }
+        <app-pagination
+          [page]="result.page"
+          [pageSize]="pageSize"
+          [total]="result.totalCount"
+          label="logs"
+          (pageChange)="goPage($event)"
+          (pageSizeChange)="onPageSizeChange($event)">
+        </app-pagination>
       } @else {
         <div class="no-results">No audit logs found</div>
       }
@@ -151,6 +154,7 @@ export class AuditLogViewerComponent implements OnInit {
   isLoading = true;
   entityTypeFilter = '';
   currentPage = 1;
+  pageSize = 10;
 
   constructor(
     private adminService: AdminService,
@@ -166,7 +170,8 @@ export class AuditLogViewerComponent implements OnInit {
     this.currentPage = 1;
     this.adminService.getAuditLogs({
       entityType: this.entityTypeFilter || undefined,
-      page: this.currentPage
+      page: this.currentPage,
+      pageSize: this.pageSize
     }).pipe(
       finalize(() => { this.isLoading = false; this.cdr.detectChanges(); })
     ).subscribe({
@@ -179,10 +184,16 @@ export class AuditLogViewerComponent implements OnInit {
     this.currentPage = page;
     this.adminService.getAuditLogs({
       entityType: this.entityTypeFilter || undefined,
-      page
+      page,
+      pageSize: this.pageSize
     }).subscribe({
       next: (result) => this.result = result,
       error: (e) => console.debug(e)
     });
+  }
+
+  onPageSizeChange(size: number): void {
+    this.pageSize = size;
+    this.loadLogs();
   }
 }
