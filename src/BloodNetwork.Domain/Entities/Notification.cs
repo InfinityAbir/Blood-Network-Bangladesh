@@ -12,6 +12,9 @@ public class Notification : BaseEntity
     public Guid? RelatedEntityId { get; set; }
     public bool IsRead { get; set; }
     public DateTime? ReadAt { get; set; }
+    /// <summary>Small JSON payload (e.g. bloodGroup/districtId/availabilityStatus) so the
+    /// client can deep-link or render a status pill without an extra round-trip.</summary>
+    public string? Metadata { get; set; }
 
     public User User { get; set; } = null!;
 }

@@ -6,6 +6,7 @@ namespace BloodNetwork.Application.Interfaces;
 public interface IAdminService
 {
     Task<AdminDashboardStatsDto> GetDashboardStatsAsync();
+    Task<AdminAnalyticsDto> GetAnalyticsAsync();
     Task<IReadOnlyList<AdminUserDto>> GetUsersAsync(string? search, UserRole? role, int page = 1, int pageSize = 20);
     Task<int> GetUserCountAsync(string? search, UserRole? role);
     Task<AdminUserDto?> ToggleUserActiveAsync(Guid userId, bool isActive);

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using BloodNetwork.Application.Common;
 using BloodNetwork.Application.DTOs;
 using BloodNetwork.Application.Interfaces;
@@ -19,9 +20,13 @@ public class DonorService
     private readonly IMapService _mapService;
     private readonly INotificationService _notificationService;
     private readonly IRepository<BloodRequest> _bloodRequestRepository;
+    private readonly IRepository<BloodRequestMatch> _matchRepository;
     private readonly IMatchingService _matchingService;
     private readonly ILogger<DonorService> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
+
+    private const double AvailabilityNotifyRadiusKm = 10;
+    private const int AvailabilityNotifyMaxRequesters = 20;
 
     public DonorService(
         IRepository<DonorProfile> donorProfileRepository,
@@ -32,6 +37,7 @@ public class DonorService
         IMapService mapService,
         INotificationService notificationService,
         IRepository<BloodRequest> bloodRequestRepository,
+        IRepository<BloodRequestMatch> matchRepository,
         IMatchingService matchingService,
         ILogger<DonorService> logger,
         IServiceScopeFactory scopeFactory)
@@ -44,6 +50,7 @@ public class DonorService
         _mapService = mapService;
         _notificationService = notificationService;
         _bloodRequestRepository = bloodRequestRepository;
+        _matchRepository = matchRepository;
         _matchingService = matchingService;
         _logger = logger;
         _scopeFactory = scopeFactory;
@@ -190,9 +197,10 @@ public class DonorService
 
             if (request.AvailabilityStatus == AvailabilityStatus.Available)
             {
+                IReadOnlyList<BloodRequest> openRequests = Array.Empty<BloodRequest>();
                 try
                 {
-                    var openRequests = await _bloodRequestRepository.FindAsync(
+                    openRequests = await _bloodRequestRepository.FindAsync(
                         r => (r.Status == RequestStatus.Open || r.Status == RequestStatus.PartiallyFulfilled) &&
                              r.BloodGroup == profile.BloodGroup,
                         cancellationToken);
@@ -219,6 +227,15 @@ public class DonorService
                 catch (Exception ex)
                 {
                     _logger.LogWarning(ex, "Matching trigger failed for user {UserId} but availability was updated", userId);
+                }
+
+                try
+                {
+                    await NotifyRequestersOfAvailabilityAsync(userId, profile, openRequests, cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Availability notify failed for user {UserId} but availability was updated", userId);
                 }
             }
 
@@ -310,6 +327,64 @@ public class DonorService
             Page = request.Page,
             PageSize = request.PageSize
         });
+    }
+
+    /// <summary>
+    /// When a donor becomes available, tells requesters who already matched this donor (and are
+    /// still open) plus nearby (~10km) compatible open requesters — capped and deduped — so they
+    /// know a donor just became reachable. Deliberately scoped narrower than "everyone in the
+    /// district" to avoid notification spam.
+    /// </summary>
+    private async Task NotifyRequestersOfAvailabilityAsync(
+        Guid donorUserId, DonorProfile profile, IReadOnlyList<BloodRequest> nearbyCandidateRequests, CancellationToken cancellationToken)
+    {
+        var recipients = new Dictionary<Guid, BloodRequest>();
+
+        var myMatches = await _matchRepository.FindAsync(
+            m => m.DonorId == donorUserId && m.DonorResponse != DonorResponse.Declined, cancellationToken);
+        var matchedRequestIds = myMatches.Select(m => m.BloodRequestId).Distinct().ToList();
+        if (matchedRequestIds.Count > 0)
+        {
+            var matchedRequests = await _bloodRequestRepository.FindAsync(
+                r => matchedRequestIds.Contains(r.Id) && (r.Status == RequestStatus.Open || r.Status == RequestStatus.PartiallyFulfilled),
+                cancellationToken);
+            foreach (var r in matchedRequests)
+            {
+                if (r.RequesterId != donorUserId) recipients.TryAdd(r.RequesterId, r);
+            }
+        }
+
+        if (profile.Latitude.HasValue && profile.Longitude.HasValue)
+        {
+            foreach (var r in nearbyCandidateRequests)
+            {
+                if (recipients.Count >= AvailabilityNotifyMaxRequesters) break;
+                if (r.RequesterId == donorUserId || !r.Latitude.HasValue || !r.Longitude.HasValue) continue;
+
+                var distance = _mapService.CalculateDistanceKm(profile.Latitude.Value, profile.Longitude.Value, r.Latitude.Value, r.Longitude.Value);
+                if (distance <= AvailabilityNotifyRadiusKm) recipients.TryAdd(r.RequesterId, r);
+            }
+        }
+
+        if (recipients.Count == 0) return;
+
+        var metadata = JsonSerializer.Serialize(new
+        {
+            bloodGroup = profile.BloodGroup.ToString(),
+            districtId = profile.DistrictId,
+            availabilityStatus = profile.AvailabilityStatus.ToString(),
+        });
+
+        foreach (var (requesterId, request) in recipients.Take(AvailabilityNotifyMaxRequesters))
+        {
+            await _notificationService.SendNotificationAsync(
+                requesterId,
+                "A compatible donor is available",
+                $"A {profile.BloodGroup} donor near your blood request at {request.HospitalName} just became available.",
+                NotificationType.Availability,
+                request.Id,
+                metadata);
+        }
     }
 
     private static DonorProfileDto MapToDto(DonorProfile profile, string? districtName, string? upazilaName)

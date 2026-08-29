@@ -12,6 +12,7 @@ public class NotificationDto
     public bool IsRead { get; set; }
     public DateTime? ReadAt { get; set; }
     public DateTime CreatedAt { get; set; }
+    public string? Metadata { get; set; }
 }
 
 public class MarkNotificationReadRequest

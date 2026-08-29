@@ -31,6 +31,7 @@ public class BloodNetworkDbContext : DbContext
     public DbSet<Report> Reports => Set<Report>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<DeveloperInfo> DeveloperInfo => Set<DeveloperInfo>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -58,6 +59,7 @@ public class BloodNetworkDbContext : DbContext
         modelBuilder.Entity<Division>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<District>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<Upazila>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<DeveloperInfo>().HasQueryFilter(e => !e.IsDeleted);
     }
 
     private static void ConfigureIndexes(ModelBuilder modelBuilder)

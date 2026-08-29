@@ -28,6 +28,13 @@ public class AdminController : ControllerBase
         return Ok(stats);
     }
 
+    [HttpGet("analytics")]
+    public async Task<IActionResult> GetAnalytics()
+    {
+        var analytics = await _adminService.GetAnalyticsAsync();
+        return Ok(analytics);
+    }
+
     [HttpGet("users")]
     public async Task<IActionResult> GetUsers([FromQuery] string? search, [FromQuery] UserRole? role, [FromQuery] int page = 1, [FromQuery][Range(1, 50)] int pageSize = 20)
     {

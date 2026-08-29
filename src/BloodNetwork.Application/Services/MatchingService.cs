@@ -122,7 +122,10 @@ public class MatchingService : IMatchingService
             var requestUser = await _userRepo.GetByIdAsync(request.RequesterId);
             var requesterName = requestUser is not null ? $"{requestUser.FirstName} {requestUser.LastName}" : "Someone";
 
-            foreach (var match in matches)
+            // Only page donors above a confidence threshold — a 15/100 match still gets a
+            // BloodRequestMatch row (for the donor's own match list) but doesn't justify a push.
+            const int notifyThreshold = 60;
+            foreach (var match in matches.Where(m => m.MatchScore > notifyThreshold))
             {
                 await _notificationService.SendNotificationAsync(
                     match.DonorId,

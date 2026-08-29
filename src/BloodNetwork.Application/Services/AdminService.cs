@@ -14,6 +14,7 @@ public class AdminService : IAdminService
     private readonly IRepository<BloodRequestMatch> _matchRepo;
     private readonly IRepository<Report> _reportRepo;
     private readonly IRepository<AuditLog> _auditLogRepo;
+    private readonly IRepository<District> _districtRepo;
     private readonly IUnitOfWork _unitOfWork;
     private readonly INotificationService _notificationService;
 
@@ -24,6 +25,7 @@ public class AdminService : IAdminService
         IRepository<BloodRequestMatch> matchRepo,
         IRepository<Report> reportRepo,
         IRepository<AuditLog> auditLogRepo,
+        IRepository<District> districtRepo,
         IUnitOfWork unitOfWork,
         INotificationService notificationService)
     {
@@ -33,6 +35,7 @@ public class AdminService : IAdminService
         _matchRepo = matchRepo;
         _reportRepo = reportRepo;
         _auditLogRepo = auditLogRepo;
+        _districtRepo = districtRepo;
         _unitOfWork = unitOfWork;
         _notificationService = notificationService;
     }
@@ -71,6 +74,113 @@ public class AdminService : IAdminService
             OpenReports = openReports,
             PendingVerifications = pendingVerifications
         };
+    }
+
+    public async Task<AdminAnalyticsDto> GetAnalyticsAsync()
+    {
+        // Aggregated in-memory (rather than via provider-translated GroupBy) so the
+        // Application layer stays free of an EF Core package reference — this dataset
+        // is small enough (users/requests/matches, not raw event logs) for that to be fine.
+        var since = DateTime.UtcNow.Date.AddDays(-29);
+
+        var donorProfiles = await _donorProfileRepo.ToListAsync(_donorProfileRepo.Query());
+        var requests = await _requestRepo.ToListAsync(_requestRepo.Query());
+        var matches = await _matchRepo.ToListAsync(_matchRepo.Query());
+
+        var bloodTypeDistribution = donorProfiles
+            .GroupBy(d => d.BloodGroup)
+            .Select(g => new BloodTypeCountDto { BloodGroup = g.Key, Count = g.Count() })
+            .OrderByDescending(x => x.Count)
+            .ToList();
+
+        var requestStatusBreakdown = requests
+            .GroupBy(r => r.Status)
+            .Select(g => new StatusCountDto { Status = g.Key.ToString(), Count = g.Count() })
+            .ToList();
+
+        var urgencyBreakdown = requests
+            .GroupBy(r => r.Urgency)
+            .Select(g => new StatusCountDto { Status = g.Key.ToString(), Count = g.Count() })
+            .ToList();
+
+        var donorVerificationBreakdown = donorProfiles
+            .GroupBy(d => d.VerificationStatus)
+            .Select(g => new StatusCountDto { Status = g.Key.ToString(), Count = g.Count() })
+            .ToList();
+
+        var requestsByDistrictRaw = requests
+            .GroupBy(r => r.DistrictId)
+            .Select(g => new { DistrictId = g.Key, Count = g.Count() })
+            .OrderByDescending(x => x.Count)
+            .Take(10)
+            .ToList();
+
+        var donorsByDistrictRaw = donorProfiles
+            .GroupBy(d => d.DistrictId)
+            .Select(g => new { DistrictId = g.Key, Count = g.Count() })
+            .OrderByDescending(x => x.Count)
+            .Take(10)
+            .ToList();
+
+        var districtIds = requestsByDistrictRaw.Select(x => x.DistrictId)
+            .Concat(donorsByDistrictRaw.Select(x => x.DistrictId))
+            .Distinct()
+            .ToList();
+        var districts = await _districtRepo.ToListAsync(_districtRepo.Query().Where(d => districtIds.Contains(d.Id)));
+        var districtNames = districts.ToDictionary(d => d.Id, d => d.Name);
+
+        var requestsByDistrict = requestsByDistrictRaw
+            .Select(x => new DistrictCountDto { DistrictName = districtNames.GetValueOrDefault(x.DistrictId, "Unknown"), Count = x.Count })
+            .ToList();
+        var donorsByDistrict = donorsByDistrictRaw
+            .Select(x => new DistrictCountDto { DistrictName = districtNames.GetValueOrDefault(x.DistrictId, "Unknown"), Count = x.Count })
+            .ToList();
+
+        var requestsOverTime = FillDateSeries(
+            requests.Where(r => r.CreatedAt >= since)
+                .GroupBy(r => r.CreatedAt.Date)
+                .Select(g => (g.Key, g.Count())),
+            since);
+
+        var newDonorsOverTime = FillDateSeries(
+            donorProfiles.Where(d => d.CreatedAt >= since)
+                .GroupBy(d => d.CreatedAt.Date)
+                .Select(g => (g.Key, g.Count())),
+            since);
+
+        var totalRequests = requests.Count;
+        var fulfilledRequests = requests.Count(r => r.Status == RequestStatus.Fulfilled);
+        var fulfillmentRate = totalRequests == 0 ? 0 : Math.Round(fulfilledRequests * 100.0 / totalRequests, 1);
+
+        var respondedMatches = matches.Where(m => m.ContactedAt != null && m.RespondedAt != null).ToList();
+        double? avgResponseHours = respondedMatches.Count == 0
+            ? null
+            : Math.Round(respondedMatches.Average(m => (m.RespondedAt!.Value - m.ContactedAt!.Value).TotalHours), 1);
+
+        return new AdminAnalyticsDto
+        {
+            BloodTypeDistribution = bloodTypeDistribution,
+            RequestStatusBreakdown = requestStatusBreakdown,
+            UrgencyBreakdown = urgencyBreakdown,
+            DonorVerificationBreakdown = donorVerificationBreakdown,
+            RequestsByDistrict = requestsByDistrict,
+            DonorsByDistrict = donorsByDistrict,
+            RequestsOverTime = requestsOverTime,
+            NewDonorsOverTime = newDonorsOverTime,
+            FulfillmentRatePercent = fulfillmentRate,
+            AverageDonorResponseHours = avgResponseHours,
+        };
+    }
+
+    private static List<TimeSeriesPointDto> FillDateSeries(IEnumerable<(DateTime Date, int Count)> raw, DateTime since)
+    {
+        var lookup = raw.ToDictionary(x => x.Date.Date, x => x.Count);
+        var result = new List<TimeSeriesPointDto>();
+        for (var day = since.Date; day <= DateTime.UtcNow.Date; day = day.AddDays(1))
+        {
+            result.Add(new TimeSeriesPointDto { Date = day, Count = lookup.GetValueOrDefault(day, 0) });
+        }
+        return result;
     }
 
     public async Task<IReadOnlyList<AdminUserDto>> GetUsersAsync(string? search, UserRole? role, int page = 1, int pageSize = 20)

@@ -7,5 +7,6 @@ public enum NotificationType
     DonorAccepted,
     DonorDeclined,
     ProfileReminder,
+    Availability,
     System
 }

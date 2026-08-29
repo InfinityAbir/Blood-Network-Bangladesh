@@ -1,31 +1,35 @@
 # Blood Network Bangladesh - Render Deployment
 
-## Step 1: Create PostgreSQL Database
-1. Render Dashboard → **New +** → **PostgreSQL**
-2. Name: `blood-network-db`
-3. Plan: **Free**
-4. Database Name: `bloodnetwork`
-5. Note the **Internal Database URL** (copy it)
+## Step 1 + 2: Database + API service — via Blueprint (`render.yaml`)
 
-## Step 2: Create API Web Service
-1. Render Dashboard → **New +** → **Web Service**
+The database and API web service are now IaC-managed by `render.yaml` at the repo root,
+instead of being clicked together by hand. This is what pins the API to a **single
+instance** and generates `Jwt__Secret` **exactly once**, which is what was causing
+`signature key not found` 401s after scaling (the old manual setup had no instance-count
+guardrail and the secret was one dashboard click away from being silently regenerated).
+
+1. Render Dashboard → **New +** → **Blueprint**
 2. Connect GitHub repo: `InfinityAbir/Blood-Network-Bangladesh`
-3. Settings:
-   - **Name:** `blood-network-api`
-   - **Runtime:** `Docker`
-   - **Port:** `8080`
-   - **Health Check Path:** `/health`
-4. Environment Variables:
-   ```
-   ASPNETCORE_ENVIRONMENT = Production
-   ASPNETCORE_URLS = http://+:8080
-   ConnectionStrings__DefaultConnection = (paste Internal Database URL from Step 1)
-   Jwt__Secret = (click Generate - any random string 32+ chars)
-   Jwt__Issuer = BloodNetworkBangladesh
-   Jwt__Audience = BloodNetworkBangladesh
-   Jwt__ExpirationInMinutes = 60
-   ```
-5. Click **Create Web Service**
+3. Render detects `render.yaml`, shows a preview of the `blood-network-db` database and
+   `blood-network-api` web service it's about to create — review the diff before
+   confirming (this preview is also how you validate the YAML if you ever edit it).
+4. Click **Apply** / **Create New Resources**. Render provisions the DB, then the API
+   service, wiring `ConnectionStrings__DefaultConnection` from the DB automatically and
+   generating `Jwt__Secret` once.
+5. After the first sync, set the one secret marked `sync: false` in the dashboard
+   (API service → Environment): `GroqApi__ApiKey`.
+
+**Never do these again once the Blueprint is applied:**
+- Don't click "Generate" on `Jwt__Secret` in the dashboard — it's now blueprint-managed
+  and persists across redeploys on its own. Regenerating it invalidates every live
+  session's access token instantly.
+- Don't create a second `blood-network-api` web service (e.g. for blue/green) without
+  also pointing it at the *same* `Jwt__Secret` value — two services each generating
+  their own secret is the other way this bug reappears.
+- Don't hand-edit the instance count outside `render.yaml`'s `numInstances: 1` — if this
+  API ever needs to scale horizontally, all instances must still share one env-var-backed
+  secret (already true for a single Render service), just don't split it into multiple
+  services.
 
 ## Step 3: Create Frontend Static Site
 1. Render Dashboard → **New +** → **Static Site**
@@ -54,8 +58,26 @@
 7. Click **Create Static Site**
 
 ## Step 4: Update API CORS
-After the frontend is deployed, go back to the API service → Environment Variables and add:
-```
-AllowedOrigins = ["https://blood-network-frontend.onrender.com"]
-```
-Then manually redeploy the API service.
+`render.yaml` already sets `AllowedOrigins` to `https://blood-network-frontend.onrender.com`.
+Only touch this if your frontend ends up on a different Render URL — update the value in
+`render.yaml` (preferred, keeps it version-controlled) or override it directly on the API
+service's Environment tab, then redeploy.
+
+## Database backups
+
+Render's **free** Postgres plan (`blood-network-db`) has no automated backups and the
+database itself **expires ~30 days after creation** unless upgraded to a paid plan —
+this is separate from the JWT issue above but is the other silent-data-loss risk on this
+stack. Two ways to cover it:
+
+- **Upgrade the plan** (Starter or above) once there's real user data — paid plans get
+  daily automated backups with point-in-time recovery, no extra scripting needed.
+- **Manual/scheduled `pg_dump`** in the meantime — run from anywhere with network access
+  to the DB's *External* Database URL (found on the database's Render dashboard page):
+  ```bash
+  pg_dump "$EXTERNAL_DATABASE_URL" -Fc -f "bloodnetwork-$(date +%F).dump"
+  ```
+  Restore with `pg_restore -d "$TARGET_DATABASE_URL" bloodnetwork-YYYY-MM-DD.dump`. Store
+  the dump somewhere durable (not just the machine that ran the command) and repeat on a
+  schedule (a weekly cron/GitHub Actions job, or just a calendar reminder pre-launch)
+  until the plan is upgraded.

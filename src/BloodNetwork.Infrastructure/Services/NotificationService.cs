@@ -26,7 +26,7 @@ public class NotificationService : INotificationService
         _broadcaster = broadcaster;
     }
 
-    public async Task SendNotificationAsync(Guid userId, string title, string message, NotificationType type, Guid? relatedEntityId = null)
+    public async Task SendNotificationAsync(Guid userId, string title, string message, NotificationType type, Guid? relatedEntityId = null, string? metadata = null)
     {
         var notification = new Notification
         {
@@ -35,6 +35,7 @@ public class NotificationService : INotificationService
             Title = title,
             Message = message,
             RelatedEntityId = relatedEntityId,
+            Metadata = metadata,
             IsRead = false
         };
 
@@ -46,12 +47,12 @@ public class NotificationService : INotificationService
         if (_broadcaster != null)
         {
             var count = await _notificationRepo.CountAsync(n => n.UserId == userId && !n.IsRead);
-            await _broadcaster.BroadcastNotificationAsync(userId, title, message, type.ToString(), relatedEntityId);
+            await _broadcaster.BroadcastNotificationAsync(userId, title, message, type.ToString(), relatedEntityId, metadata);
             await _broadcaster.BroadcastUnreadCountAsync(userId, count);
         }
     }
 
-    public async Task SendBulkNotificationAsync(IEnumerable<Guid> userIds, string title, string message, NotificationType type, Guid? relatedEntityId = null)
+    public async Task SendBulkNotificationAsync(IEnumerable<Guid> userIds, string title, string message, NotificationType type, Guid? relatedEntityId = null, string? metadata = null)
     {
         var userIdList = userIds.ToList();
         foreach (var userId in userIdList)
@@ -63,6 +64,7 @@ public class NotificationService : INotificationService
                 Title = title,
                 Message = message,
                 RelatedEntityId = relatedEntityId,
+                Metadata = metadata,
                 IsRead = false
             };
 
@@ -77,20 +79,22 @@ public class NotificationService : INotificationService
             foreach (var userId in userIdList)
             {
                 var count = await _notificationRepo.CountAsync(n => n.UserId == userId && !n.IsRead);
-                await _broadcaster.BroadcastNotificationAsync(userId, title, message, type.ToString(), relatedEntityId);
+                await _broadcaster.BroadcastNotificationAsync(userId, title, message, type.ToString(), relatedEntityId, metadata);
                 await _broadcaster.BroadcastUnreadCountAsync(userId, count);
             }
         }
     }
 
-    public async Task<IReadOnlyList<NotificationDto>> GetUserNotificationsAsync(Guid userId, int page = 1, int pageSize = 20)
+    public async Task<IReadOnlyList<NotificationDto>> GetUserNotificationsAsync(Guid userId, int page = 1, int pageSize = 20, NotificationType? type = null)
     {
         // NOTE: Ideally push OrderBy/Skip/Take to DB via IRepository with IQueryable or paginated Find.
         // Current repo returns IReadOnlyList; filtering at DB via predicate but ordering/paging in memory.
         // Clamp pagination to avoid excessive memory load.
         page = Math.Max(page, 1);
         pageSize = Math.Clamp(pageSize, 1, 50);
-        var allNotifications = await _notificationRepo.FindAsync(n => n.UserId == userId);
+        var allNotifications = type.HasValue
+            ? await _notificationRepo.FindAsync(n => n.UserId == userId && n.Type == type.Value)
+            : await _notificationRepo.FindAsync(n => n.UserId == userId);
         return allNotifications
             .OrderByDescending(n => n.CreatedAt)
             .Skip((page - 1) * pageSize)
@@ -154,7 +158,8 @@ public class NotificationService : INotificationService
             RelatedEntityId = notification.RelatedEntityId,
             IsRead = notification.IsRead,
             ReadAt = notification.ReadAt,
-            CreatedAt = notification.CreatedAt
+            CreatedAt = notification.CreatedAt,
+            Metadata = notification.Metadata
         };
     }
 }

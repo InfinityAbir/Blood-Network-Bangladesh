@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using BloodNetwork.Application.DTOs;
 using BloodNetwork.Application.Interfaces;
+using BloodNetwork.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -20,12 +21,12 @@ public class NotificationsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetNotifications([FromQuery] int page = 1, [FromQuery][Range(1, 50)] int pageSize = 20)
+    public async Task<IActionResult> GetNotifications([FromQuery] int page = 1, [FromQuery][Range(1, 50)] int pageSize = 20, [FromQuery] NotificationType? type = null)
     {
         var userId = GetUserId();
         if (userId == null) return Unauthorized();
 
-        var notifications = await _notificationService.GetUserNotificationsAsync(userId.Value, page, pageSize);
+        var notifications = await _notificationService.GetUserNotificationsAsync(userId.Value, page, pageSize, type);
         return Ok(notifications);
     }
 

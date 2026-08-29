@@ -59,6 +59,64 @@ public class AdminAuditLogDto
     public DateTime CreatedAt { get; set; }
 }
 
+public class AdminAnalyticsDto
+{
+    public List<BloodTypeCountDto> BloodTypeDistribution { get; set; } = new();
+    public List<StatusCountDto> RequestStatusBreakdown { get; set; } = new();
+    public List<StatusCountDto> UrgencyBreakdown { get; set; } = new();
+    public List<StatusCountDto> DonorVerificationBreakdown { get; set; } = new();
+    public List<DistrictCountDto> RequestsByDistrict { get; set; } = new();
+    public List<DistrictCountDto> DonorsByDistrict { get; set; } = new();
+    public List<TimeSeriesPointDto> RequestsOverTime { get; set; } = new();
+    public List<TimeSeriesPointDto> NewDonorsOverTime { get; set; } = new();
+    public double FulfillmentRatePercent { get; set; }
+    public double? AverageDonorResponseHours { get; set; }
+}
+
+public class BloodTypeCountDto
+{
+    public BloodGroup BloodGroup { get; set; }
+    public int Count { get; set; }
+}
+
+public class StatusCountDto
+{
+    public string Status { get; set; } = string.Empty;
+    public int Count { get; set; }
+}
+
+public class DistrictCountDto
+{
+    public string DistrictName { get; set; } = string.Empty;
+    public int Count { get; set; }
+}
+
+public class TimeSeriesPointDto
+{
+    public DateTime Date { get; set; }
+    public int Count { get; set; }
+}
+
+public class DeveloperInfoDto
+{
+    public string Name { get; set; } = string.Empty;
+    public string Role { get; set; } = string.Empty;
+    public string? Email { get; set; }
+    public string? Phone { get; set; }
+    public string? LinkedInUrl { get; set; }
+    public string? GithubUrl { get; set; }
+}
+
+public class UpdateDeveloperInfoRequest
+{
+    public string Name { get; set; } = string.Empty;
+    public string Role { get; set; } = string.Empty;
+    public string? Email { get; set; }
+    public string? Phone { get; set; }
+    public string? LinkedInUrl { get; set; }
+    public string? GithubUrl { get; set; }
+}
+
 public class ToggleUserActiveRequest
 {
     public bool IsActive { get; set; }
