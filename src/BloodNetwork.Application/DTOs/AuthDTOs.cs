@@ -35,7 +35,8 @@ public record UserDto(
     UserRole Role,
     bool IsPhoneVerified,
     bool MustChangePassword,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    string? PhotoUrl = null
 );
 
 public record FirstLoginChangeRequest(
@@ -48,5 +49,6 @@ public record UpdateProfileRequest(
     string CurrentPassword,
     string? NewEmail = null,
     string? NewPhoneNumber = null,
-    string? NewPassword = null
+    string? NewPassword = null,
+    string? NewPhotoUrl = null
 );

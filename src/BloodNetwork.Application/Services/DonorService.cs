@@ -309,7 +309,8 @@ public class DonorService
                 item.Area,
                 item.AvailabilityStatus,
                 item.VerificationStatus,
-                distance
+                distance,
+                user?.PhotoUrl
             ));
         }
 

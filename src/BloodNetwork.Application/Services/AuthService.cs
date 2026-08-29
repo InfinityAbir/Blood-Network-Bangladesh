@@ -264,10 +264,23 @@ public class AuthService
         if (user is null)
             return Result<UserDto>.Failure("User not found");
 
-        if (!_passwordHasher.VerifyPassword(request.CurrentPassword, user.PasswordHash))
+        // A photo isn't a sensitive credential like email/phone/password, so changing only
+        // the photo doesn't force a password re-entry — but any of those still does.
+        var changingSensitiveField = !string.IsNullOrWhiteSpace(request.NewEmail)
+            || !string.IsNullOrWhiteSpace(request.NewPhoneNumber)
+            || !string.IsNullOrWhiteSpace(request.NewPassword);
+
+        if (changingSensitiveField && !_passwordHasher.VerifyPassword(request.CurrentPassword, user.PasswordHash))
             return Result<UserDto>.Failure("Current password is incorrect");
 
         bool hasChange = false;
+
+        if (request.NewPhotoUrl != null)
+        {
+            var trimmed = request.NewPhotoUrl.Trim();
+            user.PhotoUrl = trimmed.Length == 0 ? null : trimmed;
+            hasChange = true;
+        }
 
         if (!string.IsNullOrWhiteSpace(request.NewEmail) && request.NewEmail != user.Email)
         {
@@ -349,7 +362,8 @@ public class AuthService
             user.Role,
             user.IsPhoneVerified,
             user.MustChangePassword,
-            user.CreatedAt
+            user.CreatedAt,
+            user.PhotoUrl
         );
     }
 }

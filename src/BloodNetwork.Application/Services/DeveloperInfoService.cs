@@ -31,6 +31,7 @@ public class DeveloperInfoService : IDeveloperInfoService
         info.Phone = string.IsNullOrWhiteSpace(request.Phone) ? null : request.Phone.Trim();
         info.LinkedInUrl = string.IsNullOrWhiteSpace(request.LinkedInUrl) ? null : request.LinkedInUrl.Trim();
         info.GithubUrl = string.IsNullOrWhiteSpace(request.GithubUrl) ? null : request.GithubUrl.Trim();
+        info.PhotoUrl = string.IsNullOrWhiteSpace(request.PhotoUrl) ? null : request.PhotoUrl.Trim();
         info.UpdatedAt = DateTime.UtcNow;
         await _unitOfWork.SaveChangesAsync();
         return ToDto(info);
@@ -56,5 +57,6 @@ public class DeveloperInfoService : IDeveloperInfoService
         Phone = info.Phone,
         LinkedInUrl = info.LinkedInUrl,
         GithubUrl = info.GithubUrl,
+        PhotoUrl = info.PhotoUrl,
     };
 }

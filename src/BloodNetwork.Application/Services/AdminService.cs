@@ -399,7 +399,8 @@ public class AdminService : IAdminService
             IsPhoneVerified = user.IsPhoneVerified,
             LastLoginAt = user.LastLoginAt,
             CreatedAt = user.CreatedAt,
-            DonorVerificationStatus = profile?.VerificationStatus.ToString()
+            DonorVerificationStatus = profile?.VerificationStatus.ToString(),
+            PhotoUrl = user.PhotoUrl
         };
     }
 

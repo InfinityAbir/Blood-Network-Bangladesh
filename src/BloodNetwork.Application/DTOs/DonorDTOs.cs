@@ -58,7 +58,8 @@ public record PublicDonorDto(
     string? Area,
     AvailabilityStatus AvailabilityStatus,
     VerificationStatus VerificationStatus,
-    double? DistanceKm
+    double? DistanceKm,
+    string? PhotoUrl = null
 );
 
 public record DonorSearchRequest(

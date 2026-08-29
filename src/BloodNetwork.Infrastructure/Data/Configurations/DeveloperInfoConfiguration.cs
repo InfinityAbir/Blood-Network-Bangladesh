@@ -15,6 +15,7 @@ public class DeveloperInfoConfiguration : IEntityTypeConfiguration<DeveloperInfo
         builder.Property(d => d.Phone).HasMaxLength(30);
         builder.Property(d => d.LinkedInUrl).HasMaxLength(300);
         builder.Property(d => d.GithubUrl).HasMaxLength(300);
+        builder.Property(d => d.PhotoUrl).HasMaxLength(500);
 
         builder.HasData(new DeveloperInfo
         {
@@ -25,6 +26,7 @@ public class DeveloperInfoConfiguration : IEntityTypeConfiguration<DeveloperInfo
             Phone = "01701554707",
             LinkedInUrl = "https://www.linkedin.com/in/infinityabirhasan/",
             GithubUrl = "https://github.com/InfinityAbir",
+            PhotoUrl = "https://github.com/InfinityAbir.png",
             CreatedAt = new DateTime(2026, 8, 29, 0, 0, 0, DateTimeKind.Utc),
         });
     }

@@ -14,4 +14,5 @@ public class DeveloperInfo : BaseEntity
     public string? Phone { get; set; }
     public string? LinkedInUrl { get; set; }
     public string? GithubUrl { get; set; }
+    public string? PhotoUrl { get; set; }
 }

@@ -13,5 +13,6 @@ public class UpdateDeveloperInfoValidator : AbstractValidator<UpdateDeveloperInf
         RuleFor(x => x.Phone).MaximumLength(30);
         RuleFor(x => x.LinkedInUrl).MaximumLength(300);
         RuleFor(x => x.GithubUrl).MaximumLength(300);
+        RuleFor(x => x.PhotoUrl).MaximumLength(500);
     }
 }

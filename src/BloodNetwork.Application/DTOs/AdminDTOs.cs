@@ -30,6 +30,7 @@ public class AdminUserDto
     public DateTime? LastLoginAt { get; set; }
     public DateTime CreatedAt { get; set; }
     public string? DonorVerificationStatus { get; set; }
+    public string? PhotoUrl { get; set; }
 }
 
 public class AdminReportDto
@@ -105,6 +106,7 @@ public class DeveloperInfoDto
     public string? Phone { get; set; }
     public string? LinkedInUrl { get; set; }
     public string? GithubUrl { get; set; }
+    public string? PhotoUrl { get; set; }
 }
 
 public class UpdateDeveloperInfoRequest
@@ -115,6 +117,7 @@ public class UpdateDeveloperInfoRequest
     public string? Phone { get; set; }
     public string? LinkedInUrl { get; set; }
     public string? GithubUrl { get; set; }
+    public string? PhotoUrl { get; set; }
 }
 
 public class ToggleUserActiveRequest
