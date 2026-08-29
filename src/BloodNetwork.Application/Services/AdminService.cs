@@ -15,6 +15,7 @@ public class AdminService : IAdminService
     private readonly IRepository<Report> _reportRepo;
     private readonly IRepository<AuditLog> _auditLogRepo;
     private readonly IRepository<District> _districtRepo;
+    private readonly IRepository<EligibilityQuestion> _eligibilityQuestionRepo;
     private readonly IUnitOfWork _unitOfWork;
     private readonly INotificationService _notificationService;
 
@@ -26,6 +27,7 @@ public class AdminService : IAdminService
         IRepository<Report> reportRepo,
         IRepository<AuditLog> auditLogRepo,
         IRepository<District> districtRepo,
+        IRepository<EligibilityQuestion> eligibilityQuestionRepo,
         IUnitOfWork unitOfWork,
         INotificationService notificationService)
     {
@@ -36,6 +38,7 @@ public class AdminService : IAdminService
         _reportRepo = reportRepo;
         _auditLogRepo = auditLogRepo;
         _districtRepo = districtRepo;
+        _eligibilityQuestionRepo = eligibilityQuestionRepo;
         _unitOfWork = unitOfWork;
         _notificationService = notificationService;
     }
@@ -384,6 +387,92 @@ public class AdminService : IAdminService
         await _auditLogRepo.AddAsync(log);
         await _unitOfWork.SaveChangesAsync();
     }
+
+    public async Task<IReadOnlyList<AdminEligibilityQuestionDto>> GetEligibilityQuestionsAsync()
+    {
+        var questions = await _eligibilityQuestionRepo.ToListAsync(
+            _eligibilityQuestionRepo.Query().OrderBy(q => q.DisplayOrder));
+        return questions.Select(MapToEligibilityQuestionDto).ToList();
+    }
+
+    public async Task<AdminEligibilityQuestionDto> CreateEligibilityQuestionAsync(SaveEligibilityQuestionRequest request)
+    {
+        var question = new EligibilityQuestion();
+        ApplyEligibilityQuestionRequest(question, request);
+        await _eligibilityQuestionRepo.AddAsync(question);
+        await _unitOfWork.SaveChangesAsync();
+        return MapToEligibilityQuestionDto(question);
+    }
+
+    public async Task<AdminEligibilityQuestionDto?> UpdateEligibilityQuestionAsync(Guid id, SaveEligibilityQuestionRequest request)
+    {
+        var question = await _eligibilityQuestionRepo.GetByIdAsync(id);
+        if (question == null) return null;
+
+        ApplyEligibilityQuestionRequest(question, request);
+        question.UpdatedAt = DateTime.UtcNow;
+        await _unitOfWork.SaveChangesAsync();
+        return MapToEligibilityQuestionDto(question);
+    }
+
+    public async Task<AdminEligibilityQuestionDto?> ToggleEligibilityQuestionActiveAsync(Guid id, bool isActive)
+    {
+        var question = await _eligibilityQuestionRepo.GetByIdAsync(id);
+        if (question == null) return null;
+
+        question.IsActive = isActive;
+        question.UpdatedAt = DateTime.UtcNow;
+        await _unitOfWork.SaveChangesAsync();
+        return MapToEligibilityQuestionDto(question);
+    }
+
+    public async Task<bool> DeleteEligibilityQuestionAsync(Guid id)
+    {
+        var question = await _eligibilityQuestionRepo.GetByIdAsync(id);
+        if (question == null) return false;
+
+        await _eligibilityQuestionRepo.DeleteAsync(question);
+        await _unitOfWork.SaveChangesAsync();
+        return true;
+    }
+
+    private static void ApplyEligibilityQuestionRequest(EligibilityQuestion question, SaveEligibilityQuestionRequest request)
+    {
+        question.QuestionEn = request.QuestionEn;
+        question.QuestionBn = request.QuestionBn;
+        question.QuestionBanglish = request.QuestionBanglish;
+        question.QuestionType = request.QuestionType;
+        question.Unit = request.Unit;
+        question.MinValue = request.MinValue;
+        question.MaxValue = request.MaxValue;
+        question.PassOnYes = request.PassOnYes;
+        question.IsCritical = request.IsCritical;
+        question.DisplayOrder = request.DisplayOrder;
+        question.PassMessageEn = request.PassMessageEn;
+        question.PassMessageBn = request.PassMessageBn;
+        question.FailMessageEn = request.FailMessageEn;
+        question.FailMessageBn = request.FailMessageBn;
+    }
+
+    private static AdminEligibilityQuestionDto MapToEligibilityQuestionDto(EligibilityQuestion q) => new()
+    {
+        Id = q.Id,
+        QuestionEn = q.QuestionEn,
+        QuestionBn = q.QuestionBn,
+        QuestionBanglish = q.QuestionBanglish,
+        QuestionType = q.QuestionType,
+        Unit = q.Unit,
+        MinValue = q.MinValue,
+        MaxValue = q.MaxValue,
+        PassOnYes = q.PassOnYes,
+        IsCritical = q.IsCritical,
+        IsActive = q.IsActive,
+        DisplayOrder = q.DisplayOrder,
+        PassMessageEn = q.PassMessageEn,
+        PassMessageBn = q.PassMessageBn,
+        FailMessageEn = q.FailMessageEn,
+        FailMessageBn = q.FailMessageBn,
+    };
 
     private static AdminUserDto MapToUserDto(User user, DonorProfile? profile)
     {

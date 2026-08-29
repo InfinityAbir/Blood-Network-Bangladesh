@@ -50,3 +50,39 @@ export interface AdminAuditLog {
   metadata?: string;
   createdAt: string;
 }
+
+export interface AdminEligibilityQuestion {
+  id: string;
+  questionEn: string;
+  questionBn: string;
+  questionBanglish: string;
+  questionType: 'number' | 'yesno';
+  unit?: string;
+  minValue?: number;
+  maxValue?: number;
+  passOnYes?: boolean;
+  isCritical: boolean;
+  isActive: boolean;
+  displayOrder: number;
+  passMessageEn: string;
+  passMessageBn: string;
+  failMessageEn: string;
+  failMessageBn: string;
+}
+
+export interface SaveEligibilityQuestionRequest {
+  questionEn: string;
+  questionBn: string;
+  questionBanglish: string;
+  questionType: 'number' | 'yesno';
+  unit?: string;
+  minValue?: number;
+  maxValue?: number;
+  passOnYes?: boolean;
+  isCritical: boolean;
+  displayOrder: number;
+  passMessageEn: string;
+  passMessageBn: string;
+  failMessageEn: string;
+  failMessageBn: string;
+}

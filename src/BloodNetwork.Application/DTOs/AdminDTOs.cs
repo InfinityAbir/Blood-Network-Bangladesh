@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using BloodNetwork.Domain.Enums;
 
 namespace BloodNetwork.Application.DTOs;
@@ -134,4 +135,48 @@ public class ResolveReportRequest
 {
     public ReportStatus Status { get; set; }
     public string? Resolution { get; set; }
+}
+
+public class AdminEligibilityQuestionDto
+{
+    public Guid Id { get; set; }
+    public string QuestionEn { get; set; } = string.Empty;
+    public string QuestionBn { get; set; } = string.Empty;
+    public string QuestionBanglish { get; set; } = string.Empty;
+    public string QuestionType { get; set; } = string.Empty;
+    public string? Unit { get; set; }
+    public int? MinValue { get; set; }
+    public int? MaxValue { get; set; }
+    public bool? PassOnYes { get; set; }
+    public bool IsCritical { get; set; }
+    public bool IsActive { get; set; }
+    public int DisplayOrder { get; set; }
+    public string PassMessageEn { get; set; } = string.Empty;
+    public string PassMessageBn { get; set; } = string.Empty;
+    public string FailMessageEn { get; set; } = string.Empty;
+    public string FailMessageBn { get; set; } = string.Empty;
+}
+
+public class ToggleEligibilityQuestionActiveRequest
+{
+    public bool IsActive { get; set; }
+}
+
+public class SaveEligibilityQuestionRequest
+{
+    [Required] public string QuestionEn { get; set; } = string.Empty;
+    [Required] public string QuestionBn { get; set; } = string.Empty;
+    [Required] public string QuestionBanglish { get; set; } = string.Empty;
+    /// <summary>"number" or "yesno".</summary>
+    [Required] public string QuestionType { get; set; } = string.Empty;
+    public string? Unit { get; set; }
+    public int? MinValue { get; set; }
+    public int? MaxValue { get; set; }
+    public bool? PassOnYes { get; set; }
+    public bool IsCritical { get; set; }
+    public int DisplayOrder { get; set; }
+    [Required] public string PassMessageEn { get; set; } = string.Empty;
+    [Required] public string PassMessageBn { get; set; } = string.Empty;
+    [Required] public string FailMessageEn { get; set; } = string.Empty;
+    [Required] public string FailMessageBn { get; set; } = string.Empty;
 }

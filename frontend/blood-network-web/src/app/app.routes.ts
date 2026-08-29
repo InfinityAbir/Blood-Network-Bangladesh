@@ -73,6 +73,11 @@ export const routes: Routes = [
     canActivate: [adminGuard]
   },
   {
+    path: 'admin/eligibility-questions',
+    loadComponent: () => import('./features/admin/eligibility-questions/eligibility-questions.component').then(m => m.AdminEligibilityQuestionsComponent),
+    canActivate: [adminGuard]
+  },
+  {
     path: 'settings',
     loadComponent: () => import('./features/shared/settings/settings.component').then(m => m.UserSettingsComponent),
     canActivate: [authGuard]

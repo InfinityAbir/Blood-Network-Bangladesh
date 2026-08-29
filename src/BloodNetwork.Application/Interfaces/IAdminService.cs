@@ -17,4 +17,10 @@ public interface IAdminService
     Task<IReadOnlyList<AdminAuditLogDto>> GetAuditLogsAsync(string? entityType, int page = 1, int pageSize = 20);
     Task<int> GetAuditLogCountAsync(string? entityType);
     Task LogActionAsync(Guid? userId, string action, string entityType, Guid? entityId, string? ipAddress, string? metadata);
+
+    Task<IReadOnlyList<AdminEligibilityQuestionDto>> GetEligibilityQuestionsAsync();
+    Task<AdminEligibilityQuestionDto> CreateEligibilityQuestionAsync(SaveEligibilityQuestionRequest request);
+    Task<AdminEligibilityQuestionDto?> UpdateEligibilityQuestionAsync(Guid id, SaveEligibilityQuestionRequest request);
+    Task<AdminEligibilityQuestionDto?> ToggleEligibilityQuestionActiveAsync(Guid id, bool isActive);
+    Task<bool> DeleteEligibilityQuestionAsync(Guid id);
 }

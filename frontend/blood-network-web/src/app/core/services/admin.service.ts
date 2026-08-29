@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { AdminDashboardStats, AdminUser, AdminReport, AdminAuditLog } from '../models/admin';
+import { AdminDashboardStats, AdminUser, AdminReport, AdminAuditLog, AdminEligibilityQuestion, SaveEligibilityQuestionRequest } from '../models/admin';
 import { PagedResult } from '../models/paged-result';
 
 @Injectable({
@@ -52,5 +52,25 @@ export class AdminService {
     if (filters.page) params = params.set('page', filters.page.toString());
     if (filters.pageSize) params = params.set('pageSize', filters.pageSize.toString());
     return this.http.get<PagedResult<AdminAuditLog>>(`${this.apiUrl}/audit-logs`, { params });
+  }
+
+  getEligibilityQuestions(): Observable<AdminEligibilityQuestion[]> {
+    return this.http.get<AdminEligibilityQuestion[]>(`${this.apiUrl}/eligibility-questions`);
+  }
+
+  createEligibilityQuestion(request: SaveEligibilityQuestionRequest): Observable<AdminEligibilityQuestion> {
+    return this.http.post<AdminEligibilityQuestion>(`${this.apiUrl}/eligibility-questions`, request);
+  }
+
+  updateEligibilityQuestion(id: string, request: SaveEligibilityQuestionRequest): Observable<AdminEligibilityQuestion> {
+    return this.http.put<AdminEligibilityQuestion>(`${this.apiUrl}/eligibility-questions/${id}`, request);
+  }
+
+  toggleEligibilityQuestionActive(id: string, isActive: boolean): Observable<AdminEligibilityQuestion> {
+    return this.http.post<AdminEligibilityQuestion>(`${this.apiUrl}/eligibility-questions/${id}/toggle-active`, { isActive });
+  }
+
+  deleteEligibilityQuestion(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/eligibility-questions/${id}`);
   }
 }

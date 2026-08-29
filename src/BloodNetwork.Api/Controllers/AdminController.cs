@@ -122,6 +122,70 @@ public class AdminController : ControllerBase
         });
     }
 
+    [HttpGet("eligibility-questions")]
+    public async Task<IActionResult> GetEligibilityQuestions()
+    {
+        var questions = await _adminService.GetEligibilityQuestionsAsync();
+        return Ok(questions);
+    }
+
+    [HttpPost("eligibility-questions")]
+    public async Task<IActionResult> CreateEligibilityQuestion([FromBody] SaveEligibilityQuestionRequest request)
+    {
+        if (request.QuestionType != "number" && request.QuestionType != "yesno")
+            return BadRequest("questionType must be 'number' or 'yesno'");
+
+        var result = await _adminService.CreateEligibilityQuestionAsync(request);
+
+        await _adminService.LogActionAsync(
+            GetUserId(), "CreateEligibilityQuestion", "EligibilityQuestion", result.Id,
+            HttpContext.Connection.RemoteIpAddress?.ToString(), $"Created question: {result.QuestionEn}");
+
+        return Ok(result);
+    }
+
+    [HttpPut("eligibility-questions/{questionId}")]
+    public async Task<IActionResult> UpdateEligibilityQuestion(Guid questionId, [FromBody] SaveEligibilityQuestionRequest request)
+    {
+        if (request.QuestionType != "number" && request.QuestionType != "yesno")
+            return BadRequest("questionType must be 'number' or 'yesno'");
+
+        var result = await _adminService.UpdateEligibilityQuestionAsync(questionId, request);
+        if (result == null) return NotFound();
+
+        await _adminService.LogActionAsync(
+            GetUserId(), "UpdateEligibilityQuestion", "EligibilityQuestion", questionId,
+            HttpContext.Connection.RemoteIpAddress?.ToString(), $"Updated question: {result.QuestionEn}");
+
+        return Ok(result);
+    }
+
+    [HttpPost("eligibility-questions/{questionId}/toggle-active")]
+    public async Task<IActionResult> ToggleEligibilityQuestionActive(Guid questionId, [FromBody] ToggleEligibilityQuestionActiveRequest request)
+    {
+        var result = await _adminService.ToggleEligibilityQuestionActiveAsync(questionId, request.IsActive);
+        if (result == null) return NotFound();
+
+        await _adminService.LogActionAsync(
+            GetUserId(), "ToggleEligibilityQuestionActive", "EligibilityQuestion", questionId,
+            HttpContext.Connection.RemoteIpAddress?.ToString(), $"Set active={request.IsActive} for question {questionId}");
+
+        return Ok(result);
+    }
+
+    [HttpDelete("eligibility-questions/{questionId}")]
+    public async Task<IActionResult> DeleteEligibilityQuestion(Guid questionId)
+    {
+        var deleted = await _adminService.DeleteEligibilityQuestionAsync(questionId);
+        if (!deleted) return NotFound();
+
+        await _adminService.LogActionAsync(
+            GetUserId(), "DeleteEligibilityQuestion", "EligibilityQuestion", questionId,
+            HttpContext.Connection.RemoteIpAddress?.ToString(), $"Deleted question {questionId}");
+
+        return NoContent();
+    }
+
     private Guid? GetUserId()
     {
         var claim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst("sub") ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub);

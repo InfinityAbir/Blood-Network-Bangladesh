@@ -31,17 +31,17 @@ public class AIController : ControllerBase
 
     [HttpGet("eligibility/questions")]
     [AllowAnonymous]
-    public IActionResult GetEligibilityQuestions()
+    public async Task<IActionResult> GetEligibilityQuestions()
     {
-        var questions = _eligibilityService.GetQuestions();
+        var questions = await _eligibilityService.GetQuestionsAsync();
         return Ok(questions);
     }
 
     [HttpPost("eligibility/check")]
     [AllowAnonymous]
-    public IActionResult CheckEligibility([FromBody] List<EligibilityAnswerDto> answers)
+    public async Task<IActionResult> CheckEligibility([FromBody] List<EligibilityAnswerDto> answers)
     {
-        var result = _eligibilityService.EvaluateAnswers(answers);
+        var result = await _eligibilityService.EvaluateAnswersAsync(answers);
         return Ok(result);
     }
 

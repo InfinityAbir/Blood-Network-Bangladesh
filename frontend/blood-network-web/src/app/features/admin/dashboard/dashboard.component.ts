@@ -133,6 +133,9 @@ import { CountUpDirective } from '../../../shared/directives/count-up.directive'
           <a mat-raised-button routerLink="/admin/settings" routerLinkActive="active-link" class="bgn-press">
             <mat-icon>settings</mat-icon> Settings
           </a>
+          <a mat-raised-button routerLink="/admin/eligibility-questions" routerLinkActive="active-link" class="bgn-press">
+            <mat-icon>fact_check</mat-icon> Eligibility Questions
+          </a>
         </div>
       }
     </main>

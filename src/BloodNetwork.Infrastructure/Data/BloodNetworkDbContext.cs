@@ -33,11 +33,13 @@ public class BloodNetworkDbContext : DbContext
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<DeveloperInfo> DeveloperInfo => Set<DeveloperInfo>();
+    public DbSet<EligibilityQuestion> EligibilityQuestions => Set<EligibilityQuestion>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(BloodNetworkDbContext).Assembly);
         SeedLocations(modelBuilder);
+        modelBuilder.Entity<EligibilityQuestion>().HasData(EligibilityQuestionSeed.GetQuestions());
         ConfigureIndexes(modelBuilder);
         ConfigureSoftDeleteFilters(modelBuilder);
         ConfigureUtcDateTimes(modelBuilder);
@@ -91,6 +93,7 @@ public class BloodNetworkDbContext : DbContext
         modelBuilder.Entity<District>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<Upazila>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<DeveloperInfo>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<EligibilityQuestion>().HasQueryFilter(e => !e.IsDeleted);
     }
 
     private static void ConfigureIndexes(ModelBuilder modelBuilder)

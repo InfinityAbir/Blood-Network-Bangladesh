@@ -16,18 +16,18 @@ import { environment } from '../../../../environments/environment';
 import { RevealDirective } from '../../directives/reveal.directive';
 
 interface EligibilityQuestion {
-  id: number;
+  id: string;
   questionBn: string;
   questionEn: string;
   questionBanglish: string;
   questionType: 'yesno' | 'number';
   unit?: string;
-  minValue: number;
-  maxValue: number;
+  minValue?: number;
+  maxValue?: number;
 }
 
 interface EligibilityCheck {
-  questionId: number;
+  questionId: string;
   passed: boolean;
   message: string;
   messageBn: string;
@@ -124,8 +124,8 @@ interface EligibilityResult {
                   <input
                     matInput
                     type="number"
-                    [min]="currentQuestion().minValue"
-                    [max]="currentQuestion().maxValue"
+                    [min]="currentQuestion().minValue ?? null"
+                    [max]="currentQuestion().maxValue ?? null"
                     [(ngModel)]="answers()[qKey(currentQuestion())]"
                     [placeholder]="currentQuestion().unit ?? ''"
                   />
@@ -133,7 +133,7 @@ interface EligibilityResult {
                     <mat-hint>{{ currentQuestion().unit }}</mat-hint>
                   }
                   @if (answers()[qKey(currentQuestion())] !== undefined && answers()[qKey(currentQuestion())] !== '' && isNumberOutOfRange()) {
-                    <mat-error>Value must be between {{ currentQuestion().minValue }} and {{ currentQuestion().maxValue }} {{ currentQuestion().unit ?? '' }}</mat-error>
+                    <mat-error>Value must be {{ rangeHint(currentQuestion()) }} {{ currentQuestion().unit ?? '' }}</mat-error>
                   }
                 </mat-form-field>
               }
@@ -208,7 +208,7 @@ interface EligibilityResult {
 
             <div class="disclaimer-box bgn-fade-up">
               <mat-icon>info</mat-icon>
-              <p>This is a self-assessment only. Please consult a medical professional for definitive eligibility. / এটি শুধুমাত্র আত্মমূল্যায়ন। চূড়ান্ত যোগ্যতার জন্য একজন চিকিৎসকের সাথে পরামর্শ করুন।</p>
+              <p>This self-check is not a medical diagnosis and isn't approved by a medical authority. For an accurate assessment, please visit a hospital or consult a doctor. / এটি কোনো চিকিৎসা নির্ণয় নয় এবং কোনো চিকিৎসা কর্তৃপক্ষ কর্তৃক অনুমোদিত নয়। সঠিক মূল্যায়নের জন্য দয়া করে হাসপাতালে যান বা একজন চিকিৎসকের পরামর্শ নিন।</p>
             </div>
 
             <div class="result-actions">
@@ -463,7 +463,7 @@ export class EligibilityCheckComponent {
     if (q.questionType === 'number') {
       if (val === undefined || val === null || val === '') return false;
       const num = Number(val);
-      return !isNaN(num) && num >= q.minValue && num <= q.maxValue;
+      return !isNaN(num) && this.withinRange(num, q);
     }
     return false;
   }
@@ -474,7 +474,20 @@ export class EligibilityCheckComponent {
     const val = this.answers()[String(q.id)];
     if (val === undefined || val === null || val === '') return false;
     const num = Number(val);
-    return isNaN(num) || num < q.minValue || num > q.maxValue;
+    return isNaN(num) || !this.withinRange(num, q);
+  }
+
+  private withinRange(num: number, q: EligibilityQuestion): boolean {
+    if (q.minValue !== undefined && num < q.minValue) return false;
+    if (q.maxValue !== undefined && num > q.maxValue) return false;
+    return true;
+  }
+
+  rangeHint(q: EligibilityQuestion): string {
+    if (q.minValue !== undefined && q.maxValue !== undefined) return `between ${q.minValue} and ${q.maxValue}`;
+    if (q.minValue !== undefined) return `at least ${q.minValue}`;
+    if (q.maxValue !== undefined) return `at most ${q.maxValue}`;
+    return '';
   }
 
   next(): void {
