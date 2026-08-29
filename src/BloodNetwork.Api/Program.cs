@@ -16,6 +16,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
+using Npgsql;
 using Serilog;
 
 var builder = WebApplication.CreateEmptyBuilder(new WebApplicationOptions
@@ -49,8 +50,9 @@ if (builder.Environment.IsEnvironment("Testing"))
 }
 else
 {
+    var connectionString = NormalizeConnectionString(builder.Configuration.GetConnectionString("DefaultConnection"));
     builder.Services.AddDbContext<BloodNetworkDbContext>(options =>
-        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+        options.UseNpgsql(connectionString));
 }
 
 builder.Services.AddMemoryCache();
@@ -326,4 +328,35 @@ catch (Exception ex)
 finally
 {
     Log.CloseAndFlush();
+}
+
+// Render's `fromDatabase: property: connectionString` yields a URI
+// (postgres://user:pass@host:port/db), but Npgsql needs keyvalue format
+// (Host=...;Username=...). Convert when we detect the URI form.
+static string? NormalizeConnectionString(string? value)
+{
+    if (string.IsNullOrWhiteSpace(value))
+    {
+        return value;
+    }
+
+    if (!value.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase) &&
+        !value.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase))
+    {
+        return value;
+    }
+
+    var uri = new Uri(value);
+    var userInfo = uri.UserInfo.Split(':', 2);
+
+    var npgsqlBuilder = new NpgsqlConnectionStringBuilder
+    {
+        Host = uri.Host,
+        Port = uri.Port > 0 ? uri.Port : 5432,
+        Database = uri.AbsolutePath.TrimStart('/'),
+        Username = Uri.UnescapeDataString(userInfo[0]),
+        Password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : null,
+    };
+
+    return npgsqlBuilder.ConnectionString;
 }
