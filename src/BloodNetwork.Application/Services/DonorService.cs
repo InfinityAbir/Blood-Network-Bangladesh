@@ -86,14 +86,14 @@ public class DonorService
                 UserId = userId,
                 BloodGroup = request.BloodGroup,
                 Gender = request.Gender,
-                DateOfBirth = ToUtc(request.DateOfBirth),
+                DateOfBirth = request.DateOfBirth,
                 DistrictId = request.DistrictId,
                 UpazilaId = request.UpazilaId,
                 Area = request.Area,
                 CustomAddress = request.CustomAddress,
                 Latitude = request.Latitude,
                 Longitude = request.Longitude,
-                LastDonationDate = ToUtc(request.LastDonationDate),
+                LastDonationDate = request.LastDonationDate,
                 AvailabilityStatus = AvailabilityStatus.Available,
                 VerificationStatus = VerificationStatus.Unverified
             };
@@ -137,14 +137,14 @@ public class DonorService
 
             profile.BloodGroup = request.BloodGroup;
             profile.Gender = request.Gender;
-            profile.DateOfBirth = ToUtc(request.DateOfBirth);
+            profile.DateOfBirth = request.DateOfBirth;
             profile.DistrictId = request.DistrictId;
             profile.UpazilaId = request.UpazilaId;
             profile.Area = request.Area;
             profile.CustomAddress = request.CustomAddress;
             profile.Latitude = request.Latitude;
             profile.Longitude = request.Longitude;
-            profile.LastDonationDate = ToUtc(request.LastDonationDate);
+            profile.LastDonationDate = request.LastDonationDate;
             profile.UpdatedAt = DateTime.UtcNow;
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -414,14 +414,4 @@ public class DonorService
         );
     }
 
-    private static DateTime? ToUtc(DateTime? value)
-    {
-        if (value is null)
-            return null;
-
-        if (value.Value.Kind == DateTimeKind.Unspecified)
-            return DateTime.SpecifyKind(value.Value, DateTimeKind.Utc);
-
-        return value.Value.ToUniversalTime();
-    }
 }

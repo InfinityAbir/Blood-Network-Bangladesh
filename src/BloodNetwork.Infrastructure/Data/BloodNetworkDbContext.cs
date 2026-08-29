@@ -2,6 +2,7 @@ using BloodNetwork.Domain.Entities;
 using BloodNetwork.Infrastructure.Data.Seeds;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace BloodNetwork.Infrastructure.Data;
 
@@ -39,7 +40,37 @@ public class BloodNetworkDbContext : DbContext
         SeedLocations(modelBuilder);
         ConfigureIndexes(modelBuilder);
         ConfigureSoftDeleteFilters(modelBuilder);
+        ConfigureUtcDateTimes(modelBuilder);
         base.OnModelCreating(modelBuilder);
+    }
+
+    // Npgsql only accepts Kind=Utc DateTimes for "timestamp with time zone" columns. Rather than
+    // relying on every service to remember to stamp client-supplied dates as UTC before saving
+    // (which is exactly how the RequiredBy 500 slipped through), force it at the model level for
+    // every DateTime/DateTime? property, current and future, on read and write alike.
+    private static DateTime ToUtc(DateTime v) =>
+        v.Kind == DateTimeKind.Unspecified ? DateTime.SpecifyKind(v, DateTimeKind.Utc) : v.ToUniversalTime();
+
+    private static readonly ValueConverter<DateTime, DateTime> UtcConverter = new(
+        v => ToUtc(v),
+        v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+
+    private static readonly ValueConverter<DateTime?, DateTime?> UtcConverterNullable = new(
+        v => v.HasValue ? ToUtc(v.Value) : v,
+        v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : v);
+
+    private static void ConfigureUtcDateTimes(ModelBuilder modelBuilder)
+    {
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            foreach (var property in entityType.GetProperties())
+            {
+                if (property.ClrType == typeof(DateTime))
+                    property.SetValueConverter(UtcConverter);
+                else if (property.ClrType == typeof(DateTime?))
+                    property.SetValueConverter(UtcConverterNullable);
+            }
+        }
     }
 
     private static void ConfigureSoftDeleteFilters(ModelBuilder modelBuilder)
