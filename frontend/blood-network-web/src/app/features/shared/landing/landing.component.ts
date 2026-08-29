@@ -217,15 +217,20 @@ import { CountUpDirective } from '../../../shared/directives/count-up.directive'
     .hero-accent { color: #ffd2d2; }
     .tagline { font-size: 1.15rem; max-width: 620px; margin: 0 auto 32px; opacity: 0.94; }
     .cta-buttons { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-bottom: 18px; align-items: center; }
-    .cta { height: 52px !important; border-radius: var(--bgn-radius-pill) !important; font-size: 1rem !important; font-weight: 600 !important; padding: 0 28px !important; white-space: nowrap !important; }
+    .cta { height: 52px !important; border-radius: var(--bgn-radius-pill) !important; font-size: 1rem !important; font-weight: 600 !important; padding: 0 28px !important; white-space: nowrap !important; transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, background-color 0.2s ease-out; }
     .cta-inner { display: inline-flex; flex-direction: row; flex-wrap: nowrap; align-items: center; justify-content: center; gap: 8px; line-height: 1; white-space: nowrap; }
-    .cta-inner .bgn-icon { display: inline-block; flex-shrink: 0; }
+    .cta-inner .bgn-icon { display: inline-block; flex-shrink: 0; transition: transform 0.2s ease-out; }
     .cta-need { background: #fff !important; color: #b71c1c !important; }
+    .cta-need:hover { transform: translateY(-3px); box-shadow: 0 10px 24px -6px rgba(0,0,0,0.35); }
+    .cta-need:hover .bgn-icon { transform: scale(1.15); }
     .cta-donate { background: rgba(255,255,255,0.16) !important; color: #fff !important; border: 1px solid rgba(255,255,255,0.4) !important; }
-    .ghost-link { color: #fff !important; opacity: 1 !important; font-weight: 500 !important; background: rgba(255,255,255,0.14) !important; border: 1px solid rgba(255,255,255,0.28) !important; border-radius: var(--bgn-radius-pill) !important; backdrop-filter: blur(4px); }
-    .ghost-link:hover { background: rgba(255,255,255,0.22) !important; }
+    .cta-donate:hover { background: rgba(255,255,255,0.26) !important; transform: translateY(-3px); box-shadow: 0 10px 24px -6px rgba(0,0,0,0.3); }
+    .cta-donate:hover .bgn-icon { transform: scale(1.15); }
+    .ghost-link { color: #fff !important; opacity: 1 !important; font-weight: 500 !important; background: rgba(255,255,255,0.14) !important; border: 1px solid rgba(255,255,255,0.28) !important; border-radius: var(--bgn-radius-pill) !important; backdrop-filter: blur(4px); transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, background-color 0.2s ease-out; }
+    .ghost-link:hover { background: rgba(255,255,255,0.24) !important; transform: translateY(-2px); box-shadow: 0 8px 20px -6px rgba(0,0,0,0.3); }
     .ghost-link-inner { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; line-height: 1; }
-    .ghost-link-inner .bgn-icon { display: inline-block; flex-shrink: 0; }
+    .ghost-link-inner .bgn-icon { display: inline-block; flex-shrink: 0; transition: transform 0.2s ease-out; }
+    .ghost-link:hover .ghost-link-inner .bgn-icon { transform: scale(1.1) rotate(-6deg); }
 
     /* STATS */
     .stats {
