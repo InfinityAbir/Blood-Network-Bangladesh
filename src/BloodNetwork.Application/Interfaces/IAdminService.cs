@@ -13,6 +13,8 @@ public interface IAdminService
     Task<AdminUserDto?> VerifyDonorAsync(Guid userId, VerificationStatus status);
     Task<IReadOnlyList<AdminReportDto>> GetReportsAsync(ReportStatus? status, int page = 1, int pageSize = 10);
     Task<int> GetReportCountAsync(ReportStatus? status);
+    Task<IReadOnlyList<BloodRequestMatchDto>> GetMatchesAsync(DonorResponse? response, int page = 1, int pageSize = 10);
+    Task<int> GetMatchCountAsync(DonorResponse? response);
     Task<AdminReportDto?> ResolveReportAsync(Guid reportId, Guid adminId, ReportStatus status, string? resolution);
     Task<IReadOnlyList<AdminAuditLogDto>> GetAuditLogsAsync(string? entityType, int page = 1, int pageSize = 10);
     Task<int> GetAuditLogCountAsync(string? entityType);

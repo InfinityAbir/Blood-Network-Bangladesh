@@ -112,6 +112,20 @@ public class AdminController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("matches")]
+    public async Task<IActionResult> GetMatches([FromQuery] DonorResponse? response, [FromQuery] int page = 1, [FromQuery][Range(1, 100)] int pageSize = 10)
+    {
+        var matches = await _adminService.GetMatchesAsync(response, page, pageSize);
+        var total = await _adminService.GetMatchCountAsync(response);
+        return Ok(new PagedResult<BloodRequestMatchDto>
+        {
+            Items = matches,
+            TotalCount = total,
+            Page = page,
+            PageSize = pageSize
+        });
+    }
+
     [HttpGet("audit-logs")]
     public async Task<IActionResult> GetAuditLogs([FromQuery] string? entityType, [FromQuery] int page = 1, [FromQuery][Range(1, 100)] int pageSize = 10)
     {

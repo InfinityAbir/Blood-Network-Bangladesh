@@ -322,6 +322,72 @@ public class AdminService : IAdminService
         return await _reportRepo.CountAsync(query);
     }
 
+    public async Task<IReadOnlyList<BloodRequestMatchDto>> GetMatchesAsync(DonorResponse? response, int page = 1, int pageSize = 10)
+    {
+        var query = _matchRepo.Query();
+        if (response.HasValue)
+            query = query.Where(m => m.DonorResponse == response.Value);
+
+        var pagedMatches = await _matchRepo.ToListAsync(
+            query.OrderByDescending(m => m.CreatedAt).Skip((page - 1) * pageSize).Take(pageSize));
+
+        if (pagedMatches.Count == 0) return new List<BloodRequestMatchDto>();
+
+        var donorIds = pagedMatches.Select(m => m.DonorId).Distinct().ToList();
+        var requestIds = pagedMatches.Select(m => m.BloodRequestId).Distinct().ToList();
+
+        var donors = await _userRepo.ToListAsync(_userRepo.Query().Where(u => donorIds.Contains(u.Id)));
+        var donorLookup = donors.ToDictionary(u => u.Id);
+
+        var profiles = await _donorProfileRepo.ToListAsync(_donorProfileRepo.Query().Where(p => donorIds.Contains(p.UserId)));
+        var profileLookup = profiles.ToDictionary(p => p.UserId);
+
+        var requests = await _requestRepo.ToListAsync(_requestRepo.Query().Where(r => requestIds.Contains(r.Id)));
+        var requestLookup = requests.ToDictionary(r => r.Id);
+
+        var requesterIds = requests.Select(r => r.RequesterId).Distinct().ToList();
+        var requesters = await _userRepo.ToListAsync(_userRepo.Query().Where(u => requesterIds.Contains(u.Id)));
+        var requesterLookup = requesters.ToDictionary(u => u.Id);
+
+        return pagedMatches.Select(match =>
+        {
+            donorLookup.TryGetValue(match.DonorId, out var donor);
+            profileLookup.TryGetValue(match.DonorId, out var profile);
+            requestLookup.TryGetValue(match.BloodRequestId, out var bloodReq);
+            var requester = bloodReq != null && requesterLookup.TryGetValue(bloodReq.RequesterId, out var r) ? r : null;
+
+            return new BloodRequestMatchDto
+            {
+                Id = match.Id,
+                BloodRequestId = match.BloodRequestId,
+                DonorId = match.DonorId,
+                DonorName = donor != null ? $"{donor.FirstName} {donor.LastName}" : "Unknown",
+                DonorPhone = donor?.PhoneNumber ?? string.Empty,
+                DonorBloodGroup = profile?.BloodGroup.ToString() ?? "Unknown",
+                HospitalName = bloodReq?.HospitalName ?? string.Empty,
+                RequesterId = bloodReq?.RequesterId,
+                RequesterName = requester != null ? $"{requester.FirstName} {requester.LastName}" : string.Empty,
+                RequesterPhone = requester?.PhoneNumber ?? string.Empty,
+                MatchScore = match.MatchScore,
+                DistanceKm = match.DistanceKm,
+                DonorResponse = match.DonorResponse,
+                ContactedAt = match.ContactedAt,
+                RespondedAt = match.RespondedAt,
+                AcceptedAt = match.AcceptedAt,
+                DeclinedAt = match.DeclinedAt,
+                CreatedAt = match.CreatedAt,
+            };
+        }).ToList();
+    }
+
+    public async Task<int> GetMatchCountAsync(DonorResponse? response)
+    {
+        var query = _matchRepo.Query();
+        if (response.HasValue)
+            query = query.Where(m => m.DonorResponse == response.Value);
+        return await _matchRepo.CountAsync(query);
+    }
+
     public async Task<AdminReportDto?> ResolveReportAsync(Guid reportId, Guid adminId, ReportStatus status, string? resolution)
     {
         var report = await _reportRepo.GetByIdAsync(reportId);
