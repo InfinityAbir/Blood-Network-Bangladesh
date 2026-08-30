@@ -240,7 +240,7 @@ if (!app.Environment.IsEnvironment("Testing"))
                 };
                 db.Users.Add(admin);
                 await db.SaveChangesAsync();
-                Log.Information("Seeded default admin {Phone}", adminPhone);
+                Log.Information("Seeded default admin account");
             }
             else
             {
@@ -254,7 +254,7 @@ if (!app.Environment.IsEnvironment("Testing"))
                     {
                         existing.MustChangePassword = true;
                         needsUpdate = true;
-                        Log.Information("Forced admin {Phone} to mustChangePassword (still default password)", adminPhone);
+                        Log.Information("Forced admin to mustChangePassword (still default password)");
                     }
                     // Only re-hash before first login (prevents overwriting user-changed password)
                     if (existing.MustChangePassword && existing.LastLoginAt == null && !hasher.VerifyPassword(adminPassword, existing.PasswordHash))
@@ -262,13 +262,13 @@ if (!app.Environment.IsEnvironment("Testing"))
                         existing.PasswordHash = hasher.HashPassword(adminPassword);
                         existing.Email = adminEmail;
                         needsUpdate = true;
-                        Log.Information("Updated admin {Phone} password hash to match env (pre-first-login)", adminPhone);
+                        Log.Information("Updated admin password hash to match env (pre-first-login)");
                     }
                     if (!existing.MustChangePassword && existing.LastLoginAt == null)
                     {
                         existing.MustChangePassword = true;
                         needsUpdate = true;
-                        Log.Information("Updated existing admin {Phone} to require password change", adminPhone);
+                        Log.Information("Updated existing admin to require password change");
                     }
                     if (needsUpdate) await db.SaveChangesAsync();
                 }

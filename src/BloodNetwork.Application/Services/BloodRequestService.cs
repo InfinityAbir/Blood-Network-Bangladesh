@@ -131,23 +131,37 @@ public class BloodRequestService
             }
         });
 
-        await _notificationService.SendNotificationAsync(
-            requesterId,
-            "Blood Request Created",
-            $"Your blood request for {request.BloodGroup.ToLabel()} blood ({request.UnitsRequired} units) at {request.HospitalName} has been posted. We are finding matching donors for you.",
-            NotificationType.RequestUpdate,
-            bloodRequest.Id);
+        try
+        {
+            await _notificationService.SendNotificationAsync(
+                requesterId,
+                "Blood Request Created",
+                $"Your blood request for {request.BloodGroup.ToLabel()} blood ({request.UnitsRequired} units) at {request.HospitalName} has been posted. We are finding matching donors for you.",
+                NotificationType.RequestUpdate,
+                bloodRequest.Id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to send request-created notification for {RequestId}", bloodRequest.Id);
+        }
 
         var admins = await _userRepository.ToListAsync(
             _userRepository.Query().Where(u => u.Role == UserRole.Admin), cancellationToken);
         if (admins.Count > 0)
         {
-            await _notificationService.SendBulkNotificationAsync(
-                admins.Select(a => a.Id),
-                "New Blood Request",
-                $"{user.FirstName} {user.LastName} requested {request.UnitsRequired} unit(s) of {request.BloodGroup.ToLabel()} blood at {request.HospitalName}.",
-                NotificationType.NewRequestPendingReview,
-                bloodRequest.Id);
+            try
+            {
+                await _notificationService.SendBulkNotificationAsync(
+                    admins.Select(a => a.Id),
+                    "New Blood Request",
+                    $"{user.FirstName} {user.LastName} requested {request.UnitsRequired} unit(s) of {request.BloodGroup.ToLabel()} blood at {request.HospitalName}.",
+                    NotificationType.NewRequestPendingReview,
+                    bloodRequest.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to send admin notification for new request {RequestId}", bloodRequest.Id);
+            }
         }
 
         return Result<BloodRequestDto>.Success(MapToDto(bloodRequest, user, district, upazila));
@@ -234,12 +248,19 @@ public class BloodRequestService
             var cancelledDonors = donorMatches.Where(m => m.DonorResponse != DonorResponse.Declined).ToList();
             foreach (var match in cancelledDonors)
             {
-                await _notificationService.SendNotificationAsync(
-                    match.DonorId,
-                    "Blood Request Cancelled",
-                    $"The blood request at {request.HospitalName} for {request.BloodGroup.ToLabel()} blood has been cancelled by the requester.",
-                    NotificationType.RequestUpdate,
-                    requestId);
+                try
+                {
+                    await _notificationService.SendNotificationAsync(
+                        match.DonorId,
+                        "Blood Request Cancelled",
+                        $"The blood request at {request.HospitalName} for {request.BloodGroup.ToLabel()} blood has been cancelled by the requester.",
+                        NotificationType.RequestUpdate,
+                        requestId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to send cancel notification to donor {DonorId}", match.DonorId);
+                }
             }
         }
 
@@ -295,12 +316,19 @@ public class BloodRequestService
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        await _notificationService.SendNotificationAsync(
-            existing.RequesterId,
-            "Blood Request Updated",
-            $"Your blood request at {existing.HospitalName} has been updated.",
-            NotificationType.RequestUpdate,
-            existing.Id);
+        try
+        {
+            await _notificationService.SendNotificationAsync(
+                existing.RequesterId,
+                "Blood Request Updated",
+                $"Your blood request at {existing.HospitalName} has been updated.",
+                NotificationType.RequestUpdate,
+                existing.Id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to send request-updated notification for {RequestId}", requestId);
+        }
 
         var user = await _userRepository.GetByIdAsync(existing.RequesterId, cancellationToken);
 
@@ -378,21 +406,35 @@ public class BloodRequestService
                 _logger.LogWarning(ex, "Failed to auto-update donor profiles on fulfillment for request {RequestId}", requestId);
             }
 
-            await _notificationService.SendNotificationAsync(
-                requesterId,
-                "Blood Request Fulfilled",
-                $"Great news! Your blood request at {request.HospitalName} has been fully fulfilled. Thank you for using Blood Network Bangladesh!",
-                NotificationType.RequestUpdate,
-                requestId);
+            try
+            {
+                await _notificationService.SendNotificationAsync(
+                    requesterId,
+                    "Blood Request Fulfilled",
+                    $"Great news! Your blood request at {request.HospitalName} has been fully fulfilled. Thank you for using Blood Network Bangladesh!",
+                    NotificationType.RequestUpdate,
+                    requestId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to send fulfill notification for {RequestId}", requestId);
+            }
         }
         else
         {
-            await _notificationService.SendNotificationAsync(
-                requesterId,
-                "Blood Request Partially Fulfilled",
-                $"Your blood request at {request.HospitalName} has been partially fulfilled: {request.UnitsFulfilled}/{request.UnitsRequired} units. {request.UnitsRequired - request.UnitsFulfilled} more units needed.",
-                NotificationType.RequestUpdate,
-                requestId);
+            try
+            {
+                await _notificationService.SendNotificationAsync(
+                    requesterId,
+                    "Blood Request Partially Fulfilled",
+                    $"Your blood request at {request.HospitalName} has been partially fulfilled: {request.UnitsFulfilled}/{request.UnitsRequired} units. {request.UnitsRequired - request.UnitsFulfilled} more units needed.",
+                    NotificationType.RequestUpdate,
+                    requestId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to send partial-fulfill notification for {RequestId}", requestId);
+            }
         }
 
         var user = await _userRepository.GetByIdAsync(request.RequesterId, cancellationToken);

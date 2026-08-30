@@ -42,7 +42,9 @@ public static class DependencyInjection
 
         services.Configure<MatchScoreWeightsOptions>(
             configuration.GetSection("AppSettings:MatchScoreWeights"));
-        services.Configure<AppSettings>(configuration.GetSection(AppSettings.SectionName));
+        services.AddOptions<AppSettings>()
+            .Bind(configuration.GetSection(AppSettings.SectionName))
+            .ValidateDataAnnotations();
         services.Configure<FirebaseOptions>(configuration.GetSection(FirebaseOptions.SectionName));
 
         services.AddHttpClient<IAiChatService, GroqChatService>(c => c.Timeout = TimeSpan.FromSeconds(30));

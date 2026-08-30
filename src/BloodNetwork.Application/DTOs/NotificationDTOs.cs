@@ -15,11 +15,6 @@ public class NotificationDto
     public string? Metadata { get; set; }
 }
 
-public class MarkNotificationReadRequest
-{
-    public bool IsRead { get; set; } = true;
-}
-
 public class UnreadCountDto
 {
     public int Count { get; set; }

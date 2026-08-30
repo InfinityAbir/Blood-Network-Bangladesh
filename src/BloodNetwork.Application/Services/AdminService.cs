@@ -3,6 +3,7 @@ using BloodNetwork.Application.Interfaces;
 using BloodNetwork.Domain.Entities;
 using BloodNetwork.Domain.Enums;
 using BloodNetwork.Domain.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace BloodNetwork.Application.Services;
 
@@ -19,6 +20,7 @@ public class AdminService : IAdminService
     private readonly IRepository<EligibilityQuestion> _eligibilityQuestionRepo;
     private readonly IUnitOfWork _unitOfWork;
     private readonly INotificationService _notificationService;
+    private readonly ILogger<AdminService> _logger;
 
     public AdminService(
         IRepository<User> userRepo,
@@ -31,7 +33,8 @@ public class AdminService : IAdminService
         IRepository<Upazila> upazilaRepo,
         IRepository<EligibilityQuestion> eligibilityQuestionRepo,
         IUnitOfWork unitOfWork,
-        INotificationService notificationService)
+        INotificationService notificationService,
+        ILogger<AdminService> logger)
     {
         _userRepo = userRepo;
         _donorProfileRepo = donorProfileRepo;
@@ -44,6 +47,7 @@ public class AdminService : IAdminService
         _eligibilityQuestionRepo = eligibilityQuestionRepo;
         _unitOfWork = unitOfWork;
         _notificationService = notificationService;
+        _logger = logger;
     }
 
     public async Task<AdminDashboardStatsDto> GetDashboardStatsAsync()
@@ -278,12 +282,19 @@ public class AdminService : IAdminService
             ? "Congratulations! Your donor profile has been verified. You are now visible to blood requesters and can start receiving match requests."
             : $"Your donor verification status has been updated to: {status}. Please check your profile for details.";
 
-        await _notificationService.SendNotificationAsync(
-            userId,
-            notifTitle,
-            notifMessage,
-            NotificationType.System,
-            null);
+        try
+        {
+            await _notificationService.SendNotificationAsync(
+                userId,
+                notifTitle,
+                notifMessage,
+                NotificationType.System,
+                null);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to send verification notification to user {UserId}", userId);
+        }
 
         var user = await _userRepo.GetByIdAsync(userId);
         return user != null ? MapToUserDto(user, profile) : null;

@@ -131,12 +131,19 @@ public class MatchingService : IMatchingService
             const int notifyThreshold = 60;
             foreach (var match in matches.Where(m => m.MatchScore > notifyThreshold))
             {
-                await _notificationService.SendNotificationAsync(
-                    match.DonorId,
-                    "New Blood Request Match",
-                    $"{requesterName} needs {request.BloodGroup.ToLabel()} blood at {request.HospitalName}. You scored {match.MatchScore}/100 match.",
-                    NotificationType.BloodRequestMatch,
-                    request.Id);
+                try
+                {
+                    await _notificationService.SendNotificationAsync(
+                        match.DonorId,
+                        "New Blood Request Match",
+                        $"{requesterName} needs {request.BloodGroup.ToLabel()} blood at {request.HospitalName}. You scored {match.MatchScore}/100 match.",
+                        NotificationType.BloodRequestMatch,
+                        request.Id);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to send match notification to donor {DonorId}", match.DonorId);
+                }
             }
         }
 
@@ -188,12 +195,19 @@ public class MatchingService : IMatchingService
 
         if (request != null)
         {
-            await _notificationService.SendNotificationAsync(
-                request.RequesterId,
-                $"Donor {responseType}",
-                $"{donorName} has {responseType} your blood request at {request.HospitalName}.",
-                notifType,
-                match.BloodRequestId);
+            try
+            {
+                await _notificationService.SendNotificationAsync(
+                    request.RequesterId,
+                    $"Donor {responseType}",
+                    $"{donorName} has {responseType} your blood request at {request.HospitalName}.",
+                    notifType,
+                    match.BloodRequestId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to send donor {Response} notification for request {RequestId}", responseType, match.BloodRequestId);
+            }
         }
 
         return match;

@@ -108,7 +108,7 @@ public class MatchesController : ControllerBase
     private Guid? GetUserId()
     {
         var claim = User.FindFirst(ClaimTypes.NameIdentifier);
-        return claim != null ? Guid.Parse(claim.Value) : null;
+        return claim != null && Guid.TryParse(claim.Value, out var userId) ? userId : null;
     }
 
     private async Task<List<BloodRequestMatchDto>> MapMatchesToDtosAsync(IReadOnlyList<BloodRequestMatch> matches)
