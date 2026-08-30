@@ -107,7 +107,7 @@ public class BloodRequestService
         await _notificationService.SendNotificationAsync(
             requesterId,
             "Blood Request Created",
-            $"Your blood request for {request.BloodGroup} blood ({request.UnitsRequired} units) at {request.HospitalName} has been posted. We are finding matching donors for you.",
+            $"Your blood request for {request.BloodGroup.ToLabel()} blood ({request.UnitsRequired} units) at {request.HospitalName} has been posted. We are finding matching donors for you.",
             NotificationType.RequestUpdate,
             bloodRequest.Id);
 
@@ -118,7 +118,7 @@ public class BloodRequestService
             await _notificationService.SendBulkNotificationAsync(
                 admins.Select(a => a.Id),
                 "New Blood Request",
-                $"{user.FirstName} {user.LastName} requested {request.UnitsRequired} unit(s) of {request.BloodGroup} blood at {request.HospitalName}.",
+                $"{user.FirstName} {user.LastName} requested {request.UnitsRequired} unit(s) of {request.BloodGroup.ToLabel()} blood at {request.HospitalName}.",
                 NotificationType.NewRequestPendingReview,
                 bloodRequest.Id);
         }
@@ -209,7 +209,7 @@ public class BloodRequestService
                 await _notificationService.SendNotificationAsync(
                     match.DonorId,
                     "Blood Request Cancelled",
-                    $"The blood request at {request.HospitalName} for {request.BloodGroup} blood has been cancelled by the requester.",
+                    $"The blood request at {request.HospitalName} for {request.BloodGroup.ToLabel()} blood has been cancelled by the requester.",
                     NotificationType.RequestUpdate,
                     requestId);
             }

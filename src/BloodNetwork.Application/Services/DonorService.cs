@@ -413,7 +413,7 @@ public class DonorService
             await _notificationService.SendNotificationAsync(
                 requesterId,
                 "A compatible donor is available",
-                $"A {profile.BloodGroup} donor near your blood request at {request.HospitalName} just became available.",
+                $"A {profile.BloodGroup.ToLabel()} donor near your blood request at {request.HospitalName} just became available.",
                 NotificationType.Availability,
                 request.Id,
                 metadata);

@@ -130,7 +130,7 @@ public class MatchingService : IMatchingService
                 await _notificationService.SendNotificationAsync(
                     match.DonorId,
                     "New Blood Request Match",
-                    $"{requesterName} needs {request.BloodGroup} blood at {request.HospitalName}. You scored {match.MatchScore}/100 match.",
+                    $"{requesterName} needs {request.BloodGroup.ToLabel()} blood at {request.HospitalName}. You scored {match.MatchScore}/100 match.",
                     NotificationType.BloodRequestMatch,
                     request.Id);
             }
