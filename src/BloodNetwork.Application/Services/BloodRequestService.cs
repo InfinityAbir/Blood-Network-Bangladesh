@@ -213,10 +213,11 @@ public class BloodRequestService
     {
         var request = await _requestRepository.GetByIdAsync(requestId, cancellationToken);
         if (request is null)
-            return Result<BloodRequestDto>.Failure("Blood request not found");
+            return Result<BloodRequestDto>.NotFound();
 
+        // 404 for non-owners too: don't reveal that another user's request exists.
         if (request.RequesterId != requesterId)
-            return Result<BloodRequestDto>.Failure("You can only cancel your own requests");
+            return Result<BloodRequestDto>.NotFound();
 
         if (request.Status != RequestStatus.Open && request.Status != RequestStatus.PartiallyFulfilled)
             return Result<BloodRequestDto>.Failure("Only open or partially fulfilled requests can be cancelled");
@@ -310,10 +311,11 @@ public class BloodRequestService
     {
         var request = await _requestRepository.GetByIdAsync(requestId, cancellationToken);
         if (request is null)
-            return Result<BloodRequestDto>.Failure("Blood request not found");
+            return Result<BloodRequestDto>.NotFound();
 
+        // 404 for non-owners too: don't reveal that another user's request exists.
         if (request.RequesterId != requesterId)
-            return Result<BloodRequestDto>.Failure("You can only update your own requests");
+            return Result<BloodRequestDto>.NotFound();
 
         if (request.Status != RequestStatus.Open && request.Status != RequestStatus.PartiallyFulfilled)
             return Result<BloodRequestDto>.Failure("Request is not in a fulfillable state");

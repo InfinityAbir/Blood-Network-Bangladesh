@@ -32,6 +32,7 @@ public class BloodNetworkDbContext : DbContext
     public DbSet<Report> Reports => Set<Report>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<DeviceToken> DeviceTokens => Set<DeviceToken>();
     public DbSet<DeveloperInfo> DeveloperInfo => Set<DeveloperInfo>();
     public DbSet<EligibilityQuestion> EligibilityQuestions => Set<EligibilityQuestion>();
     public DbSet<UserEligibilityState> UserEligibilityStates => Set<UserEligibilityState>();
@@ -90,6 +91,7 @@ public class BloodNetworkDbContext : DbContext
         modelBuilder.Entity<Report>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<AuditLog>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<RefreshToken>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<DeviceToken>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<Division>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<District>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<Upazila>().HasQueryFilter(e => !e.IsDeleted);
@@ -151,6 +153,12 @@ public class BloodNetworkDbContext : DbContext
             e.HasIndex(t => t.Token).IsUnique();
             e.HasIndex(t => t.UserId);
             e.HasIndex(t => new { t.UserId, t.IsRevoked });
+        });
+
+        modelBuilder.Entity<DeviceToken>(e =>
+        {
+            e.HasIndex(t => t.Token).IsUnique();
+            e.HasIndex(t => new { t.UserId, t.Platform });
         });
 
         modelBuilder.Entity<UserEligibilityState>(e =>

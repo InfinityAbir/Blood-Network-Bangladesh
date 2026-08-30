@@ -48,6 +48,7 @@ logs/
 ## Environment / Secrets
 appsettings.Production.json
 appsettings.Testing.json
+appsettings.local.json
 appsettings.*.local.json
 *.env
 .env.local
@@ -71,3 +72,7 @@ memory.md
 status.md
 feedback.md
 architecture.md
+
+## Firebase secrets (never commit service-account keys)
+*.adminsdk*.json
+secrets/

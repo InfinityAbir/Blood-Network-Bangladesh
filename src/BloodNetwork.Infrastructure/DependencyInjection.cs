@@ -7,7 +7,6 @@ using BloodNetwork.Domain.Interfaces;
 using BloodNetwork.Infrastructure.Authentication;
 using BloodNetwork.Infrastructure.Data;
 using BloodNetwork.Infrastructure.Services;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BloodNetwork.Infrastructure;
@@ -33,6 +32,8 @@ public static class DependencyInjection
         services.AddScoped<BloodRequestService>();
         services.AddScoped<IMatchingService, MatchingService>();
         services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<IPushNotificationSender, PushNotificationService>();
+        services.AddScoped<DeviceTokenService>();
         services.AddScoped<IAdminService, AdminService>();
         services.AddScoped<IDonorEngagementService, DonorEngagementService>();
         services.AddScoped<IMatchEnhancementService, MatchEnhancementService>();
@@ -42,6 +43,7 @@ public static class DependencyInjection
         services.Configure<MatchScoreWeightsOptions>(
             configuration.GetSection("AppSettings:MatchScoreWeights"));
         services.Configure<AppSettings>(configuration.GetSection(AppSettings.SectionName));
+        services.Configure<FirebaseOptions>(configuration.GetSection(FirebaseOptions.SectionName));
 
         services.AddHttpClient<IAiChatService, GroqChatService>(c => c.Timeout = TimeSpan.FromSeconds(30));
 

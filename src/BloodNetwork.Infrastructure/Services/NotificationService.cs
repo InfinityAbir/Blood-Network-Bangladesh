@@ -13,17 +13,20 @@ public class NotificationService : INotificationService
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<NotificationService> _logger;
     private readonly INotificationBroadcaster? _broadcaster;
+    private readonly IPushNotificationSender? _pushSender;
 
     public NotificationService(
         IRepository<Notification> notificationRepo,
         IUnitOfWork unitOfWork,
         ILogger<NotificationService> logger,
-        INotificationBroadcaster? broadcaster = null)
+        INotificationBroadcaster? broadcaster = null,
+        IPushNotificationSender? pushSender = null)
     {
         _notificationRepo = notificationRepo;
         _unitOfWork = unitOfWork;
         _logger = logger;
         _broadcaster = broadcaster;
+        _pushSender = pushSender;
     }
 
     public async Task SendNotificationAsync(Guid userId, string title, string message, NotificationType type, Guid? relatedEntityId = null, string? metadata = null)
@@ -50,6 +53,8 @@ public class NotificationService : INotificationService
             await _broadcaster.BroadcastNotificationAsync(userId, title, message, type.ToString(), relatedEntityId, metadata);
             await _broadcaster.BroadcastUnreadCountAsync(userId, count);
         }
+
+        await SendPushAsync(userId, title, message, type, relatedEntityId, metadata);
     }
 
     public async Task SendBulkNotificationAsync(IEnumerable<Guid> userIds, string title, string message, NotificationType type, Guid? relatedEntityId = null, string? metadata = null)
@@ -82,6 +87,25 @@ public class NotificationService : INotificationService
                 await _broadcaster.BroadcastNotificationAsync(userId, title, message, type.ToString(), relatedEntityId, metadata);
                 await _broadcaster.BroadcastUnreadCountAsync(userId, count);
             }
+        }
+
+        foreach (var userId in userIdList)
+        {
+            await SendPushAsync(userId, title, message, type, relatedEntityId, metadata);
+        }
+    }
+
+    private async Task SendPushAsync(Guid userId, string title, string message, NotificationType type, Guid? relatedEntityId = null, string? metadata = null)
+    {
+        if (_pushSender is null) return;
+        try
+        {
+            await _pushSender.SendPushAsync(userId, title, message, type.ToString(), relatedEntityId, metadata);
+        }
+        catch (Exception ex)
+        {
+            // Push is additive — never let it break or slow down the in-app notification.
+            _logger.LogWarning(ex, "Push notification send failed for user {UserId}", userId);
         }
     }
 

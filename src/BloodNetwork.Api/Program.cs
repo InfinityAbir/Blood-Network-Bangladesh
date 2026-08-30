@@ -33,6 +33,7 @@ builder.WebHost.UseKestrel(options =>
 builder.Configuration
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: false)
+    .AddJsonFile("appsettings.local.json", optional: true, reloadOnChange: false)
     .AddEnvironmentVariables();
 
 Log.Logger = new LoggerConfiguration()
@@ -137,7 +138,7 @@ builder.Services.AddRateLimiter(options =>
         partitionKey: RateLimitPartitionKey(httpContext),
         factory: _ => new FixedWindowRateLimiterOptions
         {
-            PermitLimit = 10,
+            PermitLimit = builder.Configuration.GetValue("RateLimit:AuthPerMinute", 10),
             Window = TimeSpan.FromMinutes(1),
             QueueLimit = 0,
         }));
@@ -146,7 +147,7 @@ builder.Services.AddRateLimiter(options =>
         partitionKey: RateLimitPartitionKey(httpContext),
         factory: _ => new FixedWindowRateLimiterOptions
         {
-            PermitLimit = 60,
+            PermitLimit = builder.Configuration.GetValue("RateLimit:ApiPerMinute", 60),
             Window = TimeSpan.FromMinutes(1),
             QueueLimit = 0,
         }));
@@ -155,7 +156,7 @@ builder.Services.AddRateLimiter(options =>
         partitionKey: RateLimitPartitionKey(httpContext),
         factory: _ => new FixedWindowRateLimiterOptions
         {
-            PermitLimit = 30,
+            PermitLimit = builder.Configuration.GetValue("RateLimit:SearchPerMinute", 30),
             Window = TimeSpan.FromMinutes(1),
             QueueLimit = 0,
         }));

@@ -11,7 +11,8 @@ public class AuthIntegrationTests : IClassFixture<CustomWebApplicationFactory>
     private readonly HttpClient _client;
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
-        PropertyNameCaseInsensitive = true
+        PropertyNameCaseInsensitive = true,
+        Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
     };
 
     public AuthIntegrationTests(CustomWebApplicationFactory factory)

@@ -156,6 +156,9 @@ public class BloodRequestsController : ControllerBase
         if (result.IsSuccess)
             return Ok(result.Value);
 
+        if (result.IsNotFound)
+            return NotFound(new { success = false, message = "Blood request not found" });
+
         return BadRequest(new { success = false, message = result.Error });
     }
 
@@ -179,6 +182,9 @@ public class BloodRequestsController : ControllerBase
 
         if (result.IsSuccess)
             return Ok(result.Value);
+
+        if (result.IsNotFound)
+            return NotFound(new { success = false, message = "Blood request not found" });
 
         return BadRequest(new { success = false, message = result.Error });
     }
