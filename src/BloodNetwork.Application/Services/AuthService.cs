@@ -77,8 +77,8 @@ public class AuthService
             }
         }
 
-        // Never trust client-provided role — force to Donor/Requester only
-        if (request.Role == UserRole.Admin || request.Role == UserRole.Volunteer)
+        // Only Admin is forbidden for public registration; Volunteer/Donor/Requester are allowed (G7)
+        if (request.Role == UserRole.Admin)
         {
             return Result<AuthResponse>.Failure("Invalid role assignment.");
         }

@@ -1,4 +1,5 @@
 using BloodNetwork.Application.Common;
+using BloodNetwork.Application.Configuration;
 using BloodNetwork.Application.DTOs;
 using BloodNetwork.Application.Interfaces;
 using BloodNetwork.Domain.Entities;
@@ -6,6 +7,7 @@ using BloodNetwork.Domain.Enums;
 using BloodNetwork.Domain.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace BloodNetwork.Application.Services;
 
@@ -19,8 +21,11 @@ public class BloodRequestService
     private readonly IMatchingService _matchingService;
     private readonly INotificationService _notificationService;
     private readonly IRepository<BloodRequestMatch> _matchRepository;
+    private readonly IRepository<DonorProfile> _donorProfileRepository;
+    private readonly IRepository<DonationRecord> _donationRecordRepository;
     private readonly ILogger<BloodRequestService> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly AppSettings _appSettings;
 
     public BloodRequestService(
         IRepository<BloodRequest> requestRepository,
@@ -31,8 +36,11 @@ public class BloodRequestService
         IMatchingService matchingService,
         INotificationService notificationService,
         IRepository<BloodRequestMatch> matchRepository,
+        IRepository<DonorProfile> donorProfileRepository,
+        IRepository<DonationRecord> donationRecordRepository,
         ILogger<BloodRequestService> logger,
-        IServiceScopeFactory scopeFactory)
+        IServiceScopeFactory scopeFactory,
+        IOptions<AppSettings> appSettings)
     {
         _requestRepository = requestRepository;
         _userRepository = userRepository;
@@ -42,8 +50,11 @@ public class BloodRequestService
         _matchingService = matchingService;
         _notificationService = notificationService;
         _matchRepository = matchRepository;
+        _donorProfileRepository = donorProfileRepository;
+        _donationRecordRepository = donationRecordRepository;
         _logger = logger;
         _scopeFactory = scopeFactory;
+        _appSettings = appSettings.Value;
     }
 
     public async Task<Result<BloodRequestDto>> CreateRequestAsync(Guid requesterId, CreateBloodRequestRequest request, CancellationToken cancellationToken = default)
@@ -62,6 +73,22 @@ public class BloodRequestService
 
         if (upazila.DistrictId != request.DistrictId)
             return Result<BloodRequestDto>.Failure("Upazila does not belong to district");
+
+        // G6: enforce MaxActiveRequestsPerUser
+        var activeCount = await _requestRepository.CountAsync(
+            _requestRepository.Query().Where(r => r.RequesterId == requesterId && (r.Status == RequestStatus.Open || r.Status == RequestStatus.PartiallyFulfilled)),
+            cancellationToken);
+        if (activeCount >= _appSettings.MaxActiveRequestsPerUser)
+            return Result<BloodRequestDto>.Failure($"You have {activeCount} active requests. Maximum allowed is {_appSettings.MaxActiveRequestsPerUser}.");
+
+        // G6: enforce ContactCooldownHours (throttle request creation)
+        if (_appSettings.ContactCooldownHours > 0)
+        {
+            var cooldownCutoff = DateTime.UtcNow.AddHours(-_appSettings.ContactCooldownHours);
+            var hasRecentRequest = await _requestRepository.AnyAsync(r => r.RequesterId == requesterId && r.CreatedAt >= cooldownCutoff, cancellationToken);
+            if (hasRecentRequest)
+                return Result<BloodRequestDto>.Failure($"Please wait {_appSettings.ContactCooldownHours} hours between requests.");
+        }
 
         var bloodRequest = new BloodRequest
         {
@@ -314,8 +341,41 @@ public class BloodRequestService
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+        // G5: auto-update LastDonationDate / availability for donors with Accepted matches when request becomes Fulfilled
         if (request.Status == RequestStatus.Fulfilled)
         {
+            try
+            {
+                var acceptedMatches = await _matchRepository.FindAsync(
+                    m => m.BloodRequestId == requestId && m.DonorResponse == DonorResponse.Accepted, cancellationToken);
+                foreach (var match in acceptedMatches)
+                {
+                    var profile = await _donorProfileRepository.FirstOrDefaultAsync(p => p.UserId == match.DonorId, cancellationToken);
+                    if (profile == null) continue;
+                    profile.LastDonationDate = DateTime.UtcNow;
+                    profile.AvailabilityStatus = AvailabilityStatus.RecentlyDonated;
+                    profile.TotalDonationCount += 1;
+                    profile.UpdatedAt = DateTime.UtcNow;
+                    var record = new DonationRecord
+                    {
+                        DonorId = match.DonorId,
+                        BloodRequestId = requestId,
+                        DonationDate = DateTime.UtcNow,
+                        DonationLocation = request.HospitalName,
+                        Units = 1,
+                        Notes = $"Auto-created on fulfillment of request {requestId}",
+                        CreatedBy = requesterId
+                    };
+                    await _donationRecordRepository.AddAsync(record, cancellationToken);
+                }
+                if (acceptedMatches.Count > 0)
+                    await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to auto-update donor profiles on fulfillment for request {RequestId}", requestId);
+            }
+
             await _notificationService.SendNotificationAsync(
                 requesterId,
                 "Blood Request Fulfilled",

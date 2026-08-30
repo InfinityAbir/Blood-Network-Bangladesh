@@ -1,8 +1,10 @@
+using BloodNetwork.Application.Configuration;
 using BloodNetwork.Application.Interfaces;
 using BloodNetwork.Domain.Entities;
 using BloodNetwork.Domain.Enums;
 using BloodNetwork.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace BloodNetwork.Application.Services;
 
@@ -11,15 +13,18 @@ public class DonorEngagementService : IDonorEngagementService
     private readonly IRepository<DonorProfile> _donorProfileRepo;
     private readonly IRepository<User> _userRepo;
     private readonly ILogger<DonorEngagementService> _logger;
+    private readonly AppSettings _appSettings;
 
     public DonorEngagementService(
         IRepository<DonorProfile> donorProfileRepo,
         IRepository<User> userRepo,
-        ILogger<DonorEngagementService> logger)
+        ILogger<DonorEngagementService> logger,
+        IOptions<AppSettings> appSettings)
     {
         _donorProfileRepo = donorProfileRepo;
         _userRepo = userRepo;
         _logger = logger;
+        _appSettings = appSettings.Value;
     }
 
     public async Task<IReadOnlyList<DonorEngagementDto>> GetTopEngagedDonorsAsync(BloodGroup bloodGroup, int count = 10)
@@ -101,15 +106,16 @@ public class DonorEngagementService : IDonorEngagementService
     {
         int score = 0;
 
-        // Recency Factor (35 points)
+        // Recency Factor (35 points) — threshold from MinimumDonationIntervalDays
         if (profile.LastDonationDate.HasValue)
         {
             var daysSinceLastDonation = (DateTime.UtcNow - profile.LastDonationDate.Value).Days;
+            var interval = _appSettings.MinimumDonationIntervalDays;
             score += daysSinceLastDonation switch
             {
-                <= 90 => 35,
-                <= 180 => 25,
-                <= 365 => 15,
+                var d when d <= interval => 35,
+                var d when d <= interval * 2 => 25,
+                var d when d <= 365 => 15,
                 _ => 5
             };
         }
@@ -146,15 +152,16 @@ public class DonorEngagementService : IDonorEngagementService
             _ => 0
         };
 
-        // Profile Freshness Factor (10 points)
+        // Profile Freshness Factor (10 points) — threshold from DonorProfileConfirmationDays
         if (profile.LastProfileConfirmedAt.HasValue)
         {
             var daysSinceConfirmation = (DateTime.UtcNow - profile.LastProfileConfirmedAt.Value).Days;
+            var confirm = _appSettings.DonorProfileConfirmationDays;
             score += daysSinceConfirmation switch
             {
-                <= 30 => 10,
-                <= 90 => 7,
-                <= 180 => 4,
+                var d when d <= 30 => 10,
+                var d when d <= confirm => 7,
+                var d when d <= confirm * 2 => 4,
                 _ => 1
             };
         }

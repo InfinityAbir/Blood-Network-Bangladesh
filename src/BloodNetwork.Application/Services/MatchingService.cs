@@ -1,3 +1,4 @@
+using BloodNetwork.Application.Configuration;
 using BloodNetwork.Application.DTOs;
 using BloodNetwork.Application.Interfaces;
 using BloodNetwork.Domain.Entities;
@@ -18,6 +19,7 @@ public class MatchingService : IMatchingService
     private readonly IMapService _mapService;
     private readonly INotificationService _notificationService;
     private readonly MatchScoreWeightsOptions _weights;
+    private readonly AppSettings _appSettings;
     private readonly ILogger<MatchingService> _logger;
 
     private static readonly Dictionary<BloodGroup, BloodGroup[]> BloodCompatibility = new()
@@ -41,6 +43,7 @@ public class MatchingService : IMatchingService
         IMapService mapService,
         INotificationService notificationService,
         IOptions<MatchScoreWeightsOptions> weights,
+        IOptions<AppSettings> appSettings,
         ILogger<MatchingService> logger)
     {
         _requestRepo = requestRepo;
@@ -51,6 +54,7 @@ public class MatchingService : IMatchingService
         _mapService = mapService;
         _notificationService = notificationService;
         _weights = weights.Value;
+        _appSettings = appSettings.Value;
         _logger = logger;
     }
 
@@ -231,7 +235,7 @@ public class MatchingService : IMatchingService
         if (profile.LastDonationDate.HasValue)
         {
             var daysSinceLastDonation = (DateTime.UtcNow - profile.LastDonationDate.Value).Days;
-            if (daysSinceLastDonation <= 90)
+            if (daysSinceLastDonation <= _appSettings.MinimumDonationIntervalDays)
                 score += _weights.ProfileFreshness;
         }
         else

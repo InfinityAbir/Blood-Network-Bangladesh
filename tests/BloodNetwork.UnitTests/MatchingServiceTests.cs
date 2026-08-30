@@ -1,3 +1,4 @@
+using BloodNetwork.Application.Configuration;
 using BloodNetwork.Application.DTOs;
 using BloodNetwork.Application.Interfaces;
 using BloodNetwork.Application.Services;
@@ -40,6 +41,13 @@ public class MatchingServiceTests
             Distance10to25km = 5,
             DistanceOver25km = 0
         });
+        var appSettings = Options.Create(new AppSettings
+        {
+            MinimumDonationIntervalDays = 90,
+            DonorProfileConfirmationDays = 90,
+            MaxActiveRequestsPerUser = 3,
+            ContactCooldownHours = 24
+        });
 
         _service = new MatchingService(
             _requestRepoMock.Object,
@@ -50,6 +58,7 @@ public class MatchingServiceTests
             _mapServiceMock.Object,
             _notificationServiceMock.Object,
             options,
+            appSettings,
             _loggerMock.Object);
     }
 

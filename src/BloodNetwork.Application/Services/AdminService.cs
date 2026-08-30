@@ -57,6 +57,7 @@ public class AdminService : IAdminService
         var totalUsers = await _userRepo.CountAsync(usersQ);
         var totalDonors = await _userRepo.CountAsync(usersQ.Where(u => u.Role == UserRole.Donor));
         var totalRequesters = await _userRepo.CountAsync(usersQ.Where(u => u.Role == UserRole.Requester));
+        var totalVolunteers = await _userRepo.CountAsync(usersQ.Where(u => u.Role == UserRole.Volunteer));
         var totalBloodRequests = await _requestRepo.CountAsync(requestsQ);
         var openBloodRequests = await _requestRepo.CountAsync(requestsQ.Where(r => r.Status == RequestStatus.Open || r.Status == RequestStatus.PartiallyFulfilled));
         var fulfilledBloodRequests = await _requestRepo.CountAsync(requestsQ.Where(r => r.Status == RequestStatus.Fulfilled));
@@ -71,6 +72,7 @@ public class AdminService : IAdminService
             TotalUsers = totalUsers,
             TotalDonors = totalDonors,
             TotalRequesters = totalRequesters,
+            TotalVolunteers = totalVolunteers,
             TotalBloodRequests = totalBloodRequests,
             OpenBloodRequests = openBloodRequests,
             FulfilledBloodRequests = fulfilledBloodRequests,
@@ -472,6 +474,26 @@ public class AdminService : IAdminService
         report.ResolvedAt = DateTime.UtcNow;
         report.UpdatedAt = DateTime.UtcNow;
         await _unitOfWork.SaveChangesAsync();
+
+        // G4: notify reporter of outcome (Resolved/Dismissed/UnderReview)
+        try
+        {
+            var outcome = status == ReportStatus.Resolved ? "resolved" : status == ReportStatus.Dismissed ? "dismissed" : status.ToString().ToLower();
+            var title = status == ReportStatus.Resolved ? "Report Resolved" : status == ReportStatus.Dismissed ? "Report Dismissed" : $"Report {status}";
+            var message = !string.IsNullOrWhiteSpace(resolution)
+                ? $"Your report has been {outcome}. Resolution: {resolution}"
+                : $"Your report has been {outcome}.";
+            await _notificationService.SendNotificationAsync(
+                report.ReporterUserId,
+                title,
+                message,
+                NotificationType.System,
+                report.Id);
+        }
+        catch
+        {
+            // notification failure must not roll back resolution
+        }
 
         var reporter = await _userRepo.GetByIdAsync(report.ReporterUserId);
         var reported = await _userRepo.GetByIdAsync(report.ReportedUserId);

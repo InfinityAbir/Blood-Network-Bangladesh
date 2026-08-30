@@ -2,6 +2,7 @@ using BloodNetwork.Application.Configuration;
 using BloodNetwork.Application.DTOs;
 using BloodNetwork.Application.Interfaces;
 using BloodNetwork.Application.Services;
+using Microsoft.Extensions.Configuration;
 using BloodNetwork.Domain.Interfaces;
 using BloodNetwork.Infrastructure.Authentication;
 using BloodNetwork.Infrastructure.Data;
@@ -40,6 +41,7 @@ public static class DependencyInjection
 
         services.Configure<MatchScoreWeightsOptions>(
             configuration.GetSection("AppSettings:MatchScoreWeights"));
+        services.Configure<AppSettings>(configuration.GetSection(AppSettings.SectionName));
 
         services.AddHttpClient<IAiChatService, GroqChatService>(c => c.Timeout = TimeSpan.FromSeconds(30));
 

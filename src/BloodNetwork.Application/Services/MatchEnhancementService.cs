@@ -1,8 +1,10 @@
+using BloodNetwork.Application.Configuration;
 using BloodNetwork.Application.Interfaces;
 using BloodNetwork.Domain.Entities;
 using BloodNetwork.Domain.Enums;
 using BloodNetwork.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace BloodNetwork.Application.Services;
 
@@ -13,19 +15,22 @@ public class MatchEnhancementService : IMatchEnhancementService
     private readonly IRepository<BloodRequest> _requestRepo;
     private readonly IMapService _mapService;
     private readonly ILogger<MatchEnhancementService> _logger;
+    private readonly AppSettings _appSettings;
 
     public MatchEnhancementService(
         IRepository<DonorProfile> donorProfileRepo,
         IRepository<User> userRepo,
         IRepository<BloodRequest> requestRepo,
         IMapService mapService,
-        ILogger<MatchEnhancementService> logger)
+        ILogger<MatchEnhancementService> logger,
+        IOptions<AppSettings> appSettings)
     {
         _donorProfileRepo = donorProfileRepo;
         _userRepo = userRepo;
         _requestRepo = requestRepo;
         _mapService = mapService;
         _logger = logger;
+        _appSettings = appSettings.Value;
     }
 
     public async Task<IReadOnlyList<EnhancedMatchDto>> GetEnhancedMatchesAsync(
@@ -158,15 +163,16 @@ public class MatchEnhancementService : IMatchEnhancementService
             _ => 0
         };
 
-        // Recency bonus (15)
+        // Recency bonus (15) — threshold from MinimumDonationIntervalDays
         if (profile.LastDonationDate.HasValue)
         {
             var daysSinceLastDonation = (DateTime.UtcNow - profile.LastDonationDate.Value).Days;
+            var interval = _appSettings.MinimumDonationIntervalDays;
             score += daysSinceLastDonation switch
             {
-                <= 90 => 15,
-                <= 180 => 10,
-                <= 365 => 5,
+                var d when d <= interval => 15,
+                var d when d <= interval * 2 => 10,
+                var d when d <= 365 => 5,
                 _ => 2
             };
         }
