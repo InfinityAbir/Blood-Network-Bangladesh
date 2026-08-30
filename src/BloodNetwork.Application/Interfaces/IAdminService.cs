@@ -15,6 +15,8 @@ public interface IAdminService
     Task<int> GetReportCountAsync(ReportStatus? status);
     Task<IReadOnlyList<BloodRequestMatchDto>> GetMatchesAsync(DonorResponse? response, int page = 1, int pageSize = 10);
     Task<int> GetMatchCountAsync(DonorResponse? response);
+    Task<IReadOnlyList<BloodRequestDto>> GetBloodRequestsAsync(RequestStatus? status, BloodGroup? bloodGroup, int page = 1, int pageSize = 10);
+    Task<int> GetBloodRequestCountAsync(RequestStatus? status, BloodGroup? bloodGroup);
     Task<AdminReportDto?> ResolveReportAsync(Guid reportId, Guid adminId, ReportStatus status, string? resolution);
     Task<IReadOnlyList<AdminAuditLogDto>> GetAuditLogsAsync(string? entityType, int page = 1, int pageSize = 10);
     Task<int> GetAuditLogCountAsync(string? entityType);

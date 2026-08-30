@@ -15,6 +15,7 @@ public class AdminService : IAdminService
     private readonly IRepository<Report> _reportRepo;
     private readonly IRepository<AuditLog> _auditLogRepo;
     private readonly IRepository<District> _districtRepo;
+    private readonly IRepository<Upazila> _upazilaRepo;
     private readonly IRepository<EligibilityQuestion> _eligibilityQuestionRepo;
     private readonly IUnitOfWork _unitOfWork;
     private readonly INotificationService _notificationService;
@@ -27,6 +28,7 @@ public class AdminService : IAdminService
         IRepository<Report> reportRepo,
         IRepository<AuditLog> auditLogRepo,
         IRepository<District> districtRepo,
+        IRepository<Upazila> upazilaRepo,
         IRepository<EligibilityQuestion> eligibilityQuestionRepo,
         IUnitOfWork unitOfWork,
         INotificationService notificationService)
@@ -38,6 +40,7 @@ public class AdminService : IAdminService
         _reportRepo = reportRepo;
         _auditLogRepo = auditLogRepo;
         _districtRepo = districtRepo;
+        _upazilaRepo = upazilaRepo;
         _eligibilityQuestionRepo = eligibilityQuestionRepo;
         _unitOfWork = unitOfWork;
         _notificationService = notificationService;
@@ -386,6 +389,76 @@ public class AdminService : IAdminService
         if (response.HasValue)
             query = query.Where(m => m.DonorResponse == response.Value);
         return await _matchRepo.CountAsync(query);
+    }
+
+    public async Task<IReadOnlyList<BloodRequestDto>> GetBloodRequestsAsync(RequestStatus? status, BloodGroup? bloodGroup, int page = 1, int pageSize = 10)
+    {
+        var query = _requestRepo.Query();
+        if (status.HasValue)
+            query = query.Where(r => r.Status == status.Value);
+        if (bloodGroup.HasValue)
+            query = query.Where(r => r.BloodGroup == bloodGroup.Value);
+
+        var pagedRequests = await _requestRepo.ToListAsync(
+            query.OrderByDescending(r => r.CreatedAt).Skip((page - 1) * pageSize).Take(pageSize));
+
+        if (pagedRequests.Count == 0) return new List<BloodRequestDto>();
+
+        var requesterIds = pagedRequests.Select(r => r.RequesterId).Distinct().ToList();
+        var districtIds = pagedRequests.Select(r => r.DistrictId).Distinct().ToList();
+        var upazilaIds = pagedRequests.Select(r => r.UpazilaId).Distinct().ToList();
+
+        var requesters = await _userRepo.ToListAsync(_userRepo.Query().Where(u => requesterIds.Contains(u.Id)));
+        var requesterLookup = requesters.ToDictionary(u => u.Id);
+
+        var districts = await _districtRepo.ToListAsync(_districtRepo.Query().Where(d => districtIds.Contains(d.Id)));
+        var districtLookup = districts.ToDictionary(d => d.Id);
+
+        var upazilas = await _upazilaRepo.ToListAsync(_upazilaRepo.Query().Where(u => upazilaIds.Contains(u.Id)));
+        var upazilaLookup = upazilas.ToDictionary(u => u.Id);
+
+        return pagedRequests.Select(r =>
+        {
+            requesterLookup.TryGetValue(r.RequesterId, out var requester);
+            districtLookup.TryGetValue(r.DistrictId, out var district);
+            upazilaLookup.TryGetValue(r.UpazilaId, out var upazila);
+
+            return new BloodRequestDto(
+                r.Id,
+                r.RequesterId,
+                requester != null ? $"{requester.FirstName} {requester.LastName}" : "Unknown",
+                r.BloodGroup,
+                r.UnitsRequired,
+                r.UnitsFulfilled,
+                r.HospitalName,
+                r.HospitalAddress,
+                r.DistrictId,
+                district?.Name,
+                r.UpazilaId,
+                upazila?.Name,
+                r.Area,
+                r.RequiredBy,
+                r.Urgency,
+                r.PatientName,
+                r.PatientRelation,
+                r.ContactPhone,
+                r.AdditionalInformation,
+                r.Status,
+                r.CompletedAt,
+                r.CancelledAt,
+                r.CreatedAt
+            );
+        }).ToList();
+    }
+
+    public async Task<int> GetBloodRequestCountAsync(RequestStatus? status, BloodGroup? bloodGroup)
+    {
+        var query = _requestRepo.Query();
+        if (status.HasValue)
+            query = query.Where(r => r.Status == status.Value);
+        if (bloodGroup.HasValue)
+            query = query.Where(r => r.BloodGroup == bloodGroup.Value);
+        return await _requestRepo.CountAsync(query);
     }
 
     public async Task<AdminReportDto?> ResolveReportAsync(Guid reportId, Guid adminId, ReportStatus status, string? resolution)
