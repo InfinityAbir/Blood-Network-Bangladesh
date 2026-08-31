@@ -217,6 +217,10 @@ export class LoginComponent {
         this.router.navigate([this.authService.getDashboardRoute()]);
       },
       error: (err) => {
+        if (err.name === 'TimeoutError') {
+          this.errorMessage = 'The server is waking up (this can take up to a minute on first use) — please try again.';
+          return;
+        }
         const msg = err.error?.message || err.error?.Message || 'Invalid phone number or password. Please try again.';
         this.errorMessage = msg;
       }

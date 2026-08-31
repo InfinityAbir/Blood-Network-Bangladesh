@@ -334,6 +334,10 @@ export class RegisterComponent {
         setTimeout(() => this.router.navigate([this.authService.getDashboardRoute()]), 1500);
       },
       error: (err) => {
+        if (err.name === 'TimeoutError') {
+          this.errorMessage = 'The server is waking up (this can take up to a minute on first use) — please try again.';
+          return;
+        }
         this.errorMessage = err.error?.message || 'Registration failed. Please try again.';
       }
     });

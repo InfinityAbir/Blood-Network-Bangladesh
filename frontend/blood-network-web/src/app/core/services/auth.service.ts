@@ -1,7 +1,12 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, tap } from 'rxjs';
+import { Observable, tap, timeout } from 'rxjs';
+
+// The backend (Render free tier) spins down when idle and can take 50s+ to wake back up
+// on the first request - HttpClient has no default timeout, so without this the login/
+// register button would spin forever instead of surfacing a "still waking up" error.
+const COLD_START_TIMEOUT_MS = 75_000;
 import { environment } from '../../../environments/environment';
 import { User, AuthResponse, UserRole } from '../models/user';
 import { SignalRService } from './signalr.service';
@@ -42,6 +47,7 @@ export class AuthService {
   }): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/register`, data)
       .pipe(
+        timeout(COLD_START_TIMEOUT_MS),
         tap(response => {
           this.storeAuth(response);
         })
@@ -51,6 +57,7 @@ export class AuthService {
   login(phoneNumber: string, password: string): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/login`, { phoneNumber, password })
       .pipe(
+        timeout(COLD_START_TIMEOUT_MS),
         tap(response => {
           this.storeAuth(response);
         })
