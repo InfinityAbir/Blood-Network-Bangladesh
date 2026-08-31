@@ -61,7 +61,6 @@ public class AdminService : IAdminService
         var totalUsers = await _userRepo.CountAsync(usersQ);
         var totalDonors = await _userRepo.CountAsync(usersQ.Where(u => u.Role == UserRole.Donor));
         var totalRequesters = await _userRepo.CountAsync(usersQ.Where(u => u.Role == UserRole.Requester));
-        var totalVolunteers = await _userRepo.CountAsync(usersQ.Where(u => u.Role == UserRole.Volunteer));
         var totalBloodRequests = await _requestRepo.CountAsync(requestsQ);
         var openBloodRequests = await _requestRepo.CountAsync(requestsQ.Where(r => r.Status == RequestStatus.Open || r.Status == RequestStatus.PartiallyFulfilled));
         var fulfilledBloodRequests = await _requestRepo.CountAsync(requestsQ.Where(r => r.Status == RequestStatus.Fulfilled));
@@ -69,14 +68,13 @@ public class AdminService : IAdminService
         var acceptedMatches = await _matchRepo.CountAsync(matchesQ.Where(m => m.DonorResponse == DonorResponse.Accepted));
         var totalReports = await _reportRepo.CountAsync(reportsQ);
         var openReports = await _reportRepo.CountAsync(reportsQ.Where(r => r.Status == ReportStatus.Open || r.Status == ReportStatus.UnderReview));
-        var pendingVerifications = await _donorProfileRepo.CountAsync(donorProfilesQ.Where(d => d.VerificationStatus == VerificationStatus.Pending));
+        var pendingVerifications = await _donorProfileRepo.CountAsync(donorProfilesQ.Where(d => d.VerificationStatus == VerificationStatus.Unverified));
 
         return new AdminDashboardStatsDto
         {
             TotalUsers = totalUsers,
             TotalDonors = totalDonors,
             TotalRequesters = totalRequesters,
-            TotalVolunteers = totalVolunteers,
             TotalBloodRequests = totalBloodRequests,
             OpenBloodRequests = openBloodRequests,
             FulfilledBloodRequests = fulfilledBloodRequests,

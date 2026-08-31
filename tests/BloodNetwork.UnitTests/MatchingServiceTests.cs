@@ -33,7 +33,6 @@ public class MatchingServiceTests
             Available = 30,
             Unknown = 0,
             Verified = 15,
-            Pending = 5,
             Unverified = 0,
             ProfileFreshness = 10,
             Distance0to3km = 15,
@@ -382,6 +381,109 @@ public class MatchingServiceTests
         Assert.NotNull(result);
         Assert.Equal(DonorResponse.Accepted, result!.DonorResponse);
         Assert.NotNull(result.AcceptedAt);
+    }
+
+    [Fact]
+    public async Task RespondToMatchAsync_AcceptNormal_DoesNotChangeAvailability()
+    {
+        var matchId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+
+        var match = new BloodRequestMatch
+        {
+            Id = matchId,
+            DonorId = userId,
+            BloodRequestId = Guid.NewGuid(),
+            DonorResponse = DonorResponse.Pending
+        };
+
+        var profile = new DonorProfile
+        {
+            UserId = userId,
+            AvailabilityStatus = AvailabilityStatus.Available
+        };
+
+        _matchRepoMock.Setup(r => r.GetByIdAsync(matchId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(match);
+        _requestRepoMock.Setup(r => r.GetByIdAsync(match.BloodRequestId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new BloodRequest { Id = match.BloodRequestId, RequesterId = Guid.NewGuid(), HospitalName = "Test Hospital", Urgency = Urgency.Normal });
+        _userRepoMock.Setup(r => r.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new User { Id = userId, FirstName = "Donor", LastName = "Test" });
+
+        var result = await _service.RespondToMatchAsync(matchId, userId, DonorResponse.Accepted);
+
+        Assert.NotNull(result);
+        Assert.Equal(AvailabilityStatus.Available, profile.AvailabilityStatus);
+    }
+
+    [Theory]
+    [InlineData(Urgency.Urgent)]
+    [InlineData(Urgency.Critical)]
+    public async Task RespondToMatchAsync_AcceptUrgentOrCritical_BecomesUnavailable(Urgency urgency)
+    {
+        var matchId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+
+        var match = new BloodRequestMatch
+        {
+            Id = matchId,
+            DonorId = userId,
+            BloodRequestId = Guid.NewGuid(),
+            DonorResponse = DonorResponse.Pending
+        };
+
+        var profile = new DonorProfile
+        {
+            UserId = userId,
+            AvailabilityStatus = AvailabilityStatus.Available
+        };
+
+        _matchRepoMock.Setup(r => r.GetByIdAsync(matchId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(match);
+        _requestRepoMock.Setup(r => r.GetByIdAsync(match.BloodRequestId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new BloodRequest { Id = match.BloodRequestId, RequesterId = Guid.NewGuid(), HospitalName = "Test Hospital", Urgency = urgency });
+        _userRepoMock.Setup(r => r.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new User { Id = userId, FirstName = "Donor", LastName = "Test" });
+        _donorProfileRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<DonorProfile, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(profile);
+
+        var result = await _service.RespondToMatchAsync(matchId, userId, DonorResponse.Accepted);
+
+        Assert.NotNull(result);
+        Assert.Equal(AvailabilityStatus.Unavailable, profile.AvailabilityStatus);
+    }
+
+    [Fact]
+    public async Task RespondToMatchAsync_AcceptNormal_WhenAlreadyUnavailable_StaysUnavailable()
+    {
+        var matchId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+
+        var match = new BloodRequestMatch
+        {
+            Id = matchId,
+            DonorId = userId,
+            BloodRequestId = Guid.NewGuid(),
+            DonorResponse = DonorResponse.Pending
+        };
+
+        var profile = new DonorProfile
+        {
+            UserId = userId,
+            AvailabilityStatus = AvailabilityStatus.Unavailable
+        };
+
+        _matchRepoMock.Setup(r => r.GetByIdAsync(matchId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(match);
+        _requestRepoMock.Setup(r => r.GetByIdAsync(match.BloodRequestId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new BloodRequest { Id = match.BloodRequestId, RequesterId = Guid.NewGuid(), HospitalName = "Test Hospital", Urgency = Urgency.Normal });
+        _userRepoMock.Setup(r => r.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new User { Id = userId, FirstName = "Donor", LastName = "Test" });
+
+        var result = await _service.RespondToMatchAsync(matchId, userId, DonorResponse.Accepted);
+
+        Assert.NotNull(result);
+        Assert.Equal(AvailabilityStatus.Unavailable, profile.AvailabilityStatus);
     }
 
     [Fact]

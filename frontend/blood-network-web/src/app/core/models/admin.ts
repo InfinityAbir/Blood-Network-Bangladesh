@@ -18,7 +18,7 @@ export interface AdminUser {
   lastName: string;
   phoneNumber: string;
   email?: string;
-  role: 'Donor' | 'Requester' | 'Volunteer' | 'Admin';
+  role: 'Donor' | 'Requester' | 'Admin' | 'Volunteer'; // Volunteer legacy only
   isActive: boolean;
   isPhoneVerified: boolean;
   lastLoginAt?: string;

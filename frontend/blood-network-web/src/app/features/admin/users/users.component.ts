@@ -1,7 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { RouterLink, ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -79,6 +79,15 @@ import { AuthService } from '../../../core/services/auth.service';
               <button mat-stroked-button class="filter-chip" [class.active]="selectedStatus==='Deactive'" (click)="setStatus('Deactive')"><mat-icon class="chip-icon">block</mat-icon> Deactive</button>
             </div>
           </div>
+          <div class="filter-group">
+            <span class="filter-label">Verify</span>
+            <div class="chip-row">
+              <button mat-stroked-button class="filter-chip" [class.active]="selectedVerification===''" (click)="setVerification('')">All</button>
+              <button mat-stroked-button class="filter-chip" [class.active]="selectedVerification==='Verified'" (click)="setVerification('Verified')">Verified</button>
+              <button mat-stroked-button class="filter-chip" [class.active]="selectedVerification==='Unverified'" (click)="setVerification('Unverified')">Unverified</button>
+              <button mat-stroked-button class="filter-chip" [class.active]="selectedVerification==='Rejected'" (click)="setVerification('Rejected')">Rejected</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -100,9 +109,9 @@ import { AuthService } from '../../../core/services/auth.service';
             </mat-card>
           }
         </div>
-      } @else if (result && result.items.length > 0) {
+      } @else if (result && filteredItems.length > 0) {
         <div class="results-panel" appReveal>
-        @for (user of result.items; track user.id) {
+        @for (user of filteredItems; track user.id) {
           <mat-card class="user-card bgn-hover-lift">
             <mat-card-header>
               <mat-card-title>{{ user.firstName }} {{ user.lastName }}</mat-card-title>
@@ -122,12 +131,15 @@ import { AuthService } from '../../../core/services/auth.service';
               </div>
             </mat-card-content>
             <mat-card-actions align="end">
-              @if (user.role === 'Donor' && (user.donorVerificationStatus === 'Pending' || user.donorVerificationStatus === 'Unverified')) {
+              @if (user.role === 'Donor' && user.donorVerificationStatus === 'Unverified') {
                 <button mat-button color="primary" (click)="verifyDonor(user.id, 'Verified')" class="bgn-press">Verify</button>
                 <button mat-button color="warn" (click)="verifyDonor(user.id, 'Rejected')" class="bgn-press">Reject</button>
               }
               @if (user.role === 'Donor' && user.donorVerificationStatus === 'Verified') {
-                <button mat-button color="warn" (click)="verifyDonor(user.id, 'Rejected')" class="bgn-press">Unverify</button>
+                <button mat-button color="warn" (click)="verifyDonor(user.id, 'Rejected')" class="bgn-press">Reject</button>
+              }
+              @if (user.role === 'Donor' && user.donorVerificationStatus === 'Rejected') {
+                <button mat-button color="primary" (click)="verifyDonor(user.id, 'Verified')" class="bgn-press">Verify</button>
               }
               <button mat-button [color]="user.isActive ? 'warn' : 'primary'" (click)="toggleActive(user.id, !user.isActive)" class="bgn-press" [disabled]="isSelf(user.id) && user.isActive">
                 {{ user.isActive ? 'Deactivate' : 'Activate' }}
@@ -232,7 +244,6 @@ import { AuthService } from '../../../core/services/auth.service';
     .chip.active { background: #e8f5e9; color: #2e7d32; }
     .chip.inactive { background: #ffebee; color: #c62828; }
     .verify-verified { background: #e8f5e9; color: #2e7d32; }
-    .verify-pending { background: #fff3e0; color: #e65100; }
     .verify-unverified { background: #f5f5f5; color: #666; }
     .verify-rejected { background: #ffebee; color: #c62828; }
     .detail { font-size: 12px; color: #999; }
@@ -254,20 +265,32 @@ export class UserManagementComponent implements OnInit {
   searchTerm = '';
   selectedRole = '';
   selectedStatus = '';
+  selectedVerification = '';
   currentPage = 1;
   pageSize = 10;
 
   constructor(
     private adminService: AdminService,
     private cdr: ChangeDetectorRef,
-    private authService: AuthService
+    private authService: AuthService,
+    private route: ActivatedRoute
   ) {}
+
+  get filteredItems(): AdminUser[] {
+    if (!this.result) return [];
+    if (!this.selectedVerification) return this.result.items;
+    return this.result.items.filter(u => u.donorVerificationStatus === this.selectedVerification);
+  }
 
   isSelf(userId: string): boolean {
     return this.authService.currentUser()?.id === userId;
   }
 
   ngOnInit(): void {
+    this.route.queryParams.subscribe(params => {
+      if (params['role']) this.selectedRole = params['role'];
+      if (params['verify']) this.selectedVerification = params['verify'];
+    });
     this.loadUsers();
   }
 
@@ -287,10 +310,15 @@ export class UserManagementComponent implements OnInit {
     this.loadUsers();
   }
 
+  setVerification(status: string): void {
+    this.selectedVerification = status;
+  }
+
   resetFilters(): void {
     this.searchTerm = '';
     this.selectedRole = '';
     this.selectedStatus = '';
+    this.selectedVerification = '';
     this.loadUsers();
   }
 

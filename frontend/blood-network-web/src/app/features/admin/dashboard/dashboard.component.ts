@@ -109,13 +109,14 @@ import { CountUpDirective } from '../../../shared/directives/count-up.directive'
             </mat-card-content>
           </mat-card>
 
-          <mat-card appReveal [appRevealDelay]="4" class="bgn-hover-lift">
+          <mat-card appReveal [appRevealDelay]="4" class="bgn-hover-lift" routerLink="/admin/users" [queryParams]="{ role: 'Donor', verify: 'Unverified' }" style="cursor:pointer">
             <mat-card-header>
               <mat-icon class="card-icon verify">verified</mat-icon>
-              <mat-card-title>Pending Verifications</mat-card-title>
+              <mat-card-title>Unverified Donors</mat-card-title>
             </mat-card-header>
             <mat-card-content>
               <div class="stat-value" [appCountUp]="stats.pendingVerifications">0</div>
+              <div class="stat-detail">awaiting verification</div>
             </mat-card-content>
           </mat-card>
         </div>

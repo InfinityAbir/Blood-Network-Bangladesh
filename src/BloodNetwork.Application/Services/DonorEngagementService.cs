@@ -148,7 +148,6 @@ public class DonorEngagementService : IDonorEngagementService
         score += profile.VerificationStatus switch
         {
             VerificationStatus.Verified => 10,
-            VerificationStatus.Pending => 5,
             _ => 0
         };
 

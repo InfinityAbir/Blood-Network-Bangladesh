@@ -1,8 +1,9 @@
 export enum UserRole {
   Donor = 'Donor',
   Requester = 'Requester',
-  Volunteer = 'Volunteer',
-  Admin = 'Admin'
+  Admin = 'Admin',
+  /** @deprecated Volunteer removed - legacy only */
+  Volunteer = 'Volunteer'
 }
 
 export interface User {

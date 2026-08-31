@@ -9,9 +9,10 @@ export enum AvailabilityStatus {
 
 export enum VerificationStatus {
   Unverified = 'Unverified',
-  Pending = 'Pending',
   Verified = 'Verified',
-  Rejected = 'Rejected'
+  Rejected = 'Rejected',
+  /** @deprecated Pending removed - legacy only */
+  Pending = 'Pending'
 }
 
 export interface DonorProfile {

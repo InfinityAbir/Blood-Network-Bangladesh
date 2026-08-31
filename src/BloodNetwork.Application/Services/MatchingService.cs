@@ -176,9 +176,25 @@ public class MatchingService : IMatchingService
         match.DonorResponse = response;
         match.RespondedAt = DateTime.UtcNow;
 
+        var request = await _requestRepo.GetByIdAsync(match.BloodRequestId);
+
         if (response == DonorResponse.Accepted)
         {
             match.AcceptedAt = DateTime.UtcNow;
+
+            // Once a donor accepts an Urgent/Critical request they're committed to the donation,
+            // so take them off the market — later matching passes shouldn't page them for another
+            // request they can't help with. An accepted Normal request leaves availability
+            // untouched: a donor who accepted one Normal request must stay matchable for a later
+            // Urgent/Critical one (and the toggle stays theirs to flip manually).
+            if (request is not null && (request.Urgency == Urgency.Critical || request.Urgency == Urgency.Urgent))
+            {
+                var profile = await _donorProfileRepo.FirstOrDefaultAsync(p => p.UserId == userId);
+                if (profile is not null)
+                {
+                    profile.AvailabilityStatus = AvailabilityStatus.Unavailable;
+                }
+            }
         }
         else if (response == DonorResponse.Declined)
         {
@@ -189,7 +205,6 @@ public class MatchingService : IMatchingService
 
         var donorUser = await _userRepo.GetByIdAsync(userId);
         var donorName = donorUser is not null ? $"{donorUser.FirstName} {donorUser.LastName}" : "A donor";
-        var request = await _requestRepo.GetByIdAsync(match.BloodRequestId);
         var responseType = response == DonorResponse.Accepted ? "accepted" : "declined";
         var notifType = response == DonorResponse.Accepted ? NotificationType.DonorAccepted : NotificationType.DonorDeclined;
 
@@ -240,7 +255,6 @@ public class MatchingService : IMatchingService
         score += profile.VerificationStatus switch
         {
             VerificationStatus.Verified => _weights.Verified,
-            VerificationStatus.Pending => _weights.Pending,
             VerificationStatus.Unverified => _weights.Unverified,
             VerificationStatus.Rejected => 0,
             _ => 0

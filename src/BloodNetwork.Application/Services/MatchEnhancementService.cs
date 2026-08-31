@@ -159,7 +159,6 @@ public class MatchEnhancementService : IMatchEnhancementService
         score += profile.VerificationStatus switch
         {
             VerificationStatus.Verified => 15,
-            VerificationStatus.Pending => 7,
             _ => 0
         };
 

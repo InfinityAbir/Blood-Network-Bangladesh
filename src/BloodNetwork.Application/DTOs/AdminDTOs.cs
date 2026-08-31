@@ -8,7 +8,6 @@ public class AdminDashboardStatsDto
     public int TotalUsers { get; set; }
     public int TotalDonors { get; set; }
     public int TotalRequesters { get; set; }
-    public int TotalVolunteers { get; set; }
     public int TotalBloodRequests { get; set; }
     public int OpenBloodRequests { get; set; }
     public int FulfilledBloodRequests { get; set; }
