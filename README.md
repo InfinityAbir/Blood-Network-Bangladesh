@@ -4,6 +4,12 @@
   <strong>Connecting blood donors with those in need — quickly, safely, and reliably.</strong>
 </p>
 
+## Screenshots
+
+| Homepage | Admin Dashboard | AI Chat |
+|---|---|---|
+| ![Homepage](image/homepage.png) | ![Admin Dashboard](image/admindashboard.png) | ![AI Chat](image/aichat.png) |
+
 ---
 
 ## Why This Project Exists
