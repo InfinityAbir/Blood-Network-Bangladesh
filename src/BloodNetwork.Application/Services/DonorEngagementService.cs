@@ -1,10 +1,8 @@
-using BloodNetwork.Application.Configuration;
 using BloodNetwork.Application.Interfaces;
 using BloodNetwork.Domain.Entities;
 using BloodNetwork.Domain.Enums;
 using BloodNetwork.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace BloodNetwork.Application.Services;
 
@@ -13,18 +11,18 @@ public class DonorEngagementService : IDonorEngagementService
     private readonly IRepository<DonorProfile> _donorProfileRepo;
     private readonly IRepository<User> _userRepo;
     private readonly ILogger<DonorEngagementService> _logger;
-    private readonly AppSettings _appSettings;
+    private readonly ISystemSettingsService _systemSettingsService;
 
     public DonorEngagementService(
         IRepository<DonorProfile> donorProfileRepo,
         IRepository<User> userRepo,
         ILogger<DonorEngagementService> logger,
-        IOptions<AppSettings> appSettings)
+        ISystemSettingsService systemSettingsService)
     {
         _donorProfileRepo = donorProfileRepo;
         _userRepo = userRepo;
         _logger = logger;
-        _appSettings = appSettings.Value;
+        _systemSettingsService = systemSettingsService;
     }
 
     public async Task<IReadOnlyList<DonorEngagementDto>> GetTopEngagedDonorsAsync(BloodGroup bloodGroup, int count = 10)
@@ -33,6 +31,7 @@ public class DonorEngagementService : IDonorEngagementService
         var userIds = profiles.Select(p => p.UserId).ToList();
         var users = await _userRepo.FindAsync(u => userIds.Contains(u.Id) && u.IsActive);
         var userLookup = users.ToDictionary(u => u.Id);
+        var appSettings = await _systemSettingsService.GetAppSettingsAsync();
 
         var results = new List<DonorEngagementDto>();
         foreach (var profile in profiles)
@@ -40,7 +39,7 @@ public class DonorEngagementService : IDonorEngagementService
             if (!userLookup.ContainsKey(profile.UserId)) continue;
 
             var user = userLookup[profile.UserId];
-            var score = CalculateEngagementScore(profile);
+            var score = CalculateEngagementScore(profile, appSettings);
 
             results.Add(new DonorEngagementDto
             {
@@ -74,7 +73,8 @@ public class DonorEngagementService : IDonorEngagementService
         var user = await _userRepo.GetByIdAsync(donorId);
         if (user == null) return null;
 
-        var score = CalculateEngagementScore(profile);
+        var appSettings = await _systemSettingsService.GetAppSettingsAsync();
+        var score = CalculateEngagementScore(profile, appSettings);
 
         return new DonorEngagementDto
         {
@@ -99,18 +99,21 @@ public class DonorEngagementService : IDonorEngagementService
             return 0;
         }
 
-        return CalculateEngagementScore(profile);
+        var appSettings = await _systemSettingsService.GetAppSettingsAsync();
+        return CalculateEngagementScore(profile, appSettings);
     }
 
-    public int CalculateEngagementScore(DonorProfile profile)
+    public int CalculateEngagementScore(DonorProfile profile, Configuration.AppSettings? appSettings = null)
     {
+        // Use passed settings or fallback to dynamic fetch (sync fallback for legacy callers)
+        var settings = appSettings ?? _systemSettingsService.GetAppSettingsAsync().GetAwaiter().GetResult();
         int score = 0;
 
         // Recency Factor (35 points) — threshold from MinimumDonationIntervalDays
         if (profile.LastDonationDate.HasValue)
         {
             var daysSinceLastDonation = (DateTime.UtcNow - profile.LastDonationDate.Value).Days;
-            var interval = _appSettings.MinimumDonationIntervalDays;
+            var interval = settings.MinimumDonationIntervalDays;
             score += daysSinceLastDonation switch
             {
                 var d when d <= interval => 35,
@@ -155,7 +158,7 @@ public class DonorEngagementService : IDonorEngagementService
         if (profile.LastProfileConfirmedAt.HasValue)
         {
             var daysSinceConfirmation = (DateTime.UtcNow - profile.LastProfileConfirmedAt.Value).Days;
-            var confirm = _appSettings.DonorProfileConfirmationDays;
+            var confirm = settings.DonorProfileConfirmationDays;
             score += daysSinceConfirmation switch
             {
                 var d when d <= 30 => 10,

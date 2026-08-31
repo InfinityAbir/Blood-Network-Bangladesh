@@ -1,11 +1,9 @@
-using BloodNetwork.Application.Configuration;
 using BloodNetwork.Application.DTOs;
 using BloodNetwork.Application.Interfaces;
 using BloodNetwork.Domain.Entities;
 using BloodNetwork.Domain.Enums;
 using BloodNetwork.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace BloodNetwork.Application.Services;
 
@@ -18,8 +16,7 @@ public class MatchingService : IMatchingService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapService _mapService;
     private readonly INotificationService _notificationService;
-    private readonly MatchScoreWeightsOptions _weights;
-    private readonly AppSettings _appSettings;
+    private readonly ISystemSettingsService _systemSettingsService;
     private readonly ILogger<MatchingService> _logger;
 
     private static readonly Dictionary<BloodGroup, BloodGroup[]> BloodCompatibility = new()
@@ -42,8 +39,7 @@ public class MatchingService : IMatchingService
         IUnitOfWork unitOfWork,
         IMapService mapService,
         INotificationService notificationService,
-        IOptions<MatchScoreWeightsOptions> weights,
-        IOptions<AppSettings> appSettings,
+        ISystemSettingsService systemSettingsService,
         ILogger<MatchingService> logger)
     {
         _requestRepo = requestRepo;
@@ -53,8 +49,7 @@ public class MatchingService : IMatchingService
         _unitOfWork = unitOfWork;
         _mapService = mapService;
         _notificationService = notificationService;
-        _weights = weights.Value;
-        _appSettings = appSettings.Value;
+        _systemSettingsService = systemSettingsService;
         _logger = logger;
     }
 
@@ -95,11 +90,15 @@ public class MatchingService : IMatchingService
 
         _logger.LogInformation("Found {Count} candidate donors for request {RequestId} (evaluating top {Eval})", filteredCandidates.Count, requestId, prioritized.Count);
 
+        // Dynamic weights from admin-editable SystemSettings (fallback to appsettings.json)
+        var weights = await _systemSettingsService.GetMatchWeightsAsync();
+        var appSettings = await _systemSettingsService.GetAppSettingsAsync();
+
         var matches = new List<BloodRequestMatch>();
         foreach (var profile in prioritized)
         {
             var distance = CalculateDistance(profile, request);
-            var score = CalculateScore(profile, request, distance);
+            var score = CalculateScore(profile, request, distance, weights, appSettings);
             if (score < 10) continue;
 
             var match = new BloodRequestMatch
@@ -236,26 +235,26 @@ public class MatchingService : IMatchingService
         return compatibleGroups.Contains(donorGroup);
     }
 
-    private int CalculateScore(DonorProfile profile, BloodRequest request, double? preCalculatedDistance = null)
+    private int CalculateScore(DonorProfile profile, BloodRequest request, double? preCalculatedDistance, DTOs.MatchScoreWeightsOptions weights, Configuration.AppSettings appSettings)
     {
         int score = 0;
 
         if (profile.BloodGroup == request.BloodGroup)
-            score += _weights.ExactBloodGroup;
+            score += weights.ExactBloodGroup;
         else if (IsCompatible(profile.BloodGroup, request.BloodGroup))
-            score += _weights.CompatibleBloodGroup;
+            score += weights.CompatibleBloodGroup;
 
         score += profile.AvailabilityStatus switch
         {
-            AvailabilityStatus.Available => _weights.Available,
-            AvailabilityStatus.Unknown => _weights.Unknown,
+            AvailabilityStatus.Available => weights.Available,
+            AvailabilityStatus.Unknown => weights.Unknown,
             _ => 0
         };
 
         score += profile.VerificationStatus switch
         {
-            VerificationStatus.Verified => _weights.Verified,
-            VerificationStatus.Unverified => _weights.Unverified,
+            VerificationStatus.Verified => weights.Verified,
+            VerificationStatus.Unverified => weights.Unverified,
             VerificationStatus.Rejected => 0,
             _ => 0
         };
@@ -263,12 +262,12 @@ public class MatchingService : IMatchingService
         if (profile.LastDonationDate.HasValue)
         {
             var daysSinceLastDonation = (DateTime.UtcNow - profile.LastDonationDate.Value).Days;
-            if (daysSinceLastDonation <= _appSettings.MinimumDonationIntervalDays)
-                score += _weights.ProfileFreshness;
+            if (daysSinceLastDonation <= appSettings.MinimumDonationIntervalDays)
+                score += weights.ProfileFreshness;
         }
         else
         {
-            score += _weights.ProfileFreshness;
+            score += weights.ProfileFreshness;
         }
 
         var distance = preCalculatedDistance ?? CalculateDistance(profile, request);
@@ -276,14 +275,23 @@ public class MatchingService : IMatchingService
         {
             score += distance.Value switch
             {
-                <= 3 => _weights.Distance0to3km,
-                <= 10 => _weights.Distance3to10km,
-                <= 25 => _weights.Distance10to25km,
-                _ => _weights.DistanceOver25km
+                <= 3 => weights.Distance0to3km,
+                <= 10 => weights.Distance3to10km,
+                <= 25 => weights.Distance10to25km,
+                _ => weights.DistanceOver25km
             };
         }
 
         return score;
+    }
+
+    // Backward compat for tests that call CalculateScore directly (if any)
+    private int CalculateScore(DonorProfile profile, BloodRequest request, double? preCalculatedDistance = null)
+    {
+        // Fallback to defaults when called without dynamic weights (e.g., unit tests without DB)
+        var weights = new DTOs.MatchScoreWeightsOptions();
+        var appSettings = new Configuration.AppSettings();
+        return CalculateScore(profile, request, preCalculatedDistance, weights, appSettings);
     }
 
     private double? CalculateDistance(DonorProfile profile, BloodRequest request)

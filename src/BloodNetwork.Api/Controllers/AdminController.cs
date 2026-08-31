@@ -15,10 +15,12 @@ namespace BloodNetwork.Api.Controllers;
 public class AdminController : ControllerBase
 {
     private readonly IAdminService _adminService;
+    private readonly ISystemSettingsService _systemSettingsService;
 
-    public AdminController(IAdminService adminService)
+    public AdminController(IAdminService adminService, ISystemSettingsService systemSettingsService)
     {
         _adminService = adminService;
+        _systemSettingsService = systemSettingsService;
     }
 
     [HttpGet("dashboard")]
@@ -216,6 +218,23 @@ public class AdminController : ControllerBase
             HttpContext.Connection.RemoteIpAddress?.ToString(), $"Deleted question {questionId}");
 
         return NoContent();
+    }
+
+    [HttpGet("system-settings")]
+    public async Task<IActionResult> GetSystemSettings()
+    {
+        var settings = await _systemSettingsService.GetAsync();
+        return Ok(settings);
+    }
+
+    [HttpPut("system-settings")]
+    public async Task<IActionResult> UpdateSystemSettings([FromBody] UpdateSystemSettingsRequest request)
+    {
+        var updated = await _systemSettingsService.UpdateAsync(request);
+        await _adminService.LogActionAsync(
+            GetUserId(), "UpdateSystemSettings", "SystemSettings", null,
+            HttpContext.Connection.RemoteIpAddress?.ToString(), "Updated system settings / match weights");
+        return Ok(updated);
     }
 
     private Guid? GetUserId()

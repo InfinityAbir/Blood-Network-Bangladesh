@@ -78,6 +78,11 @@ export const routes: Routes = [
     canActivate: [adminGuard]
   },
   {
+    path: 'admin/system-settings',
+    loadComponent: () => import('./features/admin/system-settings/system-settings.component').then(m => m.SystemSettingsComponent),
+    canActivate: [adminGuard]
+  },
+  {
     path: 'settings',
     loadComponent: () => import('./features/shared/settings/settings.component').then(m => m.UserSettingsComponent),
     canActivate: [authGuard]

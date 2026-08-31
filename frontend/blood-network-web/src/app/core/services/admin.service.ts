@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { AdminDashboardStats, AdminUser, AdminReport, AdminAuditLog, AdminEligibilityQuestion, SaveEligibilityQuestionRequest } from '../models/admin';
+import { AdminDashboardStats, AdminUser, AdminReport, AdminAuditLog, AdminEligibilityQuestion, SaveEligibilityQuestionRequest, SystemSettings } from '../models/admin';
 import { PagedResult } from '../models/paged-result';
 
 @Injectable({
@@ -73,5 +73,13 @@ export class AdminService {
 
   deleteEligibilityQuestion(id: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/eligibility-questions/${id}`);
+  }
+
+  getSystemSettings(): Observable<SystemSettings> {
+    return this.http.get<SystemSettings>(`${this.apiUrl}/system-settings`);
+  }
+
+  updateSystemSettings(settings: SystemSettings): Observable<SystemSettings> {
+    return this.http.put<SystemSettings>(`${this.apiUrl}/system-settings`, settings);
   }
 }

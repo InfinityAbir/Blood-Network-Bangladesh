@@ -39,6 +39,7 @@ public static class DependencyInjection
         services.AddScoped<IMatchEnhancementService, MatchEnhancementService>();
         services.AddScoped<IEligibilityService, EligibilityService>();
         services.AddScoped<IDeveloperInfoService, DeveloperInfoService>();
+        services.AddScoped<ISystemSettingsService, SystemSettingsService>();
 
         services.Configure<MatchScoreWeightsOptions>(
             configuration.GetSection("AppSettings:MatchScoreWeights"));

@@ -21,12 +21,13 @@ public class MatchingServiceTests
     private readonly Mock<IMapService> _mapServiceMock = new();
     private readonly Mock<INotificationService> _notificationServiceMock = new();
     private readonly Mock<ILogger<MatchingService>> _loggerMock = new();
+    private readonly Mock<ISystemSettingsService> _systemSettingsMock = new();
 
     private readonly MatchingService _service;
 
     public MatchingServiceTests()
     {
-        var options = Options.Create(new MatchScoreWeightsOptions
+        var weights = new MatchScoreWeightsOptions
         {
             ExactBloodGroup = 30,
             CompatibleBloodGroup = 0,
@@ -39,14 +40,16 @@ public class MatchingServiceTests
             Distance3to10km = 10,
             Distance10to25km = 5,
             DistanceOver25km = 0
-        });
-        var appSettings = Options.Create(new AppSettings
+        };
+        var appSettings = new AppSettings
         {
             MinimumDonationIntervalDays = 90,
             DonorProfileConfirmationDays = 90,
             MaxActiveRequestsPerUser = 3,
             ContactCooldownHours = 24
-        });
+        };
+        _systemSettingsMock.Setup(s => s.GetMatchWeightsAsync()).ReturnsAsync(weights);
+        _systemSettingsMock.Setup(s => s.GetAppSettingsAsync()).ReturnsAsync(appSettings);
 
         _service = new MatchingService(
             _requestRepoMock.Object,
@@ -56,8 +59,7 @@ public class MatchingServiceTests
             _unitOfWorkMock.Object,
             _mapServiceMock.Object,
             _notificationServiceMock.Object,
-            options,
-            appSettings,
+            _systemSettingsMock.Object,
             _loggerMock.Object);
     }
 

@@ -36,6 +36,7 @@ public class BloodNetworkDbContext : DbContext
     public DbSet<DeveloperInfo> DeveloperInfo => Set<DeveloperInfo>();
     public DbSet<EligibilityQuestion> EligibilityQuestions => Set<EligibilityQuestion>();
     public DbSet<UserEligibilityState> UserEligibilityStates => Set<UserEligibilityState>();
+    public DbSet<SystemSettings> SystemSettings => Set<SystemSettings>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -98,6 +99,7 @@ public class BloodNetworkDbContext : DbContext
         modelBuilder.Entity<DeveloperInfo>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<EligibilityQuestion>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<UserEligibilityState>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<SystemSettings>().HasQueryFilter(e => !e.IsDeleted);
     }
 
     private static void ConfigureIndexes(ModelBuilder modelBuilder)

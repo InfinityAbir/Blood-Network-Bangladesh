@@ -1,10 +1,8 @@
-using BloodNetwork.Application.Configuration;
 using BloodNetwork.Application.Interfaces;
 using BloodNetwork.Domain.Entities;
 using BloodNetwork.Domain.Enums;
 using BloodNetwork.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace BloodNetwork.Application.Services;
 
@@ -15,7 +13,7 @@ public class MatchEnhancementService : IMatchEnhancementService
     private readonly IRepository<BloodRequest> _requestRepo;
     private readonly IMapService _mapService;
     private readonly ILogger<MatchEnhancementService> _logger;
-    private readonly AppSettings _appSettings;
+    private readonly ISystemSettingsService _systemSettingsService;
 
     public MatchEnhancementService(
         IRepository<DonorProfile> donorProfileRepo,
@@ -23,14 +21,14 @@ public class MatchEnhancementService : IMatchEnhancementService
         IRepository<BloodRequest> requestRepo,
         IMapService mapService,
         ILogger<MatchEnhancementService> logger,
-        IOptions<AppSettings> appSettings)
+        ISystemSettingsService systemSettingsService)
     {
         _donorProfileRepo = donorProfileRepo;
         _userRepo = userRepo;
         _requestRepo = requestRepo;
         _mapService = mapService;
         _logger = logger;
-        _appSettings = appSettings.Value;
+        _systemSettingsService = systemSettingsService;
     }
 
     public async Task<IReadOnlyList<EnhancedMatchDto>> GetEnhancedMatchesAsync(
@@ -50,6 +48,7 @@ public class MatchEnhancementService : IMatchEnhancementService
         var users = await _userRepo.FindAsync(u => donorIds.Contains(u.Id));
         var userLookup = users.ToDictionary(u => u.Id);
 
+        var appSettings = await _systemSettingsService.GetAppSettingsAsync();
         var results = new List<EnhancedMatchDto>();
 
         foreach (var match in rawMatches)
@@ -59,7 +58,7 @@ public class MatchEnhancementService : IMatchEnhancementService
             userLookup.TryGetValue(match.DonorId, out var user);
             var donorName = user != null ? $"{user.FirstName} {user.LastName}" : "Unknown Donor";
 
-            var acceptanceProb = CalculateAcceptanceProbability(profile, request);
+            var acceptanceProb = CalculateAcceptanceProbability(profile, request, appSettings);
             var combinedScore = CalculateCombinedScore(match.MatchScore, acceptanceProb);
 
             results.Add(new EnhancedMatchDto
@@ -84,15 +83,16 @@ public class MatchEnhancementService : IMatchEnhancementService
         var user = await _userRepo.GetByIdAsync(match.DonorId);
 
         var donorName = user != null ? $"{user.FirstName} {user.LastName}" : "Unknown Donor";
+        var appSettings = await _systemSettingsService.GetAppSettingsAsync();
 
         int acceptanceProb;
         if (requestLat.HasValue && requestLon.HasValue && profile != null)
         {
-            acceptanceProb = CalculateAcceptanceProbabilityWithLocation(profile, requestLat.Value, requestLon.Value, false);
+            acceptanceProb = CalculateAcceptanceProbabilityWithLocation(profile, requestLat.Value, requestLon.Value, false, appSettings);
         }
         else if (profile != null)
         {
-            acceptanceProb = CalculateAcceptanceProbabilityWithLocation(profile, null, null, false);
+            acceptanceProb = CalculateAcceptanceProbabilityWithLocation(profile, null, null, false, appSettings);
         }
         else
         {
@@ -113,14 +113,14 @@ public class MatchEnhancementService : IMatchEnhancementService
         };
     }
 
-    private int CalculateAcceptanceProbability(DonorProfile profile, BloodRequest request)
+    private int CalculateAcceptanceProbability(DonorProfile profile, BloodRequest request, Configuration.AppSettings appSettings)
     {
         var isEmergency = request.Urgency == Urgency.Critical || request.Urgency == Urgency.Urgent;
-        return CalculateAcceptanceProbabilityWithLocation(profile, request.Latitude, request.Longitude, isEmergency);
+        return CalculateAcceptanceProbabilityWithLocation(profile, request.Latitude, request.Longitude, isEmergency, appSettings);
     }
 
     private int CalculateAcceptanceProbabilityWithLocation(
-        DonorProfile profile, double? requestLat, double? requestLon, bool isEmergency)
+        DonorProfile profile, double? requestLat, double? requestLon, bool isEmergency, Configuration.AppSettings? appSettings = null)
     {
         int score = 0;
 
@@ -162,11 +162,12 @@ public class MatchEnhancementService : IMatchEnhancementService
             _ => 0
         };
 
-        // Recency bonus (15) — threshold from MinimumDonationIntervalDays
+        // Recency bonus (15) — threshold from MinimumDonationIntervalDays (dynamic)
         if (profile.LastDonationDate.HasValue)
         {
             var daysSinceLastDonation = (DateTime.UtcNow - profile.LastDonationDate.Value).Days;
-            var interval = _appSettings.MinimumDonationIntervalDays;
+            var settings = appSettings ?? _systemSettingsService.GetAppSettingsAsync().GetAwaiter().GetResult();
+            var interval = settings.MinimumDonationIntervalDays;
             score += daysSinceLastDonation switch
             {
                 var d when d <= interval => 15,

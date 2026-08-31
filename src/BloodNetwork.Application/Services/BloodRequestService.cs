@@ -1,5 +1,4 @@
 using BloodNetwork.Application.Common;
-using BloodNetwork.Application.Configuration;
 using BloodNetwork.Application.DTOs;
 using BloodNetwork.Application.Interfaces;
 using BloodNetwork.Domain.Entities;
@@ -7,7 +6,6 @@ using BloodNetwork.Domain.Enums;
 using BloodNetwork.Domain.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace BloodNetwork.Application.Services;
 
@@ -25,7 +23,7 @@ public class BloodRequestService
     private readonly IRepository<DonationRecord> _donationRecordRepository;
     private readonly ILogger<BloodRequestService> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
-    private readonly AppSettings _appSettings;
+    private readonly ISystemSettingsService _systemSettingsService;
 
     public BloodRequestService(
         IRepository<BloodRequest> requestRepository,
@@ -40,7 +38,7 @@ public class BloodRequestService
         IRepository<DonationRecord> donationRecordRepository,
         ILogger<BloodRequestService> logger,
         IServiceScopeFactory scopeFactory,
-        IOptions<AppSettings> appSettings)
+        ISystemSettingsService systemSettingsService)
     {
         _requestRepository = requestRepository;
         _userRepository = userRepository;
@@ -54,7 +52,7 @@ public class BloodRequestService
         _donationRecordRepository = donationRecordRepository;
         _logger = logger;
         _scopeFactory = scopeFactory;
-        _appSettings = appSettings.Value;
+        _systemSettingsService = systemSettingsService;
     }
 
     public async Task<Result<BloodRequestDto>> CreateRequestAsync(Guid requesterId, CreateBloodRequestRequest request, CancellationToken cancellationToken = default)
@@ -74,20 +72,21 @@ public class BloodRequestService
         if (upazila.DistrictId != request.DistrictId)
             return Result<BloodRequestDto>.Failure("Upazila does not belong to district");
 
-        // G6: enforce MaxActiveRequestsPerUser
+        // G6: enforce MaxActiveRequestsPerUser (dynamic)
+        var appSettings = await _systemSettingsService.GetAppSettingsAsync();
         var activeCount = await _requestRepository.CountAsync(
             _requestRepository.Query().Where(r => r.RequesterId == requesterId && (r.Status == RequestStatus.Open || r.Status == RequestStatus.PartiallyFulfilled)),
             cancellationToken);
-        if (activeCount >= _appSettings.MaxActiveRequestsPerUser)
-            return Result<BloodRequestDto>.Failure($"You have {activeCount} active requests. Maximum allowed is {_appSettings.MaxActiveRequestsPerUser}.");
+        if (activeCount >= appSettings.MaxActiveRequestsPerUser)
+            return Result<BloodRequestDto>.Failure($"You have {activeCount} active requests. Maximum allowed is {appSettings.MaxActiveRequestsPerUser}.");
 
-        // G6: enforce ContactCooldownHours (throttle request creation)
-        if (_appSettings.ContactCooldownHours > 0)
+        // G6: enforce ContactCooldownHours (throttle request creation) - dynamic
+        if (appSettings.ContactCooldownHours > 0)
         {
-            var cooldownCutoff = DateTime.UtcNow.AddHours(-_appSettings.ContactCooldownHours);
+            var cooldownCutoff = DateTime.UtcNow.AddHours(-appSettings.ContactCooldownHours);
             var hasRecentRequest = await _requestRepository.AnyAsync(r => r.RequesterId == requesterId && r.CreatedAt >= cooldownCutoff, cancellationToken);
             if (hasRecentRequest)
-                return Result<BloodRequestDto>.Failure($"Please wait {_appSettings.ContactCooldownHours} hours between requests.");
+                return Result<BloodRequestDto>.Failure($"Please wait {appSettings.ContactCooldownHours} hours between requests.");
         }
 
         var bloodRequest = new BloodRequest

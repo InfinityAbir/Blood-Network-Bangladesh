@@ -45,16 +45,16 @@ The platform answers one critical question:
 ### Emergency Blood Request
 Anyone can create an emergency blood request in under a minute. The system immediately searches for compatible, available donors nearby and ranks them by eligibility, proximity, and availability.
 
-### Smart Donor Matching
+### Smart Donor Matching (Admin-Tunable)
 The matching engine considers:
 - **Blood compatibility** (ABO/Rh rules)
 - **Donor availability** (self-declared status)
-- **Donation interval** (configurable, medically-informed)
-- **Verification status** (phone, profile, blood group)
-- **Profile freshness** (last confirmed date)
-- **Geographic proximity** (distance scoring)
+- **Donation interval** (`MinimumDonationIntervalDays` — admin-editable)
+- **Verification status** (Verified/Unverified/Rejected)
+- **Profile freshness** (`DonorProfileConfirmationDays` — admin-editable)
+- **Geographic proximity** (distance buckets 0-3/3-10/10-25/>25 km — each weight admin-editable)
 
-All weights are configurable — not hard-coded — so the system can be tuned with local medical guidance.
+All weights are **not hard-coded**: admins tune them live via `Admin → System Settings` (`PUT /api/admin/system-settings`), backed by `SystemSettings` DB row with `appsettings.json` seed fallback.
 
 ### Donor Empowerment
 Donors control their own availability. They can:
@@ -83,7 +83,8 @@ Administrators can:
 
 | Layer | Technology |
 |---|---|
-| **Frontend** | Angular 21, TypeScript, Angular Material, SCSS |
+| **Frontend (Web)** | Angular 21, TypeScript, Angular Material, SCSS |
+| **Frontend (Mobile)** | Android (Kotlin, Jetpack Compose, Material 3, Retrofit, Coroutines) |
 | **Backend** | ASP.NET Core 10, C#, Clean Architecture |
 | **Database** | PostgreSQL with Entity Framework Core |
 | **Authentication** | JWT (access + refresh tokens), role-based authorization |
@@ -99,20 +100,22 @@ Administrators can:
 Blood-Network-Bangladesh/
 ├── src/
 │   ├── BloodNetwork.Api/              # ASP.NET Core Web API
-│   ├── BloodNetwork.Application/      # Business logic, CQRS, DTOs, validators
-│   ├── BloodNetwork.Domain/           # Entities, enums, domain rules
+│   ├── BloodNetwork.Application/      # Business logic, DTOs, validators, services
+│   ├── BloodNetwork.Domain/           # Entities (User, DonorProfile, SystemSettings...), enums
 │   └── BloodNetwork.Infrastructure/   # EF Core, PostgreSQL, auth, providers
 ├── frontend/
-│   └── blood-network-web/             # Angular 21 application
+│   └── blood-network-web/             # Angular 21 web app (Admin: System Settings, User Mgmt)
+├── android/ Blood Network Bangladesh Android App/
+│   └── app/src/main/java/...          # Kotlin/Compose mobile app (mirrors web admin)
 ├── tests/
-│   ├── BloodNetwork.UnitTests/
-│   └── BloodNetwork.IntegrationTests/
+│   ├── BloodNetwork.UnitTests/        # Matching, validation, service tests
+│   └── BloodNetwork.IntegrationTests/ # Auth, request, push tests
 ├── docs/
-│   ├── architecture.md                # System architecture documentation
-│   ├── feedback.md                    # Development feedback log
-│   ├── memory.md                      # Decisions and lessons learned
-│   └── status.md                      # Phase-by-phase progress tracker
-└── blood_network_bangladesh_prd.md    # Product Requirements Document
+│   ├── architecture.md
+│   ├── feedback.md
+│   ├── memory.md
+│   └── status.md
+└── blood_network_bangladesh_prd.md
 ```
 
 ---
@@ -165,10 +168,12 @@ The backend follows Clean Architecture principles:
 - `POST /api/matches/{id}/decline` — Donor declines request
 
 ### Admin
-- `GET /api/admin/dashboard` — Platform statistics
-- `GET /api/admin/users` — User management
+- `GET /api/admin/dashboard` — Platform statistics (Unverified donors = awaiting verification, not stale Pending)
+- `GET /api/admin/users` — User management (filters: role, active, verification)
 - `PUT /api/admin/users/{id}/status` — Activate/deactivate user
-- `POST /api/admin/users/{id}/verify` — Verify donor
+- `POST /api/admin/users/{id}/verify` — Verify donor (Verified/Rejected/Unverified; Pending removed as dead state)
+- `GET /api/admin/system-settings` — Get dynamic business rules & match weights
+- `PUT /api/admin/system-settings` — Update weights & rules (applies immediately, no redeploy)
 
 Full API documentation available at `/swagger` when running in development mode.
 
@@ -218,27 +223,33 @@ Angular will be available at `http://localhost:4200`.
 
 ---
 
-## Configurable Settings
+## Configurable Settings (Dynamic, Admin-Editable)
 
-All business rules are configurable via `appsettings.json`:
+All business rules are **admin-editable at runtime** via `Admin → System Settings` (no redeploy needed). Values are stored in the `SystemSettings` table with `appsettings.json` as fallback seed.
 
 ```json
+// GET /api/admin/system-settings  |  PUT /api/admin/system-settings  (Admin only)
 {
-  "AppSettings": {
-    "MinimumDonationIntervalDays": 90,
-    "DonorProfileConfirmationDays": 90,
-    "MaxActiveRequestsPerUser": 3,
-    "ContactCooldownHours": 24,
-    "MatchScoreWeights": {
-      "ExactBloodGroup": 30,
-      "Available": 30,
-      "Verified": 15,
-      "ProfileFreshness": 10,
-      "Distance0to3km": 15
-    }
-  }
+  "minimumDonationIntervalDays": 90,        // RecentlyDonated window
+  "donorProfileConfirmationDays": 90,       // Unknown after this many days
+  "maxActiveRequestsPerUser": 3,
+  "contactCooldownHours": 24,
+  "exactBloodGroupWeight": 30,              // +30 for exact match
+  "compatibleBloodGroupWeight": 0,
+  "availableWeight": 30,
+  "unknownWeight": 0,
+  "verifiedWeight": 15,
+  "unverifiedWeight": 0,
+  "profileFreshnessWeight": 10,
+  "distance0to3kmWeight": 15,
+  "distance3to10kmWeight": 10,
+  "distance10to25kmWeight": 5,
+  "distanceOver25kmWeight": 0
 }
 ```
+
+> **Before:** weights lived only in `appsettings.json:AppSettings:MatchScoreWeights` (required redeploy to tune).  
+> **Now:** `ISystemSettingsService` backs `MatchingService`, `DonorService`, `BloodRequestService` etc. with DB values; `PUT /api/admin/system-settings` updates immediately for new matches. Legacy `IOptions<MatchScoreWeightsOptions>` remains as seed fallback if DB row missing.
 
 ---
 
@@ -265,15 +276,18 @@ The platform uses standard ABO/Rh red-blood-cell compatibility for donor matchin
 
 | Phase | Status | Description |
 |---|---|---|
-| A: Foundation | ✅ Complete | Solution structure, Clean Architecture, EF Core, Angular scaffold |
-| B: Identity | 🔲 Pending | User registration, JWT auth, phone verification |
-| C: Donors | 🔲 Pending | Donor profiles, search, availability, verification |
-| D: Blood Requests | 🔲 Pending | Request creation, validation, status management |
-| E: Matching Engine | 🔲 Pending | Compatibility, eligibility, scoring, ranking |
-| F: Notifications | 🔲 Pending | In-app notifications, service abstraction |
-| G: Admin | 🔲 Pending | Dashboard, user management, reports, audit logs |
-| H: Security & Quality | 🔲 Pending | Rate limiting, tests, privacy review |
-| I: Deployment | 🔲 Pending | Production config, HTTPS, monitoring |
+| A: Foundation | ✅ Complete | Solution structure, Clean Architecture, EF Core, Angular + Android scaffold, CI |
+| B: Identity | ✅ Complete | Registration, JWT (access+refresh), phone validation, role-based guards (Donor/Requester/Admin) |
+| C: Donors | ✅ Complete | Donor profiles, Bangladesh location hierarchy, availability (Available/RecentlyDonated/Unknown), verification (Unverified/Verified/Rejected — Pending removed as dead state), photo upload |
+| D: Blood Requests | ✅ Complete | Emergency request CRUD, validation, status (Open/PartiallyFulfilled/Fulfilled/Cancelled), cooldown & max-active enforcement (dynamic) |
+| E: Matching Engine | ✅ Complete | ABO/Rh compatibility, distance (Haversine), eligibility, configurable scoring — weights now **admin-editable via SystemSettings** without redeploy |
+| F: Notifications | ✅ Complete | In-app + SignalR + FCM push, bulk admin alerts, unread badges |
+| G: Admin | ✅ Complete | Dashboard (Unverified donors count fixed), user management with verification filters, reports, audit logs, eligibility questions, **System Settings** (match weights & business rules) |
+| H: Security & Quality | ✅ Complete | Rate limiting, FluentValidation, global exception handling, audit logs, 47 unit + integration tests, privacy review |
+| I: Deployment | ✅ Complete | Render (API + DB PostgreSQL), env-based config, HTTPS, Swagger, health checks, FCM |
+| J: Mobile App | ✅ Complete | Android (Kotlin/Compose, Material 3, Retrofit) mirrors web: donor search, request flow, admin, system settings |
+| K: Dynamic Config | ✅ Complete | `SystemSettings` entity + `ISystemSettingsService` + `PUT /api/admin/system-settings`; web & Android admin UIs for live tuning |
+| L: Cleanup | 🔄 Ongoing | Removed dead states (Pending, Volunteer) with `[Obsolete]` for DB compat; volunteer→requester migration ready |
 
 ---
 

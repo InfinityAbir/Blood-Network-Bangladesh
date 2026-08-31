@@ -86,3 +86,22 @@ export interface SaveEligibilityQuestionRequest {
   failMessageEn: string;
   failMessageBn: string;
 }
+
+export interface SystemSettings {
+  minimumDonationIntervalDays: number;
+  donorProfileConfirmationDays: number;
+  maxActiveRequestsPerUser: number;
+  contactCooldownHours: number;
+  exactBloodGroupWeight: number;
+  compatibleBloodGroupWeight: number;
+  availableWeight: number;
+  unknownWeight: number;
+  verifiedWeight: number;
+  unverifiedWeight: number;
+  profileFreshnessWeight: number;
+  distance0to3kmWeight: number;
+  distance3to10kmWeight: number;
+  distance10to25kmWeight: number;
+  distanceOver25kmWeight: number;
+  updatedAt: string;
+}

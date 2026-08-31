@@ -1,6 +1,5 @@
 using System.Text.Json;
 using BloodNetwork.Application.Common;
-using BloodNetwork.Application.Configuration;
 using BloodNetwork.Application.DTOs;
 using BloodNetwork.Application.Interfaces;
 using BloodNetwork.Domain.Entities;
@@ -8,7 +7,6 @@ using BloodNetwork.Domain.Enums;
 using BloodNetwork.Domain.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace BloodNetwork.Application.Services;
 
@@ -30,7 +28,7 @@ public class DonorService
     private const double AvailabilityNotifyRadiusKm = 10;
     private const int AvailabilityNotifyMaxRequesters = 20;
 
-    private readonly AppSettings _appSettings;
+    private readonly ISystemSettingsService _systemSettingsService;
 
     public DonorService(
         IRepository<DonorProfile> donorProfileRepository,
@@ -45,7 +43,7 @@ public class DonorService
         IMatchingService matchingService,
         ILogger<DonorService> logger,
         IServiceScopeFactory scopeFactory,
-        IOptions<AppSettings> appSettings)
+        ISystemSettingsService systemSettingsService)
     {
         _donorProfileRepository = donorProfileRepository;
         _userRepository = userRepository;
@@ -59,11 +57,15 @@ public class DonorService
         _matchingService = matchingService;
         _logger = logger;
         _scopeFactory = scopeFactory;
-        _appSettings = appSettings.Value;
+        _systemSettingsService = systemSettingsService;
     }
 
-    private bool IsWithinRecentDonationWindow(DateTime? lastDonationDate) =>
-        lastDonationDate.HasValue && (DateTime.UtcNow - lastDonationDate.Value).TotalDays < _appSettings.MinimumDonationIntervalDays;
+    private async Task<bool> IsWithinRecentDonationWindowAsync(DateTime? lastDonationDate)
+    {
+        if (!lastDonationDate.HasValue) return false;
+        var settings = await _systemSettingsService.GetAppSettingsAsync();
+        return (DateTime.UtcNow - lastDonationDate.Value).TotalDays < settings.MinimumDonationIntervalDays;
+    }
 
     public async Task<Result<DonorProfileDto>> CreateProfileAsync(Guid userId, CreateDonorProfileRequest request, CancellationToken cancellationToken = default)
     {
@@ -90,6 +92,7 @@ public class DonorService
             if (upazila.DistrictId != request.DistrictId)
                 return Result<DonorProfileDto>.Failure("Upazila does not belong to district");
 
+            var isWithinWindow = await IsWithinRecentDonationWindowAsync(request.LastDonationDate);
             var profile = new DonorProfile
             {
                 UserId = userId,
@@ -103,7 +106,7 @@ public class DonorService
                 Latitude = request.Latitude,
                 Longitude = request.Longitude,
                 LastDonationDate = request.LastDonationDate,
-                AvailabilityStatus = IsWithinRecentDonationWindow(request.LastDonationDate)
+                AvailabilityStatus = isWithinWindow
                     ? AvailabilityStatus.RecentlyDonated
                     : AvailabilityStatus.Available,
                 VerificationStatus = VerificationStatus.Unverified,
@@ -161,12 +164,12 @@ public class DonorService
             // other reason — that stronger manual choice shouldn't get silently overwritten.
             // Conversely, auto-promote back to Available once the cooldown passes, but only if
             // this same auto-logic was what set RecentlyDonated in the first place.
-            var wasWithinWindow = IsWithinRecentDonationWindow(profile.LastDonationDate);
+            var wasWithinWindow = await IsWithinRecentDonationWindowAsync(profile.LastDonationDate);
             profile.LastDonationDate = request.LastDonationDate;
             profile.UpdatedAt = DateTime.UtcNow;
             profile.LastProfileConfirmedAt = DateTime.UtcNow;
 
-            var isWithinWindow = IsWithinRecentDonationWindow(profile.LastDonationDate);
+            var isWithinWindow = await IsWithinRecentDonationWindowAsync(profile.LastDonationDate);
             if (isWithinWindow && profile.AvailabilityStatus != AvailabilityStatus.Unavailable)
             {
                 profile.AvailabilityStatus = AvailabilityStatus.RecentlyDonated;
@@ -175,8 +178,9 @@ public class DonorService
             {
                 profile.AvailabilityStatus = AvailabilityStatus.Available;
             }
-            // G6: enforce confirmation freshness
-            if (profile.LastProfileConfirmedAt.HasValue && (DateTime.UtcNow - profile.LastProfileConfirmedAt.Value).TotalDays > _appSettings.DonorProfileConfirmationDays)
+            // G6: enforce confirmation freshness (dynamic)
+            var settings = await _systemSettingsService.GetAppSettingsAsync();
+            if (profile.LastProfileConfirmedAt.HasValue && (DateTime.UtcNow - profile.LastProfileConfirmedAt.Value).TotalDays > settings.DonorProfileConfirmationDays)
             {
                 profile.AvailabilityStatus = AvailabilityStatus.Unknown;
             }
@@ -202,8 +206,9 @@ public class DonorService
             if (profile is null)
                 return Result<DonorProfileDto>.Failure("Donor profile not found");
 
-            // G6: auto-downgrade stale profiles to Unknown
-            if (profile.LastProfileConfirmedAt.HasValue && (DateTime.UtcNow - profile.LastProfileConfirmedAt.Value).TotalDays > _appSettings.DonorProfileConfirmationDays
+            // G6: auto-downgrade stale profiles to Unknown (dynamic)
+            var settingsStale = await _systemSettingsService.GetAppSettingsAsync();
+            if (profile.LastProfileConfirmedAt.HasValue && (DateTime.UtcNow - profile.LastProfileConfirmedAt.Value).TotalDays > settingsStale.DonorProfileConfirmationDays
                 && profile.AvailabilityStatus != AvailabilityStatus.Unknown && profile.AvailabilityStatus != AvailabilityStatus.Unavailable)
             {
                 profile.AvailabilityStatus = AvailabilityStatus.Unknown;
@@ -233,14 +238,15 @@ public class DonorService
             if (profile is null)
                 return Result<DonorProfileDto>.Failure("Donor profile not found");
 
-            if (request.AvailabilityStatus == AvailabilityStatus.Available && IsWithinRecentDonationWindow(profile.LastDonationDate))
+            var settingsToggle = await _systemSettingsService.GetAppSettingsAsync();
+            if (request.AvailabilityStatus == AvailabilityStatus.Available && await IsWithinRecentDonationWindowAsync(profile.LastDonationDate))
             {
                 return Result<DonorProfileDto>.Failure(
-                    $"You donated on {profile.LastDonationDate:yyyy-MM-dd} — donors need to wait {_appSettings.MinimumDonationIntervalDays} days before donating again.");
+                    $"You donated on {profile.LastDonationDate:yyyy-MM-dd} — donors need to wait {settingsToggle.MinimumDonationIntervalDays} days before donating again.");
             }
 
-            // G6: enforce profile confirmation freshness
-            if (profile.LastProfileConfirmedAt.HasValue && (DateTime.UtcNow - profile.LastProfileConfirmedAt.Value).TotalDays > _appSettings.DonorProfileConfirmationDays)
+            // G6: enforce profile confirmation freshness (dynamic)
+            if (profile.LastProfileConfirmedAt.HasValue && (DateTime.UtcNow - profile.LastProfileConfirmedAt.Value).TotalDays > settingsToggle.DonorProfileConfirmationDays)
             {
                 profile.AvailabilityStatus = AvailabilityStatus.Unknown;
             }
