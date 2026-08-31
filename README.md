@@ -287,7 +287,7 @@ The platform uses standard ABO/Rh red-blood-cell compatibility for donor matchin
 | I: Deployment | ✅ Complete | Render (API + DB PostgreSQL), env-based config, HTTPS, Swagger, health checks, FCM |
 | J: Mobile App | ✅ Complete | Android (Kotlin/Compose, Material 3, Retrofit) mirrors web: donor search, request flow, admin, system settings |
 | K: Dynamic Config | ✅ Complete | `SystemSettings` entity + `ISystemSettingsService` + `PUT /api/admin/system-settings`; web & Android admin UIs for live tuning |
-| L: Cleanup | 🔄 Ongoing | Removed dead states (Pending, Volunteer) with `[Obsolete]` for DB compat; volunteer→requester migration ready |
+| L: Cleanup | ✅ Complete | Removed dead states from UI/logic (`Pending` chip, `Volunteer` role); enums kept as `[Obsolete]` for DB compat, data migrated via `20260831165402_CleanupVolunteerPending` (`Volunteer`→`Requester`, `Pending`→`Unverified`), fully removable when needed |
 
 ---
 
