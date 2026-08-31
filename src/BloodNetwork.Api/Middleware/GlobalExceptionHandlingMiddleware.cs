@@ -22,6 +22,17 @@ public class GlobalExceptionHandlingMiddleware
         {
             await _next(context);
         }
+        catch (OperationCanceledException ex) when (context.RequestAborted.IsCancellationRequested)
+        {
+            // Client disconnected (timeout/closed app) - not a server error, just log as warning
+            _logger.LogWarning(ex, "Request was canceled by client {Path}", context.Request.Path);
+            // Don't try to write response if client already disconnected
+            if (!context.Response.HasStarted)
+            {
+                context.Response.StatusCode = 499; // Client Closed Request
+                await context.Response.WriteAsync("{\"success\":false,\"message\":\"Request canceled\"}");
+            }
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unhandled exception occurred");

@@ -166,7 +166,7 @@ public class MatchEnhancementService : IMatchEnhancementService
         if (profile.LastDonationDate.HasValue)
         {
             var daysSinceLastDonation = (DateTime.UtcNow - profile.LastDonationDate.Value).Days;
-            var settings = appSettings ?? _systemSettingsService.GetAppSettingsAsync().GetAwaiter().GetResult();
+            var settings = appSettings ?? new Configuration.AppSettings();
             var interval = settings.MinimumDonationIntervalDays;
             score += daysSinceLastDonation switch
             {

@@ -53,7 +53,7 @@ else
 {
     var connectionString = NormalizeConnectionString(builder.Configuration.GetConnectionString("DefaultConnection"));
     builder.Services.AddDbContext<BloodNetworkDbContext>(options =>
-        options.UseNpgsql(connectionString));
+        options.UseNpgsql(connectionString, o => o.CommandTimeout(60)));
 }
 
 builder.Services.AddMemoryCache();

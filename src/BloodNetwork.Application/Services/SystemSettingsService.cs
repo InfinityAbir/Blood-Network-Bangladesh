@@ -88,30 +88,55 @@ public class SystemSettingsService : ISystemSettingsService
 
     private async Task<SystemSettings> GetOrCreateAsync()
     {
-        var existing = await _repo.FirstOrDefaultAsync(_ => true);
-        if (existing != null) return existing;
-
-        var created = new SystemSettings
+        try
         {
-            MinimumDonationIntervalDays = _fallbackAppSettings.MinimumDonationIntervalDays,
-            DonorProfileConfirmationDays = _fallbackAppSettings.DonorProfileConfirmationDays,
-            MaxActiveRequestsPerUser = _fallbackAppSettings.MaxActiveRequestsPerUser,
-            ContactCooldownHours = _fallbackAppSettings.ContactCooldownHours,
-            ExactBloodGroupWeight = _fallbackWeights.ExactBloodGroup,
-            CompatibleBloodGroupWeight = _fallbackWeights.CompatibleBloodGroup,
-            AvailableWeight = _fallbackWeights.Available,
-            UnknownWeight = _fallbackWeights.Unknown,
-            VerifiedWeight = _fallbackWeights.Verified,
-            UnverifiedWeight = _fallbackWeights.Unverified,
-            ProfileFreshnessWeight = _fallbackWeights.ProfileFreshness,
-            Distance0to3kmWeight = _fallbackWeights.Distance0to3km,
-            Distance3to10kmWeight = _fallbackWeights.Distance3to10km,
-            Distance10to25kmWeight = _fallbackWeights.Distance10to25km,
-            DistanceOver25kmWeight = _fallbackWeights.DistanceOver25km
-        };
-        await _repo.AddAsync(created);
-        await _unitOfWork.SaveChangesAsync();
-        return created;
+            var existing = await _repo.FirstOrDefaultAsync(_ => true);
+            if (existing != null) return existing;
+
+            var created = new SystemSettings
+            {
+                MinimumDonationIntervalDays = _fallbackAppSettings.MinimumDonationIntervalDays,
+                DonorProfileConfirmationDays = _fallbackAppSettings.DonorProfileConfirmationDays,
+                MaxActiveRequestsPerUser = _fallbackAppSettings.MaxActiveRequestsPerUser,
+                ContactCooldownHours = _fallbackAppSettings.ContactCooldownHours,
+                ExactBloodGroupWeight = _fallbackWeights.ExactBloodGroup,
+                CompatibleBloodGroupWeight = _fallbackWeights.CompatibleBloodGroup,
+                AvailableWeight = _fallbackWeights.Available,
+                UnknownWeight = _fallbackWeights.Unknown,
+                VerifiedWeight = _fallbackWeights.Verified,
+                UnverifiedWeight = _fallbackWeights.Unverified,
+                ProfileFreshnessWeight = _fallbackWeights.ProfileFreshness,
+                Distance0to3kmWeight = _fallbackWeights.Distance0to3km,
+                Distance3to10kmWeight = _fallbackWeights.Distance3to10km,
+                Distance10to25kmWeight = _fallbackWeights.Distance10to25km,
+                DistanceOver25kmWeight = _fallbackWeights.DistanceOver25km
+            };
+            await _repo.AddAsync(created);
+            await _unitOfWork.SaveChangesAsync();
+            return created;
+        }
+        catch (Exception ex) when (ex.Message.Contains("SystemSettings", StringComparison.OrdinalIgnoreCase) || ex.Message.Contains("42P01"))
+        {
+            // Table not yet migrated (e.g., old DB before AddSystemSettings) - fallback to in-memory defaults
+            return new SystemSettings
+            {
+                MinimumDonationIntervalDays = _fallbackAppSettings.MinimumDonationIntervalDays,
+                DonorProfileConfirmationDays = _fallbackAppSettings.DonorProfileConfirmationDays,
+                MaxActiveRequestsPerUser = _fallbackAppSettings.MaxActiveRequestsPerUser,
+                ContactCooldownHours = _fallbackAppSettings.ContactCooldownHours,
+                ExactBloodGroupWeight = _fallbackWeights.ExactBloodGroup,
+                CompatibleBloodGroupWeight = _fallbackWeights.CompatibleBloodGroup,
+                AvailableWeight = _fallbackWeights.Available,
+                UnknownWeight = _fallbackWeights.Unknown,
+                VerifiedWeight = _fallbackWeights.Verified,
+                UnverifiedWeight = _fallbackWeights.Unverified,
+                ProfileFreshnessWeight = _fallbackWeights.ProfileFreshness,
+                Distance0to3kmWeight = _fallbackWeights.Distance0to3km,
+                Distance3to10kmWeight = _fallbackWeights.Distance3to10km,
+                Distance10to25kmWeight = _fallbackWeights.Distance10to25km,
+                DistanceOver25kmWeight = _fallbackWeights.DistanceOver25km
+            };
+        }
     }
 
     private static SystemSettingsDto ToDto(SystemSettings e) => new()

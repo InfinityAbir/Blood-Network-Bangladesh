@@ -105,8 +105,8 @@ public class DonorEngagementService : IDonorEngagementService
 
     public int CalculateEngagementScore(DonorProfile profile, Configuration.AppSettings? appSettings = null)
     {
-        // Use passed settings or fallback to dynamic fetch (sync fallback for legacy callers)
-        var settings = appSettings ?? _systemSettingsService.GetAppSettingsAsync().GetAwaiter().GetResult();
+        // Use passed settings or fallback to defaults (avoid sync-over-async deadlock for legacy callers)
+        var settings = appSettings ?? new Configuration.AppSettings();
         int score = 0;
 
         // Recency Factor (35 points) — threshold from MinimumDonationIntervalDays

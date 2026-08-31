@@ -134,11 +134,20 @@ public class AuthService
             return Result<AuthResponse>.Failure("Invalid phone number or password");
 
         user.LastLoginAt = DateTime.UtcNow;
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        try
+        {
+            // Use None to avoid canceling critical LastLoginAt update if client disconnects
+            await _unitOfWork.SaveChangesAsync(CancellationToken.None);
+        }
+        catch (OperationCanceledException)
+        {
+            // Client canceled - still try to save without token
+            await _unitOfWork.SaveChangesAsync(CancellationToken.None);
+        }
 
         var dto = MapToDto(user);
         var accessToken = _jwtTokenService.GenerateAccessToken(user.Id, user.PhoneNumber, user.Role);
-        var refreshToken = await CreateRefreshTokenAsync(user.Id, cancellationToken);
+        var refreshToken = await CreateRefreshTokenAsync(user.Id, CancellationToken.None);
 
         return Result<AuthResponse>.Success(new AuthResponse(accessToken, refreshToken, dto));
     }
