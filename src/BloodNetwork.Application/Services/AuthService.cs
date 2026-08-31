@@ -121,8 +121,26 @@ public class AuthService
 
     public async Task<Result<AuthResponse>> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
     {
-        var user = await _userRepository.FirstOrDefaultAsync(
-            u => u.PhoneNumber == request.PhoneNumber, cancellationToken);
+        User? user;
+        try
+        {
+            // Use linked token with timeout to avoid hanging on DB pool exhaustion; don't fail on client cancel for lookup
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            cts.CancelAfter(TimeSpan.FromSeconds(15));
+            user = await _userRepository.FirstOrDefaultAsync(
+                u => u.PhoneNumber == request.PhoneNumber, cts.Token);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Client disconnected before DB responded - log and return timeout message
+            _logger.LogWarning("Login canceled by client for phone {Phone}", request.PhoneNumber);
+            return Result<AuthResponse>.Failure("Request timed out. Please try again.");
+        }
+        catch (OperationCanceledException ex)
+        {
+            _logger.LogWarning(ex, "DB timeout during login for phone {Phone}", request.PhoneNumber);
+            return Result<AuthResponse>.Failure("Database is busy, please try again in a moment.");
+        }
 
         if (user is null)
             return Result<AuthResponse>.Failure("Invalid phone number or password");

@@ -357,6 +357,13 @@ static string? NormalizeConnectionString(string? value)
         Database = uri.AbsolutePath.TrimStart('/'),
         Username = Uri.UnescapeDataString(userInfo[0]),
         Password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : null,
+        Timeout = 30,
+        CommandTimeout = 60,
+        KeepAlive = 30,
+        TcpKeepAlive = true,
+        Pooling = true,
+        MinPoolSize = 0,
+        MaxPoolSize = 20,
     };
 
     return npgsqlBuilder.ConnectionString;
