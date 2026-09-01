@@ -11,10 +11,13 @@ namespace BloodNetwork.Infrastructure.Data.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Data cleanup for dead states: Volunteer (Role=2) -> Requester (1), Pending (1) -> Unverified (0)
-            migrationBuilder.Sql(@"UPDATE ""Users"" SET ""Role"" = 1 WHERE ""Role"" = 2;");
-            migrationBuilder.Sql(@"UPDATE ""DonorProfiles"" SET ""VerificationStatus"" = 0 WHERE ""VerificationStatus"" = 1;");
-            migrationBuilder.Sql(@"UPDATE ""VerificationRecords"" SET ""Status"" = 0 WHERE ""Status"" = 1;");
+            // Data cleanup for dead states: Volunteer -> Requester, Pending -> Unverified.
+            // Role/VerificationStatus/Status are all stored as strings (HasConversion<string>()
+            // in their EF configs), so these must compare against the enum member's name, not
+            // its underlying int value.
+            migrationBuilder.Sql(@"UPDATE ""Users"" SET ""Role"" = 'Requester' WHERE ""Role"" = 'Volunteer';");
+            migrationBuilder.Sql(@"UPDATE ""DonorProfiles"" SET ""VerificationStatus"" = 'Unverified' WHERE ""VerificationStatus"" = 'Pending';");
+            migrationBuilder.Sql(@"UPDATE ""VerificationRecords"" SET ""Status"" = 'Unverified' WHERE ""Status"" = 'Pending';");
 
             migrationBuilder.UpdateData(
                 table: "EligibilityQuestions",
@@ -76,7 +79,7 @@ namespace BloodNetwork.Infrastructure.Data.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.Sql(@"UPDATE ""Users"" SET ""Role"" = 2 WHERE ""Role"" = 1 AND ""Id"" IN (SELECT ""UserId"" FROM ""DonorProfiles"" WHERE ""VerificationStatus"" = 0); -- best-effort revert, original Volunteer rows not recoverable precisely");
+            migrationBuilder.Sql(@"UPDATE ""Users"" SET ""Role"" = 'Volunteer' WHERE ""Role"" = 'Requester' AND ""Id"" IN (SELECT ""UserId"" FROM ""DonorProfiles"" WHERE ""VerificationStatus"" = 'Unverified'); -- best-effort revert, original Volunteer rows not recoverable precisely");
             migrationBuilder.UpdateData(
                 table: "EligibilityQuestions",
                 keyColumn: "Id",
