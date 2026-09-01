@@ -221,11 +221,19 @@ public class AdminService : IAdminService
             _donorProfileRepo.Query().Where(p => pagedIds.Contains(p.UserId)));
         var profileLookup = profiles.ToDictionary(p => p.UserId);
 
+        var locationIds = profiles.Select(p => p.DistrictId).Concat(profiles.Select(p => p.UpazilaId)).Distinct().ToList();
+        var districtNames = (await _districtRepo.ToListAsync(_districtRepo.Query().Where(d => locationIds.Contains(d.Id))))
+            .ToDictionary(d => d.Id, d => d.Name);
+        var upazilaNames = (await _upazilaRepo.ToListAsync(_upazilaRepo.Query().Where(u => locationIds.Contains(u.Id))))
+            .ToDictionary(u => u.Id, u => u.Name);
+
         return pagedUsers
             .Select(u =>
             {
                 profileLookup.TryGetValue(u.Id, out var profile);
-                return MapToUserDto(u, profile);
+                var districtName = profile != null ? districtNames.GetValueOrDefault(profile.DistrictId) : null;
+                var upazilaName = profile != null ? upazilaNames.GetValueOrDefault(profile.UpazilaId) : null;
+                return MapToUserDto(u, profile, districtName, upazilaName);
             })
             .ToList();
     }
@@ -263,7 +271,16 @@ public class AdminService : IAdminService
         await _unitOfWork.SaveChangesAsync();
 
         var profile = await _donorProfileRepo.FirstOrDefaultAsync(p => p.UserId == userId);
-        return MapToUserDto(user, profile);
+        var (districtName, upazilaName) = await GetLocationNamesAsync(profile);
+        return MapToUserDto(user, profile, districtName, upazilaName);
+    }
+
+    private async Task<(string? DistrictName, string? UpazilaName)> GetLocationNamesAsync(DonorProfile? profile)
+    {
+        if (profile == null) return (null, null);
+        var district = await _districtRepo.GetByIdAsync(profile.DistrictId);
+        var upazila = await _upazilaRepo.GetByIdAsync(profile.UpazilaId);
+        return (district?.Name, upazila?.Name);
     }
 
     public async Task<AdminUserDto?> VerifyDonorAsync(Guid userId, VerificationStatus status)
@@ -295,7 +312,9 @@ public class AdminService : IAdminService
         }
 
         var user = await _userRepo.GetByIdAsync(userId);
-        return user != null ? MapToUserDto(user, profile) : null;
+        if (user == null) return null;
+        var (districtName, upazilaName) = await GetLocationNamesAsync(profile);
+        return MapToUserDto(user, profile, districtName, upazilaName);
     }
 
     public async Task<IReadOnlyList<AdminReportDto>> GetReportsAsync(ReportStatus? status, int page = 1, int pageSize = 10)
@@ -650,7 +669,7 @@ public class AdminService : IAdminService
         FailMessageBn = q.FailMessageBn,
     };
 
-    private static AdminUserDto MapToUserDto(User user, DonorProfile? profile)
+    private static AdminUserDto MapToUserDto(User user, DonorProfile? profile, string? districtName = null, string? upazilaName = null)
     {
         return new AdminUserDto
         {
@@ -665,7 +684,12 @@ public class AdminService : IAdminService
             LastLoginAt = user.LastLoginAt,
             CreatedAt = user.CreatedAt,
             DonorVerificationStatus = profile?.VerificationStatus.ToString(),
-            PhotoUrl = user.PhotoUrl
+            PhotoUrl = user.PhotoUrl,
+            BloodGroup = profile?.BloodGroup,
+            DistrictName = districtName,
+            UpazilaName = upazilaName,
+            TotalDonationCount = profile?.TotalDonationCount,
+            LastDonationDate = profile?.LastDonationDate
         };
     }
 

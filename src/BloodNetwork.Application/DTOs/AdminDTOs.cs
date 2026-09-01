@@ -32,6 +32,11 @@ public class AdminUserDto
     public DateTime CreatedAt { get; set; }
     public string? DonorVerificationStatus { get; set; }
     public string? PhotoUrl { get; set; }
+    public BloodGroup? BloodGroup { get; set; }
+    public string? DistrictName { get; set; }
+    public string? UpazilaName { get; set; }
+    public int? TotalDonationCount { get; set; }
+    public DateTime? LastDonationDate { get; set; }
 }
 
 public class AdminReportDto
