@@ -128,7 +128,8 @@ public class MatchingService : IMatchingService
             // Only page donors above a confidence threshold — a 15/100 match still gets a
             // BloodRequestMatch row (for the donor's own match list) but doesn't justify a push.
             const int notifyThreshold = 60;
-            foreach (var match in matches.Where(m => m.MatchScore > notifyThreshold))
+            var notified = matches.Where(m => m.MatchScore > notifyThreshold).ToList();
+            foreach (var match in notified)
             {
                 try
                 {
@@ -138,12 +139,16 @@ public class MatchingService : IMatchingService
                         $"{requesterName} needs {request.BloodGroup.ToLabel()} blood at {request.HospitalName}. You scored {match.MatchScore}/100 match.",
                         NotificationType.BloodRequestMatch,
                         request.Id);
+                    match.ContactedAt = DateTime.UtcNow;
                 }
                 catch (Exception ex)
                 {
                     _logger.LogWarning(ex, "Failed to send match notification to donor {DonorId}", match.DonorId);
                 }
             }
+
+            if (notified.Count > 0)
+                await _unitOfWork.SaveChangesAsync();
         }
 
         return matches;
