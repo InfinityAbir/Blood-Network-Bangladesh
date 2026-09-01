@@ -47,3 +47,9 @@ services:
       # `sync: false` tells Render to leave the value alone on future blueprint syncs.
       - key: GroqApi__ApiKey
         sync: false
+      # Firebase Admin service-account JSON (single-line/minified), from Firebase Console ->
+      # Project Settings -> Service Accounts -> Generate new private key. Without this,
+      # PushNotificationService silently no-ops and no OS-level push is ever sent (in-app
+      # notifications via SignalR still work). See DEPLOY.md.
+      - key: Firebase__ServiceAccountJson
+        sync: false

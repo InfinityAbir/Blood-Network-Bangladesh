@@ -16,8 +16,9 @@ guardrail and the secret was one dashboard click away from being silently regene
 4. Click **Apply** / **Create New Resources**. Render provisions the DB, then the API
    service, wiring `ConnectionStrings__DefaultConnection` from the DB automatically and
    generating `Jwt__Secret` once.
-5. After the first sync, set the one secret marked `sync: false` in the dashboard
-   (API service → Environment): `GroqApi__ApiKey`.
+5. After the first sync, set the secrets marked `sync: false` in the dashboard
+   (API service → Environment): `GroqApi__ApiKey`, `Firebase__ServiceAccountJson`
+   (see **Push notifications (FCM)** below — without it, push silently no-ops).
 
 **Never do these again once the Blueprint is applied:**
 - Don't click "Generate" on `Jwt__Secret` in the dashboard — it's now blueprint-managed
@@ -62,6 +63,23 @@ guardrail and the secret was one dashboard click away from being silently regene
 Only touch this if your frontend ends up on a different Render URL — update the value in
 `render.yaml` (preferred, keeps it version-controlled) or override it directly on the API
 service's Environment tab, then redeploy.
+
+## Push notifications (FCM)
+
+Donor-match, verification, and report-resolution pushes are sent through Firebase Cloud
+Messaging by `PushNotificationService`. It degrades to a **silent no-op** with no error and
+no crash if credentials are missing — in-app/SignalR notifications keep working, but no
+OS-level push ever reaches a device. To enable it:
+
+1. Firebase Console → your project → **Project Settings** → **Service Accounts** →
+   **Generate new private key**. This downloads a JSON file.
+2. Minify it to a single line (e.g. `jq -c . serviceAccount.json` or any JSON minifier —
+   the value must be valid single-line JSON, not a file path).
+3. Render Dashboard → `blood-network-api` → **Environment** → add `Firebase__ServiceAccountJson`
+   with that JSON as the value. Keep it out of git — never commit the key file.
+4. Redeploy. Startup logs should show `Firebase Admin initialized (FCM push enabled)`; if
+   credentials are missing/invalid you'll instead see `Firebase Admin could not be
+   initialized. Push notifications disabled.`
 
 ## Database backups
 
