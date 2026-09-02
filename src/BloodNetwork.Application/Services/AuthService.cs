@@ -40,6 +40,12 @@ public class AuthService
 
     public async Task<Result<AuthResponse>> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken = default)
     {
+        // Email is optional, and the web form posts it as "" rather than omitting it. An
+        // empty string is not NULL, so it falls inside the unique index (filtered on
+        // "Email" IS NOT NULL) and the second blank-email signup collides with the first —
+        // surfacing as a raw 500 rather than any sensible message. Blank means absent.
+        var email = string.IsNullOrWhiteSpace(request.Email) ? null : request.Email.Trim();
+
         var existingPhone = await _userRepository.AnyAsync(
             u => u.PhoneNumber == request.PhoneNumber, cancellationToken);
 
@@ -69,15 +75,15 @@ public class AuthService
         if (existingPhone)
             return Result<AuthResponse>.Failure("A user with this phone number already exists");
 
-        if (!string.IsNullOrEmpty(request.Email))
+        if (email is not null)
         {
             var existingEmail = await _userRepository.AnyAsync(
-                u => u.Email == request.Email, cancellationToken);
+                u => u.Email == email, cancellationToken);
 
             if (existingEmail)
             {
                 var staleEmailUser = await _userRepository.FirstOrDefaultAsync(
-                    u => u.Email == request.Email && !u.IsPhoneVerified, cancellationToken);
+                    u => u.Email == email && !u.IsPhoneVerified, cancellationToken);
                 if (staleEmailUser != null && staleEmailUser.CreatedAt < DateTime.UtcNow.AddHours(-24))
                 {
                     try
@@ -88,7 +94,7 @@ public class AuthService
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogWarning(ex, "Stale-account cleanup failed for email {Email}", request.Email);
+                        _logger.LogWarning(ex, "Stale-account cleanup failed for email {Email}", email);
                     }
                 }
             }
@@ -108,7 +114,7 @@ public class AuthService
             FirstName = request.FirstName,
             LastName = request.LastName,
             PhoneNumber = request.PhoneNumber,
-            Email = request.Email,
+            Email = email,
             PasswordHash = _passwordHasher.HashPassword(request.Password),
             Role = request.Role,
             IsActive = true,
