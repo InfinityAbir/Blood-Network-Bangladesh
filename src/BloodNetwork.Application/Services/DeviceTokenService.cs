@@ -65,13 +65,12 @@ public class DeviceTokenService
         }
         catch (Exception ex)
         {
-            // The same FCM token can be registered from more than one place at once (e.g. a
-            // website tab and an installed-PWA "app" open together share the same token), and
-            // the unique index on Token can lose that race between the read above and this
-            // save. Whichever request won still leaves a valid row for this token, so this is
-            // best-effort - don't fail the request over it.
-            _logger.LogWarning(ex, "Device-token registration raced/failed for user {UserId}", userId);
-            return Result<bool>.Success(true);
+            // Do not claim success when the token was not persisted. That made FCM failures
+            // look like successful registration and left donors with in-app notifications only.
+            // A duplicate-token race is harmless only when another request actually won it;
+            // all other database errors must be visible to the client and deployment logs.
+            _logger.LogError(ex, "Failed to persist device token for user {UserId}", userId);
+            return Result<bool>.Failure("Could not register this device for push notifications. Please try again.");
         }
 
         try
@@ -98,7 +97,9 @@ public class DeviceTokenService
         if (existing is null)
             return Result<bool>.Failure("Device token not found");
 
-        await _tokenRepository.DeleteAsync(existing, cancellationToken);
+        // FCM registration tokens are reusable after logout/login. Soft-deleting one leaves
+        // its unique Token index occupied, so a later login cannot re-register it.
+        await _tokenRepository.HardDeleteAsync(existing, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return Result<bool>.Success(true);
     }
@@ -110,11 +111,12 @@ public class DeviceTokenService
             t => t.UserId == userId && t.LastActiveAt < cutoff, cancellationToken);
         foreach (var token in stale)
         {
-            await _tokenRepository.DeleteAsync(token, cancellationToken);
+            await _tokenRepository.HardDeleteAsync(token, cancellationToken);
         }
         if (stale.Count > 0)
         {
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
     }
+
 }

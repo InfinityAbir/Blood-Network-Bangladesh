@@ -85,6 +85,21 @@ public class PushTokenIntegrationTests : IClassFixture<CustomWebApplicationFacto
     }
 
     [Fact]
+    public async Task RegisterToken_AfterLogoutCleanup_CanRegisterTheSameFcmTokenAgain()
+    {
+        AssumeAll(await RegisterAsync("01790000006"));
+        const string fcmToken = "fcm-relogin-abcdef1234567890abcdef";
+
+        Assert.Equal(HttpStatusCode.OK, (await _client.PostAsJsonAsync("/api/push/tokens", new RegisterPushTokenRequest(fcmToken))).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await _client.DeleteAsync($"/api/push/tokens/{fcmToken}")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await _client.PostAsJsonAsync("/api/push/tokens", new RegisterPushTokenRequest(fcmToken))).StatusCode);
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<BloodNetworkDbContext>();
+        Assert.Equal(1, await db.Set<DeviceToken>().CountAsync(t => t.Token == fcmToken));
+    }
+
+    [Fact]
     public async Task RemoveToken_OtherUsersToken_ReturnsNotFound()
     {
         AssumeAll(await RegisterAsync("01790000004"));

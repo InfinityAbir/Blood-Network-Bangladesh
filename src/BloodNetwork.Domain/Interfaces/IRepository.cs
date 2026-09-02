@@ -15,6 +15,8 @@ public interface IRepository<T> where T : BaseEntity
     Task<T> AddAsync(T entity, CancellationToken cancellationToken = default);
     Task UpdateAsync(T entity, CancellationToken cancellationToken = default);
     Task DeleteAsync(T entity, CancellationToken cancellationToken = default);
+    /// <summary>Physically removes a short-lived technical record.</summary>
+    Task HardDeleteAsync(T entity, CancellationToken cancellationToken = default);
     Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default);
     Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null, CancellationToken cancellationToken = default);
     Task<bool> AnyAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default);

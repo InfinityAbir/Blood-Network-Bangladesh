@@ -66,7 +66,11 @@ public class PushNotificationService : IPushNotificationSender
             return;
         }
 
-        if (devices.Count == 0) return;
+        if (devices.Count == 0)
+        {
+            _logger.LogInformation("No registered FCM devices for notification recipient {UserId}", userId);
+            return;
+        }
 
         var app = GetApp();
         if (app is null) return;
@@ -112,14 +116,16 @@ public class PushNotificationService : IPushNotificationSender
                     }
                 };
                 await fcm.SendAsync(payload, cancellationToken);
-                _logger.LogDebug("FCM push sent to device ending ...{Tail}", DeviceTail(device.Token));
+                _logger.LogInformation("FCM push accepted for device ending ...{Tail}", DeviceTail(device.Token));
             }
             catch (FirebaseMessagingException ex) when (IsPermanentlyInvalidToken(ex))
             {
                 _logger.LogInformation("Removing invalid FCM token ending ...{Tail} for user {UserId}", DeviceTail(device.Token), userId);
                 try
                 {
-                    await _tokenRepository.DeleteAsync(device, cancellationToken);
+                    // A dead FCM token must be physically removed; soft deletion retains the
+                    // unique Token index and prevents the device from registering again.
+                    await _tokenRepository.HardDeleteAsync(device, cancellationToken);
                     await _unitOfWork.SaveChangesAsync(cancellationToken);
                 }
                 catch (Exception inner)

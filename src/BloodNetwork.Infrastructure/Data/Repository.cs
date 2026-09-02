@@ -66,6 +66,12 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
         return Task.CompletedTask;
     }
 
+    public virtual Task HardDeleteAsync(T entity, CancellationToken cancellationToken = default)
+    {
+        _dbSet.Remove(entity);
+        return Task.CompletedTask;
+    }
+
     public virtual async Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
     {
         return await _dbSet.FirstOrDefaultAsync(predicate, cancellationToken);
