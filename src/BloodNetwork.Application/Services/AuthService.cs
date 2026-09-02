@@ -382,7 +382,9 @@ public class AuthService
         {
             UserId = userId,
             Token = HashToken(tokenValue),
-            ExpiresAt = DateTime.UtcNow.AddDays(7),
+            // Honour the configured lifetime instead of a hardcoded 7 days — the setting
+            // existed but nothing read it, so changing it in config had no effect.
+            ExpiresAt = DateTime.UtcNow.AddDays(_jwtTokenService.RefreshTokenExpirationDays),
             IsRevoked = false
         };
 

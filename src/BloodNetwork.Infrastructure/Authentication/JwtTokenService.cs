@@ -17,6 +17,8 @@ public class JwtTokenService : IJwtTokenService
     private readonly int _accessTokenExpirationMinutes;
     private readonly int _refreshTokenExpirationDays;
 
+    public int RefreshTokenExpirationDays => _refreshTokenExpirationDays;
+
     public JwtTokenService(IConfiguration configuration)
     {
         _secretKey = configuration["Jwt:Secret"]!;

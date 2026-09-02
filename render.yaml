@@ -39,8 +39,11 @@ services:
         value: BloodNetworkBangladesh
       - key: Jwt__ExpirationInMinutes
         value: "60"
+      # Refresh tokens rotate on every use, so an app opened even occasionally keeps
+      # extending its own window — this is the idle timeout before a real re-login.
+      # 7 days meant a user who didn't open the app for a week got signed out.
       - key: Jwt__RefreshExpirationInDays
-        value: "7"
+        value: "90"
       - key: AllowedOrigins
         value: '["https://blood-network-bangladesh-frontend.onrender.com"]'
       # Secrets kept out of git: set once in the Render dashboard after first sync,
