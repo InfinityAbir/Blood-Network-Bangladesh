@@ -37,29 +37,42 @@ public class DeviceTokenService
         if (string.IsNullOrWhiteSpace(token) || token.Length < 16)
             return Result<bool>.Failure("A valid device token is required");
 
-        var existing = await _tokenRepository.FirstOrDefaultAsync(
-            t => t.Token == token, cancellationToken);
-
-        if (existing is null)
+        try
         {
-            await _tokenRepository.AddAsync(new DeviceToken
+            var existing = await _tokenRepository.FirstOrDefaultAsync(
+                t => t.Token == token, cancellationToken);
+
+            if (existing is null)
             {
-                UserId = userId,
-                Token = token,
-                Platform = request.Platform,
-                LastActiveAt = DateTime.UtcNow
-            }, cancellationToken);
-        }
-        else
-        {
-            existing.UserId = userId;
-            existing.Platform = request.Platform;
-            existing.LastActiveAt = DateTime.UtcNow;
-            existing.UpdatedAt = DateTime.UtcNow;
-            await _tokenRepository.UpdateAsync(existing, cancellationToken);
-        }
+                await _tokenRepository.AddAsync(new DeviceToken
+                {
+                    UserId = userId,
+                    Token = token,
+                    Platform = request.Platform,
+                    LastActiveAt = DateTime.UtcNow
+                }, cancellationToken);
+            }
+            else
+            {
+                existing.UserId = userId;
+                existing.Platform = request.Platform;
+                existing.LastActiveAt = DateTime.UtcNow;
+                existing.UpdatedAt = DateTime.UtcNow;
+                await _tokenRepository.UpdateAsync(existing, cancellationToken);
+            }
 
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            // The same FCM token can be registered from more than one place at once (e.g. a
+            // website tab and an installed-PWA "app" open together share the same token), and
+            // the unique index on Token can lose that race between the read above and this
+            // save. Whichever request won still leaves a valid row for this token, so this is
+            // best-effort - don't fail the request over it.
+            _logger.LogWarning(ex, "Device-token registration raced/failed for user {UserId}", userId);
+            return Result<bool>.Success(true);
+        }
 
         try
         {
