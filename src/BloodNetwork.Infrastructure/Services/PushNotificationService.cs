@@ -12,7 +12,7 @@ using Microsoft.Extensions.Options;
 namespace BloodNetwork.Infrastructure.Services;
 
 /// <summary>
-/// FCM push sender. Delivers an OS-level notification to every registered Android device
+/// FCM push sender. Delivers an OS-level notification to every registered Android/Web device
 /// of the target user (iOS reserved for later). Purely additive: if no Firebase credential
 /// is available (local dev, tests) it degrades to a silent no-op so the in-app
 /// notification layer is never blocked. Invalid/unregistered tokens are removed
@@ -57,7 +57,8 @@ public class PushNotificationService : IPushNotificationSender
         try
         {
             devices = await _tokenRepository.FindAsync(
-                t => t.UserId == userId && t.Platform == DevicePlatform.Android, cancellationToken);
+                t => t.UserId == userId && (t.Platform == DevicePlatform.Android || t.Platform == DevicePlatform.Web),
+                cancellationToken);
         }
         catch (Exception ex)
         {
@@ -79,17 +80,28 @@ public class PushNotificationService : IPushNotificationSender
                 {
                     Token = device.Token,
                     Notification = new FirebaseAdmin.Messaging.Notification { Title = title, Body = message },
-                    Android = new AndroidConfig
-                    {
-                        Priority = Priority.High,
-                        Notification = new AndroidNotification
+                    Android = device.Platform == DevicePlatform.Android
+                        ? new AndroidConfig
                         {
-                            // Must match the app's PushMessagingService channel so the
-                            // notification is visible on Android 13+; the platform default
-                            // channel for a new install is suppressed by default.
-                            ChannelId = "blood_updates"
+                            Priority = Priority.High,
+                            Notification = new AndroidNotification
+                            {
+                                // Must match the app's PushMessagingService channel so the
+                                // notification is visible on Android 13+; the platform default
+                                // channel for a new install is suppressed by default.
+                                ChannelId = "blood_updates"
+                            }
                         }
-                    },
+                        : null,
+                    Webpush = device.Platform == DevicePlatform.Web
+                        ? new WebpushConfig
+                        {
+                            Notification = new WebpushNotification
+                            {
+                                Icon = "/favicon.ico"
+                            }
+                        }
+                        : null,
                     Data = new Dictionary<string, string>
                     {
                         ["title"] = title,

@@ -13,6 +13,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Subscription } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { PushNotificationService } from '../../core/services/push-notification.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { Notification } from '../../core/models/notification';
 
@@ -277,6 +278,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   constructor(
     public authService: AuthService,
     private notificationService: NotificationService,
+    private pushNotificationService: PushNotificationService,
     private router: Router,
     public theme: ThemeService,
     private snackBar: MatSnackBar
@@ -286,6 +288,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     if (this.authService.isAuthenticated()) {
       this.notificationService.startConnection();
       this.notificationService.refreshUnreadCount();
+      this.pushNotificationService.register();
 
       this.subscriptions.push(
         this.notificationService.unreadCount$.subscribe(count => {

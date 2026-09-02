@@ -10,6 +10,7 @@ const COLD_START_TIMEOUT_MS = 75_000;
 import { environment } from '../../../environments/environment';
 import { User, AuthResponse, UserRole } from '../models/user';
 import { SignalRService } from './signalr.service';
+import { PushNotificationService } from './push-notification.service';
 
 @Injectable({
   providedIn: 'root'
@@ -18,6 +19,7 @@ export class AuthService {
   private readonly apiUrl = `${environment.apiUrl}/auth`;
   private currentUserSignal = signal<User | null>(null);
   private signalR = inject(SignalRService);
+  private pushNotifications = inject(PushNotificationService);
 
   currentUser = this.currentUserSignal.asReadonly();
   isAuthenticated = computed(() => {
@@ -109,6 +111,7 @@ export class AuthService {
 
   logout(): void {
     this.signalR.stop();
+    this.pushNotifications.unregister();
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
