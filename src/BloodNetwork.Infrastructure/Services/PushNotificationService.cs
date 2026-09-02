@@ -80,22 +80,23 @@ public class PushNotificationService : IPushNotificationSender
         {
             try
             {
+                var isAndroid = device.Platform == DevicePlatform.Android;
+
                 var payload = new Message
                 {
                     Token = device.Token,
-                    Notification = new FirebaseAdmin.Messaging.Notification { Title = title, Body = message },
-                    Android = device.Platform == DevicePlatform.Android
-                        ? new AndroidConfig
-                        {
-                            Priority = Priority.High,
-                            Notification = new AndroidNotification
-                            {
-                                // Must match the app's PushMessagingService channel so the
-                                // notification is visible on Android 13+; the platform default
-                                // channel for a new install is suppressed by default.
-                                ChannelId = "blood_updates"
-                            }
-                        }
+                    // Android gets a DATA-ONLY message: including a notification block hands
+                    // rendering to the system tray, which skips PushMessagingService entirely
+                    // whenever the app isn't foregrounded. That path is opaque (nothing the app
+                    // can log) and is what aggressive OEM ROMs suppress. Data-only always wakes
+                    // onMessageReceived, so the app posts the notification through its own
+                    // channel and every delivery is observable. Web still needs the block —
+                    // its service worker renders from it.
+                    Notification = isAndroid
+                        ? null
+                        : new FirebaseAdmin.Messaging.Notification { Title = title, Body = message },
+                    Android = isAndroid
+                        ? new AndroidConfig { Priority = Priority.High }
                         : null,
                     Webpush = device.Platform == DevicePlatform.Web
                         ? new WebpushConfig
