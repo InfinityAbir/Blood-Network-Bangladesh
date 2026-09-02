@@ -22,7 +22,6 @@ public class BloodRequestService
     private readonly IRepository<DonorProfile> _donorProfileRepository;
     private readonly IRepository<DonationRecord> _donationRecordRepository;
     private readonly ILogger<BloodRequestService> _logger;
-    private readonly IServiceScopeFactory _scopeFactory;
     private readonly ISystemSettingsService _systemSettingsService;
 
     public BloodRequestService(
@@ -37,7 +36,6 @@ public class BloodRequestService
         IRepository<DonorProfile> donorProfileRepository,
         IRepository<DonationRecord> donationRecordRepository,
         ILogger<BloodRequestService> logger,
-        IServiceScopeFactory scopeFactory,
         ISystemSettingsService systemSettingsService)
     {
         _requestRepository = requestRepository;
@@ -51,7 +49,6 @@ public class BloodRequestService
         _donorProfileRepository = donorProfileRepository;
         _donationRecordRepository = donationRecordRepository;
         _logger = logger;
-        _scopeFactory = scopeFactory;
         _systemSettingsService = systemSettingsService;
     }
 
@@ -114,21 +111,22 @@ public class BloodRequestService
         await _requestRepository.AddAsync(bloodRequest, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var capturedId = bloodRequest.Id;
-        _ = Task.Run(async () =>
+        // Matching runs inline, not as a detached Task.Run. Fire-and-forget work has no
+        // one keeping the instance alive once the response is sent: the host is free to
+        // suspend an idle container, which froze this task mid-flight on its outbound call
+        // to FCM. The symptom was a log that stopped dead after "Firebase Admin
+        // initialized" with neither a success nor an exception — the push was simply never
+        // completed. Awaiting it keeps the request open until FCM has accepted the message.
+        try
         {
-            using var scope = _scopeFactory.CreateScope();
-            var matching = scope.ServiceProvider.GetRequiredService<IMatchingService>();
-            var logger = scope.ServiceProvider.GetRequiredService<ILogger<BloodRequestService>>();
-            try
-            {
-                await matching.MatchRequestAsync(capturedId);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Background matching failed for request {RequestId}", capturedId);
-            }
-        });
+            await _matchingService.MatchRequestAsync(bloodRequest.Id);
+        }
+        catch (Exception ex)
+        {
+            // Matching is additive to the request itself — a failure here must not undo a
+            // blood request that is already persisted.
+            _logger.LogError(ex, "Matching failed for request {RequestId}", bloodRequest.Id);
+        }
 
         try
         {

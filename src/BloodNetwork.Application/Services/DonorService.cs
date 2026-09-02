@@ -23,7 +23,6 @@ public class DonorService
     private readonly IRepository<BloodRequestMatch> _matchRepository;
     private readonly IMatchingService _matchingService;
     private readonly ILogger<DonorService> _logger;
-    private readonly IServiceScopeFactory _scopeFactory;
 
     private const double AvailabilityNotifyRadiusKm = 10;
     private const int AvailabilityNotifyMaxRequesters = 20;
@@ -42,7 +41,6 @@ public class DonorService
         IRepository<BloodRequestMatch> matchRepository,
         IMatchingService matchingService,
         ILogger<DonorService> logger,
-        IServiceScopeFactory scopeFactory,
         ISystemSettingsService systemSettingsService)
     {
         _donorProfileRepository = donorProfileRepository;
@@ -56,7 +54,6 @@ public class DonorService
         _matchRepository = matchRepository;
         _matchingService = matchingService;
         _logger = logger;
-        _scopeFactory = scopeFactory;
         _systemSettingsService = systemSettingsService;
     }
 
@@ -266,23 +263,21 @@ public class DonorService
                              r.BloodGroup == profile.BloodGroup,
                         cancellationToken);
 
+                    // Inline rather than fire-and-forget: a detached task has nothing holding
+                    // the instance open once the response is sent, so the host is free to
+                    // suspend an idle container and freeze the task on its outbound call to
+                    // FCM — the match is recorded but the push never leaves. Same reason as
+                    // in BloodRequestService.CreateAsync.
                     foreach (var openRequest in openRequests)
                     {
-                        var capturedRequestId = openRequest.Id;
-                        _ = Task.Run(async () =>
+                        try
                         {
-                            using var scope = _scopeFactory.CreateScope();
-                            var matching = scope.ServiceProvider.GetRequiredService<IMatchingService>();
-                            var logger = scope.ServiceProvider.GetRequiredService<ILogger<DonorService>>();
-                            try
-                            {
-                                await matching.MatchRequestAsync(capturedRequestId);
-                            }
-                            catch (Exception ex)
-                            {
-                                logger.LogError(ex, "Background matching failed for request {RequestId}", capturedRequestId);
-                            }
-                        });
+                            await _matchingService.MatchRequestAsync(openRequest.Id);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Matching failed for request {RequestId}", openRequest.Id);
+                        }
                     }
                 }
                 catch (Exception ex)
