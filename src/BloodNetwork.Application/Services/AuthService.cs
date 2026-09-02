@@ -50,9 +50,19 @@ public class AuthService
                 u => u.PhoneNumber == request.PhoneNumber && !u.IsPhoneVerified, cancellationToken);
             if (staleUser != null && staleUser.CreatedAt < DateTime.UtcNow.AddHours(-24))
             {
-                await _userRepository.DeleteAsync(staleUser);
-                await _unitOfWork.SaveChangesAsync(cancellationToken);
-                existingPhone = false;
+                try
+                {
+                    await _userRepository.DeleteAsync(staleUser);
+                    await _unitOfWork.SaveChangesAsync(cancellationToken);
+                    existingPhone = false;
+                }
+                catch (Exception ex)
+                {
+                    // Restrict-delete FKs (e.g. Reports referencing this user as reporter/reported)
+                    // can block the delete. Cleanup is best-effort - fall through to the normal
+                    // "already exists" response instead of a raw 500.
+                    _logger.LogWarning(ex, "Stale-account cleanup failed for phone {Phone}", request.PhoneNumber);
+                }
             }
         }
 
@@ -70,11 +80,21 @@ public class AuthService
                     u => u.Email == request.Email && !u.IsPhoneVerified, cancellationToken);
                 if (staleEmailUser != null && staleEmailUser.CreatedAt < DateTime.UtcNow.AddHours(-24))
                 {
-                    await _userRepository.DeleteAsync(staleEmailUser);
-                    await _unitOfWork.SaveChangesAsync(cancellationToken);
-                    existingEmail = false;
+                    try
+                    {
+                        await _userRepository.DeleteAsync(staleEmailUser);
+                        await _unitOfWork.SaveChangesAsync(cancellationToken);
+                        existingEmail = false;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Stale-account cleanup failed for email {Email}", request.Email);
+                    }
                 }
             }
+
+            if (existingEmail)
+                return Result<AuthResponse>.Failure("A user with this email already exists");
         }
 
         // Only Admin is forbidden for public registration; Donor/Requester are allowed

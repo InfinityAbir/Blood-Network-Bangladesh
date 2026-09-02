@@ -241,11 +241,11 @@ import { Notification } from '../../core/models/notification';
     .notif-icon.type-donoraccepted { color: #2e7d32; }
     .notif-icon.type-donordeclined { color: #ed6c02; }
     .notif-icon.type-requestupdate { color: #1565c0; }
-    .notif-content { min-width: 0; }
+    .notif-content { min-width: 0; flex: 1 1 auto; }
     .notif-title { font-weight: 500; font-size: 13px; color: var(--bgn-text); }
     .notif-message {
       font-size: 12px; color: var(--bgn-text-muted);
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;
+      white-space: normal; overflow-wrap: break-word; max-width: 250px;
     }
     .notif-time { font-size: 11px; color: var(--bgn-text-faint); margin-top: 2px; }
 
